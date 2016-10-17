@@ -207,6 +207,7 @@ Parameters:
     Type: Number
     Default: 10
     MaxValue: 6144
+    MinValue: 5
   DBMultiAZ:
     Type: String
     Default: true
