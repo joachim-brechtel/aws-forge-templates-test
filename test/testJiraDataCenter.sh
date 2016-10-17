@@ -13,4 +13,4 @@ PARAM_JIRA_VERSION=$(atl_param "JiraVersion" "${JIRA_VERSION}")
 PARAM_DB_MASTER_PW=$(atl_param "DBMasterUserPassword" "${DB_MASTER_PASSWORD}")
 PARAM_DB_PW=$(atl_param "DBPassword" "${DB_PASSWORD}")
 
-${BASEDIR}/create-stack.sh "JiraDataCenter" "${PARAM_PUBLIC_IP}~${PARAM_JIRA_VERSION}~${PARAM_DB_MASTER_PW}~${PARAM_DB_PW}"
+${BASEDIR}/create-stack.sh "JiraDataCenter.template" "${PARAM_PUBLIC_IP}~${PARAM_JIRA_VERSION}~${PARAM_DB_MASTER_PW}~${PARAM_DB_PW}"
