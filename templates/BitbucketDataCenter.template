@@ -46,6 +46,7 @@ Metadata:
           - HomeDeleteOnTermination
           - DBMaster
           - StartCollectd
+          - ESBucketName
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -83,6 +84,8 @@ Metadata:
         default: Database snapshot ID to restore
       ElasticsearchInstanceType:
         default: Elasticsearch instance type
+      ESBucketName:
+        default: Elasticsearch snapshot S3 bucket name
       FileServerInstanceType:
         default: File server instance type
       HomeDeleteOnTermination:
@@ -240,6 +243,11 @@ Parameters:
       - i2.xlarge.elasticsearch
       - i2.2xlarge.elasticsearch
     ConstraintDescription: Must be an Elasticsearch instance type in the M3, R3 or I2 family
+  ESBucketName:
+    Type: String
+    Default: "bitbucket-elasticsearch-snapshots"
+    ConstraintDescription: "Must contain only lowercase letters, numbers, periods (.), and dashes (-)."
+    AllowedPattern: "[a-z0-9-.]*"
   FileServerInstanceType:
     Description: "Instance type for the file server hosting the Bitbucket shared home directory. See https://confluence.atlassian.com/x/GpdKLg for guidance"
     Type: String
@@ -439,7 +447,9 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ec2.amazonaws.com]
+              Service:
+                - "ec2.amazonaws.com"
+                - "es.amazonaws.com"
             Action: ["sts:AssumeRole"]
       Path: /
       Policies:
@@ -465,7 +475,19 @@ Resources:
                   - "rds:PromoteReadReplica"
                   - "rds:ModifyDBInstance"
                   - "rds:RestoreDBInstanceFromDBSnapshot"
+                  - "es:*"
+                  - "iam:PassRole"
                 Resource: ["*"]
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:DeleteObject"
+                  - "iam:PassRole"
+                Resource: [ !Sub ["arn:aws:s3:::${BucketName}}/*", BucketName: !Ref ElasticsearchBucket] ]
+              - Effect: Allow
+                Action: ["s3:ListBucket"]
+                Resource: [ !Sub ["arn:aws:s3:::${BucketName}}", BucketName: !Ref ElasticsearchBucket] ]
   BitbucketClusterNodeRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -709,7 +731,11 @@ Resources:
       ComparisonOperator: LessThanThreshold
   Elasticsearch:
     Type: "AWS::Elasticsearch::Domain"
+    Type: "AWS::Elasticsearch::Domain"
     Properties:
+      ElasticsearchVersion: 2.3
+      ElasticsearchClusterConfig:
+        InstanceType: !Ref ElasticsearchInstanceType
       AccessPolicies:
         Version: 2012-10-17
         Statement:
@@ -718,19 +744,34 @@ Resources:
               AWS: !GetAtt BitbucketClusterNodeRole.Arn
             Action: "es:*"
             Resource: "*"
-          - Effect: Allow
-            Principal:
-              AWS: !GetAtt BitbucketFileServerRole.Arn
-            Action: "es:*"
-            Resource: "*"
-      ElasticsearchVersion: 2.3
-      ElasticsearchClusterConfig:
-        InstanceType: !Ref ElasticsearchInstanceType
       Tags:
         - Key: Name
           Value: Bitbucket Elasticsearch cluster
         - Key: Application
           Value: !Ref "AWS::StackId"
+  ElasticsearchBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Ref ESBucketName
+      Tags:
+        - Key: Cluster
+          Value: !Ref "AWS::StackName"
+  ElasticsearchBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref ElasticsearchBucket
+      PolicyDocument:
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !GetAtt BitbucketFileServerRole.Arn
+            Action: ["s3:*"]
+            Resource: !Sub ["arn:aws:s3:::${BucketName}/*", BucketName: !Ref ElasticsearchBucket]
+          - Effect: "Allow"
+            Principal:
+              AWS: !GetAtt BitbucketFileServerRole.Arn
+            Action: ["s3:*"]
+            Resource: !Sub ["arn:aws:s3:::${BucketName}", BucketName: !Ref ElasticsearchBucket]
   FileServer:
     Type: "AWS::EC2::Instance"
     Metadata:
@@ -821,6 +862,10 @@ Resources:
                     - AWS_ADDITIONAL_TAGS=
                     - "BITBUCKET_VERBOSE_BACKUP=${BITBUCKET_VERBOSE_BACKUP:-true}"
                     - KEEP_BACKUPS=5
+                    - "ELASTICSEARCH_REPOSITORY_NAME=bitbucket-snapshots"
+                    - !Sub ["ELASTICSEARCH_S3_BUCKET=${BucketName}", BucketName: !Ref ESBucketName]
+                    - !Sub ["ELASTICSEARCH_S3_BUCKET_REGION=${Region}", Region: !Ref "AWS::Region"]
+                    - !Sub ["ELASTICSEARCH_SNAPSHOT_IAM_ROLE=${Role}", Role: !Ref BitbucketFileServerRole]
               mode: 000644
               owner: "ec2-user"
               group: "ec2-user"
