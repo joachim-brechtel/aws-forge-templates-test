@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: QS(0034) Atlassian Bitbucket Data Center Oct,3,2016
+Description: QS(0034) Atlassian Bitbucket Data Center Oct,19,2016
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -206,8 +206,8 @@ Parameters:
     Description: Database allocated storage size, in gigabytes (GB). If you choose Provisioned IOPS, storage should be between 100 and 6144
     Type: Number
     Default: 10
-    MaxValue: 6144
     MinValue: 5
+    MaxValue: 6144
   DBMultiAZ:
     Type: String
     Default: true
@@ -515,6 +515,8 @@ Resources:
     Type: "AWS::AutoScaling::LaunchConfiguration"
     Metadata:
       AWS::CloudFormation::Init:
+        configSets:
+          default: [1, 2]
         "1":
           packages:
             !If
@@ -632,8 +634,6 @@ Resources:
                 ensureRunning: true
                 packages:
                   yum: [nfs-utils]
-        configSets:
-          default: [1, 2]
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
@@ -810,8 +810,8 @@ Resources:
                     - !Sub ["RDS_INSTANCE_ID=${DB}", DB: !Ref "DB"]
                     - !Sub ["RESTORE_RDS_INSTANCE_CLASS=${DBInstanceClass}", DBInstanceClass: !Ref "DBInstanceClass"]
                     - !Sub ["RESTORE_RDS_MULTI_AZ=${DBMultiAZ}", DBMultiAZ: !Ref "DBMultiAZ"]
-                    - !Sub ["RESTORE_RDS_SUBNET_GROUP_NAME=${RDSSubnet}", RDSSubnet: !Ref "DBSubnetGroup"]
-                    - !Sub ["RESTORE_RDS_SECURITY_GROUP=${RDSSecurityGroup}", RDSSecurityGroup: !Ref "SecurityGroup"]
+                    - !Sub ["RESTORE_RDS_SUBNET_GROUP_NAME=${DBSubnetGroup}", DBSubnetGroup: !Ref "DBSubnetGroup"]
+                    - !Sub ["RESTORE_RDS_SECURITY_GROUP=${SecurityGroup}", SecurityGroup: !Ref "SecurityGroup"]
                     - "CURL_OPTIONS=\"-L -s -f\""
                     - !Sub ["AWS_REGION=${Region}", Region: !Ref "AWS::Region"]
                     - "AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)"
@@ -947,9 +947,9 @@ Resources:
               PolicyNames:
                 - JSessionIdStickiness
               SSLCertificateId: !Sub
-                - "arn:aws:iam::${AccountID}:server-certificate/${ServerCert}"
-                - AccountID: !Ref "AWS::AccountId"
-                  ServerCert: !Ref "SSLCertificateName"
+                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
+                - AccountId: !Ref "AWS::AccountId"
+                  SSLCertificateName: !Ref SSLCertificateName
             - !Ref AWS::NoValue
         - LoadBalancerPort: 7999
           Protocol: TCP
