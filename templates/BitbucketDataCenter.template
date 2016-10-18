@@ -530,7 +530,7 @@ Resources:
             /etc/atl:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - ATL_APP_DATA_MOUNT_ENABLED=false
                     - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
@@ -564,7 +564,7 @@ Resources:
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
             /etc/cfn/cfn-hup.conf:
               content: !Join
-                - \n
+                - "\n"
                 -
                   - "[main]"
                   - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
@@ -575,7 +575,7 @@ Resources:
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - "[cfn-auto-reloader-hook]"
                     - triggers=post.update
@@ -588,7 +588,7 @@ Resources:
             /home/atlbitbucket/.bash_profile:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - if [ -f ~/.bashrc ]; then
                     -     . ~/.bashrc
@@ -750,7 +750,7 @@ Resources:
             /etc/atl:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - ATL_ENABLED_PRODUCTS=
                     - ATL_ENABLED_SHARED_HOMES=Bitbucket
@@ -762,7 +762,7 @@ Resources:
             /etc/cfn/cfn-hup.conf:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - "[main]"
                     - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
@@ -773,7 +773,7 @@ Resources:
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - "[cfn-auto-reloader-hook]"
                     - triggers=post.update
@@ -786,7 +786,7 @@ Resources:
             /opt/atlassian/bitbucket-diy-backup/bitbucket.diy-backup.vars.sh:
               content:
                 !Join
-                  - \n
+                  - "\n"
                   -
                     - "# This file was generated from the BitbucketDataCenter CloudFormation template"
                     - !Sub ["INSTANCE_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
