@@ -544,7 +544,7 @@ Resources:
                         DBEndpointPort: !GetAtt DB.Endpoint.Port
                     - ATL_JDBC_USER=atlbitbucket
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
-                    - !Sub ["ATL_BITBUCKET_PROPERTIES=\"${Properties}", Properties: !Join ["\n", !Ref BitbucketProperties]]
+                    - !Sub ["ATL_BITBUCKET_PROPERTIES=\"${BitbucketProperties}", BitbucketProperties: !Join ["\n", !Ref BitbucketProperties]]
                     - hazelcast.network.aws=true
                     - !Sub ["hazelcast.network.aws.iam.role=${BitbucketClusterNodeRole}", BitbucketClusterNodeRole: !Ref BitbucketClusterNodeRole]
                     - !Sub ["hazelcast.network.aws.region=${Region}", Region: !Ref "AWS::Region"]
