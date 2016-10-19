@@ -871,6 +871,7 @@ Resources:
                     - AWS_ADDITIONAL_TAGS=
                     - "BITBUCKET_VERBOSE_BACKUP=${BITBUCKET_VERBOSE_BACKUP:-true}"
                     - KEEP_BACKUPS=5
+                    - "BACKUP_ELASTICSEARCH_TYPE=amazon-es"
                     - "ELASTICSEARCH_REPOSITORY_NAME=bitbucket-snapshots"
                     - "ELASTICSEARCH_INDEX_NAME=bitbucket-search-v1"
                     - !Sub ["ELASTICSEARCH_S3_BUCKET=${BucketName}", BucketName: !Ref ESBucketName]
