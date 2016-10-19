@@ -7,7 +7,6 @@ source $BASEDIR/atl-aws-extensions.sh
 TEMPLATE_NAME=${1:?"A template name must be specified."}
 PARAMETERS="$2"
 DATA_CENTER=${3:-"true"}
-S3_BUCKET_NAME=${4:-"aws-deployment-test"}
 
 STACK_NAME="$(atl_getStackName ${TEMPLATE_NAME})"
 
@@ -65,26 +64,26 @@ if [[ -z ${SUBNETS} ]]; then
 fi
 SUBNET="${SUBNETS%*\\,*}"
 
-${BASEDIR}/validate-template.sh "${TEMPLATE_NAME}.template" "${S3_BUCKET_NAME}"
+${BASEDIR}/validate-template.sh "${TEMPLATE_NAME}"
 
 PARAMETERS_ARR=($(atl_param "KeyName" "${KEY_PAIR}") $(atl_param "VPC" "${VPC_ID}"))
 if [[ "x${DATA_CENTER}" = "xtrue" ]]; then
   PARAMETERS_ARR+=($(atl_param "ExternalSubnets" "${SUBNETS}"))
   PARAMETERS_ARR+=($(atl_param "InternalSubnets" "${SUBNETS}"))
 else
-  PARAMETERS_ARR+=($(atl_param "Subnet" "${SUBNET}"))   
+  PARAMETERS_ARR+=($(atl_param "Subnet" "${SUBNET}"))
 fi
 IFS=$'~' PARAMETERS_ARR+=(${PARAMETERS})
 
 aws --region "${AWS_REGION}" cloudformation create-stack \
-  --stack-name "${STACK_NAME}" \
-  --template-url "https://${S3_BUCKET_NAME}.s3.amazonaws.com/${KEY_PAIR}-${TEMPLATE_NAME}.template" \
-  --parameters ${PARAMETERS_ARR[@]} \
-  --tags Key=Name,Value="${STACK_NAME}" \
-         Key=business_unit,Value="RD:Dev Tools Engineering" \
-         Key=resource_owner,Value="$(whoami)" \
-         Key=service_name,Value="${TEMPLATE_NAME}" \
-  --capabilities CAPABILITY_IAM
+    --stack-name "${STACK_NAME}" \
+    --template-body "file://templates/${TEMPLATE_NAME}" \
+    --parameters ${PARAMETERS_ARR[@]} \
+    --tags Key=Name,Value="${STACK_NAME}" \
+     Key=business_unit,Value="RD:Dev Tools Engineering" \
+     Key=resource_owner,Value="$(whoami)" \
+     Key=service_name,Value="${TEMPLATE_NAME}" \
+    --capabilities CAPABILITY_IAM
 
 unset IFS  
 

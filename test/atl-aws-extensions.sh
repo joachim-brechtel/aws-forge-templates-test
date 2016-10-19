@@ -165,7 +165,7 @@ function atl_getAvailabilityZones {
 }
 
 function atl_getStackName {
-  STACK_NAME="$(whoami)-${1}-$(date +%s)"
+  STACK_NAME="$(whoami)-${1%.*}-$(date +%s)"
   echo "${STACK_NAME}"
 }
 

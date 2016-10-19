@@ -48,4 +48,4 @@ if [[ -n ${SSL_CERTIFICATE} ]]; then
     PARAMS+="~${SSL_CERTIFICATE}"
 fi
 
-${BASEDIR}/create-stack.sh "BitbucketDataCenter" "${PARAMS}"
+${BASEDIR}/create-stack.sh "BitbucketDataCenter.template" "${PARAMS}"

@@ -21,4 +21,4 @@ if [[ -n ${SNAPSHOT} ]]; then
   PARAMS+="~$(atl_param "HomeVolumeSnapshotId" "${SNAPSHOT}")"
 fi
 
-${BASEDIR}/create-stack.sh "BitbucketServer" "${PARAMS}" "false"
+${BASEDIR}/create-stack.sh "BitbucketServer.template" "${PARAMS}" "false"
