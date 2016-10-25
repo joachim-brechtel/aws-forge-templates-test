@@ -12,6 +12,7 @@ EBS_SNAPSHOT=${snapshot}
 RDS_SNAPSHOT=${rds_snapshot}
 FILE_SERVER_INSTANCE_TYPE=${fileserverinstancetype}
 VOLUME_TYPE=${volumetype}
+ES_S3_BUCKET=${es_s3_bucket}
 
 # Optional Standby Parameters:
 # PRIMARY_REGION="ap-southeast-2"
@@ -47,5 +48,9 @@ fi
 if [[ -n ${SSL_CERTIFICATE} ]]; then
     PARAMS+="~${SSL_CERTIFICATE}"
 fi
+if [[ -n ${ES_S3_BUCKET} ]]; then
+    PARAMS+="~$(atl_param "ESBucketName" "${ES_S3_BUCKET}")"
+fi
+
 
 ${BASEDIR}/create-stack.sh "BitbucketDataCenter.template" "${PARAMS}"
