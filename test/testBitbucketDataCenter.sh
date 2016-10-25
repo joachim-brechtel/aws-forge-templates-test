@@ -13,13 +13,8 @@ RDS_SNAPSHOT=${rds_snapshot}
 FILE_SERVER_INSTANCE_TYPE=${fileserverinstancetype}
 VOLUME_TYPE=${volumetype}
 ES_S3_BUCKET=${es_s3_bucket}
-
-# Optional Standby Parameters:
-# PRIMARY_REGION="ap-southeast-2"
-# AWS_ACCOUNT=""
-# RDS_MASTER=""
-# STANDBY_DB_MASTER=$(atl_param "DBMaster" "arn:aws:rds:${PRIMARY_REGION}:${AWS_ACCOUNT}:db:${RDS_MASTER}")
-# SSL_CERTIFICATE=$(atl_param "SSLCertificateName" "wildcard.internal.atlassian.com")
+STANDBY_DB_MASTER=${standby_db_master}
+#SSL_CERTIFICATE=$(atl_param "SSLCertificateName" "wildcard.internal.atlassian.com")
 
 PARAMS="$(atl_param "AssociatePublicIpAddress" "true")"
 PARAMS+="~$(atl_param "BitbucketProperties" "plugin.bitbucket-scm-cache.refs.enabled=true")"
@@ -43,7 +38,7 @@ if [[ -n ${EBS_SNAPSHOT} ]]; then
     PARAMS+="~$(atl_param "HomeVolumeSnapshotId" "${EBS_SNAPSHOT}")"
 fi
 if [[ -n ${STANDBY_DB_MASTER} ]]; then
-    PARAMS+="~${STANDBY_DB_MASTER}"
+    PARAMS+="~$(atl_param "DBMaster" "${STANDBY_DB_MASTER}")"
 fi
 if [[ -n ${SSL_CERTIFICATE} ]]; then
     PARAMS+="~${SSL_CERTIFICATE}"
