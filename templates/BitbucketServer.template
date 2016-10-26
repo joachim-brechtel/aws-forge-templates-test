@@ -815,7 +815,8 @@
                   "yum": {
                     "collectd": [],
                     "collectd-java": [],
-                    "collectd-generic-jmx": []
+                    "collectd-generic-jmx": [],
+                    "collectd-rrdtool": []
                   }
                 },
                 {

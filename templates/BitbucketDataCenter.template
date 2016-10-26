@@ -555,6 +555,7 @@ Resources:
                   collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
+                  collectd-rrdtool: []
               - Ref: "AWS::NoValue"
           files:
             /etc/atl:
@@ -795,6 +796,7 @@ Resources:
                   collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
+                  collectd-rrdtool: []
               - !Ref "AWS::NoValue"
           files:
             /etc/atl:
