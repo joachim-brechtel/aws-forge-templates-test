@@ -462,6 +462,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - "ec2:AttachVolume"
+                  - "ec2:CopySnapshot"
                   - "ec2:CreateSnapshot"
                   - "ec2:CreateTags"
                   - "ec2:CreateVolume"
@@ -470,6 +471,8 @@ Resources:
                   - "ec2:DescribeSnapshots"
                   - "ec2:DescribeVolumes"
                   - "ec2:DetachVolume"
+                  - "rds:AddTagsToResource"
+                  - "rds:CopyDBSnapshot"
                   - "rds:CreateDBSnapshot"
                   - "rds:DeleteDbSnapshot"
                   - "rds:DescribeDBInstances"
@@ -867,6 +870,7 @@ Resources:
                     - "CURL_OPTIONS=\"-L -s -f\""
                     - !Sub ["AWS_REGION=${Region}", Region: !Ref "AWS::Region"]
                     - "AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document)"
+                    - "AWS_ACCOUNT_ID=$(echo \"${AWS_INFO}\" | jq -r .accountId)"
                     - "AWS_AVAILABILITY_ZONE=$(echo \"${AWS_INFO}\" | jq -r .availabilityZone)"
                     - "AWS_REGION=$(echo \"${AWS_INFO}\" | jq -r .region)"
                     - "AWS_EC2_INSTANCE_ID=$(echo \"${AWS_INFO}\" | jq -r .instanceId)"
