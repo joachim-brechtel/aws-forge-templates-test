@@ -331,8 +331,6 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
-  DoAMIOpts:
-    !Equals [!Ref AMIOpts, ""]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
   DoRestoreFromEBSSnapshot:
@@ -608,7 +606,7 @@ Resources:
                     - !Sub ["ATL_PROXY_NAME=${LoadBalancerDNSName}", LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName]
                     - ATL_SSL_SELF_CERT_ENABLED=false
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
-                    - !If [DoAMIOpts, !Join ["\n", !Ref AMIOpts], !Ref "AWS::NoValue"]
+                    - !Join ["\n", !Ref AMIOpts]
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - "\n"
