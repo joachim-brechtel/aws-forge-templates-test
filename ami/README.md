@@ -15,7 +15,7 @@ Do one of the following:
 
 ## Building AMIs
 
-Building requires the [Packer](http://packer.io) tool, jq and AWS CLI.
+Building requires the [Packer](http://packer.io) tool, [jq](https://github.com/stedolan/jq) and [AWS CLI](https://aws.amazon.com/cli/) as well as Python and Perl.
 
 To build AMIs in a VPC in the Sydney region, copy to all other regions,
 and update the CloudFormation templates with the new AMI IDs:
