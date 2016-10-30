@@ -24,6 +24,7 @@ PARAMS+="~$(atl_param "DBPassword" "${DB_PASSWORD}")"
 PARAMS+="~$(atl_param "HomeSize" "300")"
 PARAMS+="~$(atl_param "CidrBlock" "0.0.0.0/0")"
 PARAMS+="~$(atl_param "StartCollectd" "true")"
+PARAMS+="~$(atl_param "AMIOpts" "ATL_FORCE_HOST_NAME=true")"
 
 if [[ -n ${FILE_SERVER_INSTANCE_TYPE} ]]; then
     PARAMS+="~$(atl_param "FileServerInstanceType" "${FILE_SERVER_INSTANCE_TYPE}")"
