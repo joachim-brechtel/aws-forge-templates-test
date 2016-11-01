@@ -670,7 +670,7 @@ Resources:
         "2":
           commands:
             040_mount_nfs:
-              command: mount /media/atl/bitbucket/shared
+              command: "bash -c \"until mount /media/atl/bitbucket/shared; do echo 'Mount of shared volume failed trying again in 5 seconds.'; sleep 5; done\""
               ignoreErrors: false
           services:
             sysvinit:
@@ -944,6 +944,7 @@ Resources:
         - DeviceName: /dev/xvdf
           NoDevice: {}
       IamInstanceProfile: !Ref BitbucketFileServerInstanceProfile
+      EbsOptimized: true
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
