@@ -1,15 +1,15 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Atlassian Bitbucket Server",
+  "Description": "Atlassian Confluence Server",
   "Metadata": {
     "AWS::CloudFormation::Interface": {
       "ParameterGroups": [
         {
           "Label": {
-            "default": "Bitbucket setup"
+            "default": "Confluence setup"
           },
           "Parameters": [
-            "BitbucketVersion"
+            "ConfluenceVersion"
           ]
         },
         {
@@ -43,7 +43,7 @@
           },
           "Parameters": [
             "HomeVolumeSnapshotId",
-            "BitbucketProperties",
+            "ConfluenceProperties",
             "CatalinaOpts",
             "HomeDeleteOnTermination",
             "RootSize",
@@ -57,10 +57,10 @@
         "AssociatePublicIpAddress": {
           "default": "Assign public IP"
         },
-        "BitbucketProperties": {
-          "default": "Bitbucket properties"
+        "ConfluenceProperties": {
+          "default": "Confluence properties"
         },
-        "BitbucketVersion": {
+        "ConfluenceVersion": {
           "default": "Version *"
         },
         "CatalinaOpts": {
@@ -128,25 +128,25 @@
       ],
       "ConstraintDescription": "Must be 'true' or 'false'."
     },
-    "BitbucketProperties": {
-      "Description": "A comma-separated list of bitbucket properties in the form key1=value1, key2=value2, ... Find documentation at https://confluence.atlassian.com/x/m5ZKLg",
+    "ConfluenceProperties": {
+      "Description": "A comma-separated list of Confluence properties in the form <property name="key1">value1</property>, <property name="key2">value2</property>, ...",
       "Type": "CommaDelimitedList",
       "Default": ""
     },
-    "BitbucketVersion": {
-      "Description": "Version of Bitbucket, or 'latest' for the latest public release",
+    "ConfluenceVersion": {
+      "Description": "Version of Confluence, or 'latest' for the latest public release",
       "Type": "String",
       "Default": "latest",
       "AllowedPattern": "(\\d+\\.\\d+\\.\\d+(-?.*))|latest",
-      "ConstraintDescription": "Must be a valid Bitbucket version number, or 'latest' for the latest public release."
+      "ConstraintDescription": "Must be a valid Confluence version number, or 'latest' for the latest public release."
     },
     "CatalinaOpts": {
-      "Description": "Java options passed to the JVM that runs Bitbucket.",
+      "Description": "Java options passed to the JVM that runs Confluence.",
       "Type": "String",
       "Default": ""
     },
     "CidrBlock": {
-      "Description": "The CIDR IP range that is permitted to access Bitbucket. Use 0.0.0.0/0 if you want public access from the internet.",
+      "Description": "The CIDR IP range that is permitted to access Confluence. Use 0.0.0.0/0 if you want public access from the internet.",
       "Type": "String",
       "MinLength": "9",
       "MaxLength": "18",
@@ -499,7 +499,7 @@
     }
   },
   "Resources": {
-    "BitbucketBackupRole": {
+    "ConfluenceBackupRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -521,7 +521,7 @@
         "Path": "/",
         "Policies": [
           {
-            "PolicyName": "BitbucketBackupPolicy",
+            "PolicyName": "ConfluenceBackupPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -547,13 +547,13 @@
         ]
       }
     },
-    "BitbucketInstanceProfile": {
+    "ConfluenceInstanceProfile": {
       "Type": "AWS::IAM::InstanceProfile",
       "Properties": {
         "Path": "/",
         "Roles": [
           {
-            "Ref": "BitbucketBackupRole"
+            "Ref": "ConfluenceBackupRole"
           }
         ]
       }
@@ -601,10 +601,10 @@
         ]
       }
     },
-    "BitbucketServer": {
+    "ConfluenceServer": {
       "Type": "AWS::EC2::Instance",
       "Metadata": {
-        "Comment": "Launch Bitbucket Server with an IAM Role that allows DIY Backup",
+        "Comment": "Launch Confluence Server with an IAM Role that allows DIY Backup",
         "AWS::CloudFormation::Init": {
           "configSets": {
             "default": [
@@ -643,13 +643,13 @@
                     [
                       "[cfn-auto-reloader-hook]\n",
                       "triggers=post.update\n",
-                      "path=Resources.BitbucketServer.Metadata.AWS::CloudFormation::Init\n",
+                      "path=Resources.ConfluenceServer.Metadata.AWS::CloudFormation::Init\n",
                       "action=/opt/aws/bin/cfn-init -v ",
                       "         --stack ",
                       {
                         "Ref": "AWS::StackName"
                       },
-                      "         --resource BitbucketServer ",
+                      "         --resource ConfluenceServer ",
                       "         --region ",
                       {
                         "Ref": "AWS::Region"
@@ -665,17 +665,17 @@
                   "Fn::Join": [
                     "",
                     [
-                      "ATL_BITBUCKET_VERSION=",
+                      "ATL_CONFLUENCE_VERSION=",
                       {
-                        "Ref": "BitbucketVersion"
+                        "Ref": "ConfluenceVersion"
                       },
                       "\n",
-                      "ATL_BITBUCKET_PROPERTIES=\"",
+                      "ATL_CONFLUENCE_PROPERTIES=\"",
                       {
                         "Fn::Join": [
                           "\n",
                           {
-                            "Ref": "BitbucketProperties"
+                            "Ref": "ConfluenceProperties"
                           }
                         ]
                       },
@@ -693,7 +693,7 @@
                   ]
                 }
               },
-              "/home/atlbitbucket/.bash_profile": {
+              "/home/atlconfluence/.bash_profile": {
                 "content": {
                   "Fn::Join": [
                     "",
@@ -710,8 +710,8 @@
                   ]
                 },
                 "mode": "000644",
-                "owner": "atlbitbucket",
-                "group": "atlbitbucket"
+                "owner": "atlconfluence",
+                "group": "atlconfluence"
               },
               "/opt/atlassian/bitbucket-diy-backup/bitbucket.diy-backup.vars.sh": {
                 "content": {
@@ -936,7 +936,7 @@
           ]
         },
         "IamInstanceProfile": {
-          "Ref": "BitbucketInstanceProfile"
+          "Ref": "ConfluenceInstanceProfile"
         },
         "ImageId": {
           "Fn::FindInMap": [
@@ -998,7 +998,7 @@
                 {
                   "Ref": "AWS::StackName"
                 },
-                "         --resource BitbucketServer ",
+                "         --resource ConfluenceServer ",
                 "         --region ",
                 {
                   "Ref": "AWS::Region"
@@ -1009,7 +1009,7 @@
                 {
                   "Ref": "AWS::StackName"
                 },
-                "         --resource BitbucketServer ",
+                "         --resource ConfluenceServer ",
                 "         --region ",
                 {
                   "Ref": "AWS::Region"
@@ -1024,7 +1024,7 @@
   },
   "Outputs": {
     "URL": {
-      "Description": "The public URL of the Bitbucket Server instance",
+      "Description": "The public URL of the Confluence Server instance",
       "Value": {
         "Fn::Join": [
           "",
@@ -1042,13 +1042,13 @@
                 "IsPublicInstance",
                 {
                   "Fn::GetAtt": [
-                    "BitbucketServer",
+                    "ConfluenceServer",
                     "PublicDnsName"
                   ]
                 },
                 {
                   "Fn::GetAtt": [
-                    "BitbucketServer",
+                    "ConfluenceServer",
                     "PrivateIp"
                   ]
                 }
@@ -1059,13 +1059,13 @@
       }
     },
     "PublicIp": {
-      "Description": "The public IP address of the Bitbucket Server instance",
+      "Description": "The public IP address of the Confluence Server instance",
       "Value": {
         "Fn::If": [
           "IsPublicInstance",
           {
             "Fn::GetAtt": [
-              "BitbucketServer",
+              "ConfluenceServer",
               "PublicIp"
             ]
           },
@@ -1074,10 +1074,10 @@
       }
     },
     "PrivateIp": {
-      "Description": "The private IP address of the Bitbucket Server instance",
+      "Description": "The private IP address of the Confluence Server instance",
       "Value": {
         "Fn::GetAtt": [
-          "BitbucketServer",
+          "ConfluenceServer",
           "PrivateIp"
         ]
       }
