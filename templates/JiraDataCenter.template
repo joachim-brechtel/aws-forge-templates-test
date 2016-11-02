@@ -229,7 +229,7 @@
       "ConstraintDescription": "Must be in the range 1000 - 30000."
     },
     "JiraProduct": {
-      "Description": "The JIRA Product to install",
+      "Description": "The JIRA Product to install. Installs latest available version of product",
       "Type": "String",
       "ConstraintDescription": "Must be \"Software\", \"ServiceDesk\", or \"Core\"",
       "AllowedValues": [
