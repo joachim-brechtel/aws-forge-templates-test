@@ -129,7 +129,7 @@
       "ConstraintDescription": "Must be 'true' or 'false'."
     },
     "ConfluenceProperties": {
-      "Description": "A comma-separated list of Confluence properties in the form <property name="key1">value1</property>, <property name="key2">value2</property>, ...",
+      "Description": "A comma-separated list of Confluence properties in the form <property name=\"key1\">value1</property>, <property name=\"key2\">value2</property>, ...",
       "Type": "CommaDelimitedList",
       "Default": ""
     },
