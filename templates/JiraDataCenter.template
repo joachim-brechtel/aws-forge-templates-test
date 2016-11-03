@@ -628,7 +628,7 @@
                         ]
                       },
                       "\n",
-                      "ATL_RELEASE_S3_PATH=snapshots/jira\n",
+                      "ATL_RELEASE_S3_PATH=releases/jira\n",
                       "ATL_JIRA_DATA_CENTER=true\n",
                       "ATL_NGINX_ENABLED=false\n",
                       "ATL_POSTGRES_ENABLED=false\n",
