@@ -256,7 +256,7 @@ Parameters:
   ESBucketName:
     Type: String
     Default: ""
-    Description: "Name of the new, or existing, S3 bucket configured for ElasticSearch snapshots"
+    Description: "Name of a new, or existing, S3 bucket configured for ElasticSearch snapshots"
     ConstraintDescription: "Must contain only lowercase letters, numbers, periods (.), and dashes (-)."
     AllowedPattern: "[a-z0-9-.]*"
   ESSnapshotId:
@@ -931,7 +931,7 @@ Resources:
                   command: !Sub
                     - "/opt/atlassian/bitbucket-diy-backup/bitbucket.diy-restore.sh ${ESSnapshotId}"
                     - ESSnapshotId: !Ref "ESSnapshotId"
-                  ignoreErrors: true
+                  ignoreErrors: false
                   env:
                     BACKUP_HOME_TYPE: none
                     BACKUP_DATABASE_TYPE: none

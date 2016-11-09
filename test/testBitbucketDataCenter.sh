@@ -15,7 +15,7 @@ FILE_SERVER_INSTANCE_TYPE=${fileserverinstancetype}
 VOLUME_TYPE=${volumetype}
 ES_S3_BUCKET=${es_s3_bucket}
 STANDBY_DB_MASTER=${standby_db_master}
-#SSL_CERTIFICATE=$(atl_param "SSLCertificateName" "wildcard.internal.atlassian.com")
+SSL_CERTIFICATE=${ssl_certificate}
 
 PARAMS="$(atl_param "AssociatePublicIpAddress" "true")"
 PARAMS+="~$(atl_param "BitbucketProperties" "plugin.bitbucket-scm-cache.refs.enabled=true")"
@@ -46,7 +46,7 @@ if [[ -n ${STANDBY_DB_MASTER} ]]; then
     PARAMS+="~$(atl_param "DBMaster" "${STANDBY_DB_MASTER}")"
 fi
 if [[ -n ${SSL_CERTIFICATE} ]]; then
-    PARAMS+="~${SSL_CERTIFICATE}"
+    PARAMS+="~$(atl_param "SSLCertificateName" "${SSL_CERTIFICATE}")"
 fi
 if [[ -n ${ES_S3_BUCKET} ]]; then
     PARAMS+="~$(atl_param "ESBucketName" "${ES_S3_BUCKET}")"
