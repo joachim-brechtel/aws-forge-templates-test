@@ -341,32 +341,32 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
-  DoCollectd:
+  SetupCollectd:
     !Equals [!Ref StartCollectd, true]
-  DoRestoreFromEBSSnapshot:
+  RestoreFromEBSSnapshot:
     !Not [!Equals [!Ref HomeVolumeSnapshotId, ""]]
-  DoRestoreFromRDSSnapshot:
+  RestoreFromRDSSnapshot:
     !Not [!Equals [!Ref DBSnapshotId, ""]]
+  RestoreFromESSnapshot:
+    !And
+      - !Not [!Equals [!Ref ESSnapshotId, ""]]
+      - !Not [!Equals [!Ref ESBucketName, ""]]
   CreateESBucket:
     !And
       - !Equals [!Ref ESSnapshotId, ""]
       - !Not [!Equals [!Ref ESBucketName, ""]]
   StandbyMode:
     !Not [!Equals [!Ref DBMaster, ""]]
-  DoSSL:
+  SetupSSL:
     !Not [!Equals [!Ref SSLCertificateName, ""]]
   NotStandbyMode:
     !Equals [!Ref DBMaster, ""]
   IsHomeProvisionedIops:
     !Equals [!Ref HomeVolumeType, Provisioned IOPS]
   RestoreRDSOrStandby:
-    !Or [Condition: DoRestoreFromRDSSnapshot, Condition: StandbyMode]
-  DoSetDBMasterUserPassword:
+    !Or [Condition: RestoreFromRDSSnapshot, Condition: StandbyMode]
+  SetDBMasterUserPassword:
     !And [!Not [!Equals [!Ref DBMasterUserPassword, ""]], Condition: NotStandbyMode]
-  RestoreElasticsearch:
-    !And
-      - !Not [!Equals [!Ref ESSnapshotId, ""]]
-      - !Not [!Equals [!Ref ESBucketName, ""]]
 Mappings:
   AWSInstanceType2Arch:
     c3.large:
@@ -581,7 +581,7 @@ Resources:
         "1":
           packages:
             !If
-              - DoCollectd
+              - SetupCollectd
               - yum:
                   collectd: []
                   collectd-java: []
@@ -623,7 +623,7 @@ Resources:
                     - ATL_POSTGRES_ENABLED=false
                     - !Sub ["ATL_PROXY_NAME=${LoadBalancerDNSName}", LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName]
                     - ATL_SSL_SELF_CERT_ENABLED=false
-                    - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
+                    - !If [SetupSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Join ["\n", !Ref AMIOpts]
             /etc/cfn/cfn-hup.conf:
               content: !Join
@@ -679,7 +679,7 @@ Resources:
                 ensureRunning: true
                 files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
               collectd:
-                !If [DoCollectd, {enabled: true, ensureRunning: true}, !Ref "AWS::NoValue"]
+                !If [SetupCollectd, {enabled: true, ensureRunning: true}, !Ref "AWS::NoValue"]
               rpcbind:
                 enabled: true
                 ensureRunning: true
@@ -822,7 +822,7 @@ Resources:
         "1":
           packages:
             !If
-              - DoCollectd
+              - SetupCollectd
               -
                 yum:
                   collectd: []
@@ -876,7 +876,7 @@ Resources:
                     - !Sub ["INSTANCE_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub
                       - "BITBUCKET_URL=${HTTP}://${LoadBalancerDNSName}"
-                      - HTTP: !If [DoSSL, "https", "http"]
+                      - HTTP: !If [SetupSSL, "https", "http"]
                         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
                     - BITBUCKET_HOME=/media/atl/bitbucket
                     - BITBUCKET_UID=atlbitbucket
@@ -944,7 +944,7 @@ Resources:
                 files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
               collectd:
                 !If
-                  - DoCollectd
+                  - SetupCollectd
                   - enabled: true
                     ensureRunning: true
                   - !Ref "AWS::NoValue"
@@ -969,7 +969,7 @@ Resources:
             VolumeType: !If [IsHomeProvisionedIops, io1, gp2]
             Iops: !If [IsHomeProvisionedIops, !Ref HomeIops, !Ref "AWS::NoValue"]
             DeleteOnTermination: !Ref HomeDeleteOnTermination
-            SnapshotId: !If [DoRestoreFromEBSSnapshot, !Ref HomeVolumeSnapshotId, !Ref "AWS::NoValue"]
+            SnapshotId: !If [RestoreFromEBSSnapshot, !Ref HomeVolumeSnapshotId, !Ref "AWS::NoValue"]
             VolumeSize: !Ref HomeSize
         - DeviceName: /dev/xvdf
           NoDevice: {}
@@ -1015,12 +1015,12 @@ Resources:
       DBName: !If [RestoreRDSOrStandby, !Ref "AWS::NoValue",bitbucket]
       AllocatedStorage: !Ref DBStorage
       DBInstanceClass: !Ref DBInstanceClass
-      DBSnapshotIdentifier: !If [DoRestoreFromRDSSnapshot, !Ref DBSnapshotId, !Ref "AWS::NoValue"]
+      DBSnapshotIdentifier: !If [RestoreFromRDSSnapshot, !Ref DBSnapshotId, !Ref "AWS::NoValue"]
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
       EngineVersion: 9.5.2
       MasterUsername: postgres
-      MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref "AWS::NoValue"]
+      MasterUserPassword: !If [SetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref "AWS::NoValue"]
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref "AWS::NoValue"]
       MultiAZ: !If [StandbyMode, !Ref "AWS::NoValue", !Ref DBMultiAZ]
@@ -1048,11 +1048,11 @@ Resources:
       Listeners:
         - LoadBalancerPort: 80
           Protocol: HTTP
-          InstancePort: !If [DoSSL, 7991, 7990]
+          InstancePort: !If [SetupSSL, 7991, 7990]
           InstanceProtocol: HTTP
           PolicyNames: [JSessionIdStickiness]
         - !If
-            - DoSSL
+            - SetupSSL
             - LoadBalancerPort: 443
               Protocol: HTTPS
               InstancePort: 7990
@@ -1118,7 +1118,7 @@ Outputs:
     Description: The URL of the Bitbucket Data Center instance
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
-      - HTTP: !If [DoSSL, "https", "http"]
+      - HTTP: !If [SetupSSL, "https", "http"]
         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   DBMaster:
     Description: The RDS ARN to use when creating a Data Center standby stack
