@@ -167,6 +167,7 @@ if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     MAPPING_JSON=$(IFS=,\n; echo "${regionToAmi[*]}")
 
     for template in ${TEMPLATES[@]}; do
+        echo "Updating template ${template}"
         cat "${template}" | atl_replaceAmiMapping "${MAPPING_JSON}" > "${template}.tmp"
         rm "${template}"
         mv "${template}.tmp" "${template}"

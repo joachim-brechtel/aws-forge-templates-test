@@ -14,7 +14,8 @@
     "short_display_name":       "Confluence",
     "full_display_name":        "Atlassian Confluence",
     "version":                  "latest",
-    "user":                     "atlconfluence",
+    "user":                     "confluence",
+    "user_id":                  "1001",
     "db_name":                  "confluence",
     "db_user":                  "atlconfluence",
     "app_data_dir":             "/var/atlassian/application-data",
@@ -105,14 +106,6 @@
     "script": "scripts/install-postgres.sh",
     "environment_vars": [
       "VERSION={{user `postgres_version`}}"
-    ]
-  }, {
-    "type": "shell",
-    "script": "scripts/add-user.sh",
-    "environment_vars": [
-      "USER={{user `user`}}",
-      "USER_ID={{user `user_id`}}",
-      "COMMENT=\"Atlassian {{user `short_display_name`}}\""
     ]
   }, {
     "type": "shell",
