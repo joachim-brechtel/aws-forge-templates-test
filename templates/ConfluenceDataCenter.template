@@ -520,7 +520,7 @@
                   "Fn::Join": [
                     "",
                     [
-                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin/n",
+                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin\n",
                       "ATL_APP_DATA_MOUNT_ENABLED=false\n",
                       "ATL_DB_PASSWORD=",
                       {
@@ -1066,6 +1066,30 @@
     }
   },
   "Outputs": {
+    "DBURL": {
+      "Description": "The URL of the DB of Confluence Data Center instance",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "jdbc:postgresql://",
+            {
+              "Fn::GetAtt": [
+                "DB",
+                "Endpoint.Address"
+              ]
+            },
+            ":",
+            {
+              "Fn::GetAtt": [
+                "DB",
+                "Endpoint.Port"
+              ]
+            }
+          ]
+        ]
+      }
+    },
     "URL": {
       "Description": "The URL of the Confluence Data Center instance",
       "Value": {
