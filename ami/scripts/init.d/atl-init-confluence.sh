@@ -134,17 +134,15 @@ EOT
     if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
         cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
     <property name="confluence.cluster">true</property>
-    <property name="confluence.cluster.aws.access.key">????</property>
-    <property name="confluence.cluster.aws.secret.key">????</property>
-    <property name="confluence.cluster.aws.ami.role">????</property>
-    <property name="confluence.cluster.aws.region">????</property>
+    <property name="confluence.cluster.aws.ami.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
+    <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
     <property name="confluence.cluster.aws.host.header">????</property>
-    <property name="confluence.cluster.aws.security.group.name">????</property>
-    <property name="confluence.cluster.aws.tag.key">????</property>
-    <property name="confluence.cluster.aws.tag.value">????</property>
+    <property name="confluence.cluster.aws.security.group.name">${ATL_HAZELCAST_GROUP_NAME}</property>
+    <property name="confluence.cluster.aws.tag.key">${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY}</property>
+    <property name="confluence.cluster.aws.tag.value">${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE}</property>
 
     <property name="confluence.cluster.join.type">aws</property>
-    <property name="confluence.cluster.name">DL-Test</property>
+    <property name="confluence.cluster.name">${ATL_HAZELCAST_GROUP_NAME}</property>
     <property name="confluence.cluster.ttl">1</property>
 
 EOT
@@ -155,7 +153,7 @@ EOT
 </${PRODUCT_CONFIG_NAME}-configuration>
 EOT
 
-    su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${ATL_CONFLUENCE_HOME}/dbconfig.xml\"" >> "${ATL_LOG}" 2>&1
+    su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
 }
 
