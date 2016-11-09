@@ -8,8 +8,9 @@ DB_PASSWORD="stash"
 DB_MASTER_PASSWORD="postgres"
 BITBUCKET_VERSION="4.10.0"
 
-EBS_SNAPSHOT=${snapshot}
+EBS_SNAPSHOT=${ebs_snapshot}
 RDS_SNAPSHOT=${rds_snapshot}
+ES_SNAPSHOT=${es_snapshot}
 FILE_SERVER_INSTANCE_TYPE=${fileserverinstancetype}
 VOLUME_TYPE=${volumetype}
 ES_S3_BUCKET=${es_s3_bucket}
@@ -37,6 +38,9 @@ if [[ -n ${RDS_SNAPSHOT} ]]; then
 fi
 if [[ -n ${EBS_SNAPSHOT} ]]; then
     PARAMS+="~$(atl_param "HomeVolumeSnapshotId" "${EBS_SNAPSHOT}")"
+fi
+if [[ -n ${ES_SNAPSHOT} ]]; then
+    PARAMS+="~$(atl_param "ESSnapshotId" "${ES_SNAPSHOT}")"
 fi
 if [[ -n ${STANDBY_DB_MASTER} ]]; then
     PARAMS+="~$(atl_param "DBMaster" "${STANDBY_DB_MASTER}")"
