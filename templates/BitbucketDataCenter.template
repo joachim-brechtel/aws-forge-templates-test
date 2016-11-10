@@ -256,15 +256,15 @@ Parameters:
   ESBucketName:
     Type: String
     Default: ""
-    Description: "Name of a new, or existing, S3 bucket configured for ElasticSearch snapshots"
-    ConstraintDescription: "Must contain only lowercase letters, numbers, periods (.), and dashes (-)."
-    AllowedPattern: "[a-z0-9-.]*"
+    Description: "Name of a new, or existing, S3 bucket configured for Elasticsearch snapshots"
+    ConstraintDescription: "Must contain only lowercase letters, numbers and hyphens (-)."
+    AllowedPattern: "[a-z0-9-]*"
   ESSnapshotId:
     Type: String
     Default: ""
     Description: "Must be a valid snapshot ID for a snapshot in the configured S3 snapshot repository, must be used in conjunction with ESBucketName set to a correctly configured bucket"
-    AllowedPattern: "[a-z0-9-.]*"
-    ConstraintDescription: "Must contain only lowercase letters, numbers, periods (.), and dashes (-)."
+    AllowedPattern: "[a-z0-9-]*"
+    ConstraintDescription: "Must contain only lowercase letters, numbers and hyphens (-)."
   FileServerInstanceType:
     Description: "Instance type for the file server hosting the Bitbucket shared home directory. See https://confluence.atlassian.com/x/GpdKLg for guidance"
     Type: String
@@ -350,11 +350,13 @@ Conditions:
   RestoreFromESSnapshot:
     !And
       - !Not [!Equals [!Ref ESSnapshotId, ""]]
-      - !Not [!Equals [!Ref ESBucketName, ""]]
+      - !Not [Condition: ESBucketNameSet]
   CreateESBucket:
     !And
       - !Equals [!Ref ESSnapshotId, ""]
-      - !Not [!Equals [!Ref ESBucketName, ""]]
+      - !Not [Condition: ESBucketNameSet]
+  ESBucketNameSet:
+    !Equals [!Ref ESBucketName, ""]
   StandbyMode:
     !Not [!Equals [!Ref DBMaster, ""]]
   SetupSSL:
@@ -510,20 +512,13 @@ Resources:
                   - "es:*"
                 Resource: ["*"]
               - !If
-                - CreateESBucket
+                - ESBucketNameSet
                 - Effect: Allow
                   Action:
-                    - "s3:GetObject"
-                    - "s3:PutObject"
                     - "s3:DeleteObject"
-                    - "iam:PassRole"
-                  Resource:
-                    - !Sub ["arn:aws:s3:::${BucketName}/*", BucketName: !Ref ESBucketName]
-                - !Ref "AWS::NoValue"
-              - !If
-                - CreateESBucket
-                - Effect: Allow
-                  Action: ["s3:ListBucket"]
+                    - "s3:GetObject"
+                    - "s3:ListBucket"
+                    - "s3:PutObject"
                   Resource:
                     - !Sub ["arn:aws:s3:::${BucketName}", BucketName: !Ref ESBucketName]
                 - !Ref "AWS::NoValue"
@@ -797,23 +792,6 @@ Resources:
       Tags:
         - Key: Cluster
           Value: !Ref "AWS::StackName"
-  ElasticsearchBucketPolicy:
-    Type: "AWS::S3::BucketPolicy"
-    Condition: CreateESBucket
-    Properties:
-      Bucket: !Ref ESBucketName
-      PolicyDocument:
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              AWS: !GetAtt BitbucketFileServerRole.Arn
-            Action: ["s3:*"]
-            Resource: !Sub ["arn:aws:s3:::${BucketName}/*", BucketName: !Ref ESBucketName]
-          - Effect: "Allow"
-            Principal:
-              AWS: !GetAtt BitbucketFileServerRole.Arn
-            Action: ["s3:*"]
-            Resource: !Sub ["arn:aws:s3:::${BucketName}", BucketName: !Ref ESBucketName]
   FileServer:
     Type: "AWS::EC2::Instance"
     Metadata:
@@ -925,17 +903,10 @@ Resources:
               owner: "ec2-user"
               group: "ec2-user"
           commands:
-            !If
-              - RestoreElasticsearch
-              - 010_restore_es_snapshot:
-                  command: !Sub
-                    - "/opt/atlassian/bitbucket-diy-backup/bitbucket.diy-restore.sh ${ESSnapshotId}"
-                    - ESSnapshotId: !Ref "ESSnapshotId"
-                  ignoreErrors: false
-                  env:
-                    BACKUP_HOME_TYPE: none
-                    BACKUP_DATABASE_TYPE: none
-              - !Ref "AWS::NoValue"
+            010_pull_diy_backup_repo:
+              command: "git pull"
+              cwd: "/opt/atlassian/bitbucket-diy-backup"
+              ignoreErrors: true
           services:
             sysvinit:
               cfn-hup:
@@ -960,6 +931,18 @@ Resources:
               nfslock:
                 enabled: true
                 ensureRunning: true
+          commands:
+            !If
+              - RestoreFromESSnapshot
+              - 020_restore_es_snapshot:
+                  command: !Sub
+                    - "/opt/atlassian/bitbucket-diy-backup/bitbucket.diy-restore.sh ${ESSnapshotId}"
+                    - ESSnapshotId: !Ref "ESSnapshotId"
+                  ignoreErrors: false
+                  env:
+                    BACKUP_HOME_TYPE: "none"
+                    BACKUP_DATABASE_TYPE: "none"
+              - !Ref "AWS::NoValue"
         configSets:
           default: [1, 2]
     Properties:
