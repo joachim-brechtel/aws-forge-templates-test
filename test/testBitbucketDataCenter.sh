@@ -8,13 +8,14 @@ DB_PASSWORD="stash"
 DB_MASTER_PASSWORD="postgres"
 BITBUCKET_VERSION="4.10.0"
 
-EBS_SNAPSHOT=${snapshot}
+EBS_SNAPSHOT=${ebs_snapshot}
 RDS_SNAPSHOT=${rds_snapshot}
+ES_SNAPSHOT=${es_snapshot}
 FILE_SERVER_INSTANCE_TYPE=${fileserverinstancetype}
 VOLUME_TYPE=${volumetype}
 ES_S3_BUCKET=${es_s3_bucket}
 STANDBY_DB_MASTER=${standby_db_master}
-#SSL_CERTIFICATE=$(atl_param "SSLCertificateName" "wildcard.internal.atlassian.com")
+SSL_CERTIFICATE=${ssl_certificate}
 
 PARAMS="$(atl_param "AssociatePublicIpAddress" "true")"
 PARAMS+="~$(atl_param "BitbucketProperties" "plugin.bitbucket-scm-cache.refs.enabled=true")"
@@ -38,11 +39,14 @@ fi
 if [[ -n ${EBS_SNAPSHOT} ]]; then
     PARAMS+="~$(atl_param "HomeVolumeSnapshotId" "${EBS_SNAPSHOT}")"
 fi
+if [[ -n ${ES_SNAPSHOT} ]]; then
+    PARAMS+="~$(atl_param "ESSnapshotId" "${ES_SNAPSHOT}")"
+fi
 if [[ -n ${STANDBY_DB_MASTER} ]]; then
     PARAMS+="~$(atl_param "DBMaster" "${STANDBY_DB_MASTER}")"
 fi
 if [[ -n ${SSL_CERTIFICATE} ]]; then
-    PARAMS+="~${SSL_CERTIFICATE}"
+    PARAMS+="~$(atl_param "SSLCertificateName" "${SSL_CERTIFICATE}")"
 fi
 if [[ -n ${ES_S3_BUCKET} ]]; then
     PARAMS+="~$(atl_param "ESBucketName" "${ES_S3_BUCKET}")"
