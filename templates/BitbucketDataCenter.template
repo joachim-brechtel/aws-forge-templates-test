@@ -521,6 +521,7 @@ Resources:
                     - "s3:PutObject"
                   Resource:
                     - !Sub ["arn:aws:s3:::${BucketName}", BucketName: !Ref ESBucketName]
+                    - !Sub ["arn:aws:s3:::${BucketName}/*", BucketName: !Ref ESBucketName]
                 - !Ref "AWS::NoValue"
   BitbucketClusterNodeRole:
     Type: "AWS::IAM::Role"
