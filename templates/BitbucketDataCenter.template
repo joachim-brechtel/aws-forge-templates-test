@@ -350,13 +350,13 @@ Conditions:
   RestoreFromESSnapshot:
     !And
       - !Not [!Equals [!Ref ESSnapshotId, ""]]
-      - !Not [Condition: ESBucketNameSet]
+      - Condition: ESBucketNameSet
   CreateESBucket:
     !And
       - !Equals [!Ref ESSnapshotId, ""]
-      - !Not [Condition: ESBucketNameSet]
+      - Condition: ESBucketNameSet
   ESBucketNameSet:
-    !Equals [!Ref ESBucketName, ""]
+    !Not [!Equals [!Ref ESBucketName, ""]]
   StandbyMode:
     !Not [!Equals [!Ref DBMaster, ""]]
   SetupSSL:
