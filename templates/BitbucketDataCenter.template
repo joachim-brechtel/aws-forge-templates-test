@@ -876,7 +876,10 @@ Resources:
                     - BITBUCKET_HOME=/media/atl/bitbucket
                     - BITBUCKET_UID=atlbitbucket
                     - BITBUCKET_GID=atlbitbucket
-                    - "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE:-amazon-ebs}"
+                    - !If
+                      - StandbyMode
+                      - "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE:-zfs}"
+                      - "BACKUP_HOME_TYPE=${BACKUP_HOME_TYPE:-amazon-ebs}"
                     - "BACKUP_DATABASE_TYPE=${BACKUP_DATABASE_TYPE:-amazon-rds}"
                     - BACKUP_ARCHIVE_TYPE=
                     - "BACKUP_ELASTICSEARCH_TYPE=amazon-es"
