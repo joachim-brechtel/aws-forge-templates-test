@@ -954,6 +954,7 @@ Resources:
                     - ESSnapshotId: !Ref "ESSnapshotId"
                   ignoreErrors: false
                   env:
+                    SNAPSHOT_TAG_PREFIX: !Ref "ESSnapshotId"
                     BACKUP_HOME_TYPE: "none"
                     BACKUP_DATABASE_TYPE: "none"
               - !Ref "AWS::NoValue"
