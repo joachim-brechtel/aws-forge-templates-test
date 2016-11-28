@@ -408,57 +408,105 @@
       }
     },
     "AWSRegionArch2AMI": {
-      "ap-southeast-2": {
-        "HVM64": "ami-ed67588e",
+      "us-east-1": {
+        "HVM64": "ami-9ee9c389",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-999beff6",
+        "HVM64": "ami-2adca845",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-55f5a226",
+        "HVM64": "ami-5eb9ea2d",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-534e9a3d",
+        "HVM64": "ami-b98057d7",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-dfb51bbe",
+        "HVM64": "ami-e8822889",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-b8f768d4",
+        "HVM64": "ami-7f1d8213",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-a53797c6",
+        "HVM64": "ami-0e14b76d",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-southeast-2": {
+        "HVM64": "ami-ea704e89",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-central-1": {
-        "HVM64": "ami-cda55fa2",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "us-east-1": {
-        "HVM64": "ami-e6a182f1",
+        "HVM64": "ami-bb01c4d4",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-east-2": {
-        "HVM64": "ami-444f1521",
+        "HVM64": "ami-56693333",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-1be2a87b",
+        "HVM64": "ami-7fdc891f",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-4906a629",
+        "HVM64": "ami-7368c513",
         "HVMG2": "NOT_SUPPORTED"
       }
     }
   },
   "Resources": {
+    "ConfluenceClusterNodeRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "ConfluenceClusterNodePolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ec2:DescribeInstances",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ConfluenceClusterNodeInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "ConfluenceClusterNodeRole"
+          }
+        ]
+      }
+    },
     "ClusterNodeGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
@@ -474,9 +522,12 @@
         "MinSize": {
           "Ref": "ClusterNodeMin"
         },
-        "LoadBalancerNames": [
+        "TargetGroupARNs": [
           {
-            "Ref": "LoadBalancer"
+            "Ref": "MainTargetGroup"
+          },
+          {
+            "Ref": "SynchronyTargetGroup"
           }
         ],
         "VPCZoneIdentifier": {
@@ -593,7 +644,33 @@
                             "Ref": "AWS::NoValue"
                           }
                         ]
-                      }
+                      },
+                      "ATL_AWS_STACK_NAME=",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=",
+                      {
+                        "Ref": "ConfluenceClusterNodeRole"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_GROUP_NAME=",
+                      {
+                        "Ref": "SecurityGroup"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "\n"
                     ]
                   ]
                 }
@@ -725,6 +802,9 @@
         }
       },
       "Properties": {
+        "IamInstanceProfile": {
+          "Ref": "ConfluenceClusterNodeInstanceProfile"
+        },
         "AssociatePublicIpAddress": {
           "Ref": "AssociatePublicIpAddress"
         },
@@ -923,97 +1003,154 @@
       }
     },
     "LoadBalancer": {
-      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
       "Properties": {
-        "AppCookieStickinessPolicy": [
+        "LoadBalancerAttributes": [
           {
-            "CookieName": "JSESSIONID",
-            "PolicyName": "JSessionIdStickiness"
-          }
-        ],
-        "ConnectionDrainingPolicy": {
-          "Enabled": true,
-          "Timeout": 300
-        },
-        "ConnectionSettings": {
-          "IdleTimeout": 3600
-        },
-        "CrossZone": "true",
-        "Listeners": [
-          {
-            "LoadBalancerPort": "80",
-            "Protocol": "HTTP",
-            "InstancePort": {
-              "Fn::If": [
-                "DoSSL",
-                "8081",
-                "8080"
-              ]
-            },
-            "InstanceProtocol": "HTTP",
-            "PolicyNames": [
-              "JSessionIdStickiness"
-            ]
-          },
-          {
-            "LoadBalancerPort": "8091",
-            "Protocol": "HTTP",
-            "InstancePort": "8091",
-            "InstanceProtocol": "HTTP",
-            "PolicyNames": [
-              "JSessionIdStickiness"
-            ]
-          },
-          {
-            "Fn::If": [
-              "DoSSL",
-              {
-                "LoadBalancerPort": "443",
-                "Protocol": "HTTPS",
-                "InstancePort": "8080",
-                "InstanceProtocol": "HTTP",
-                "PolicyNames": [
-                  "JSessionIdStickiness"
-                ],
-                "SSLCertificateId": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:aws:iam::",
-                      {
-                        "Ref": "AWS::AccountId"
-                      },
-                      ":server-certificate/",
-                      {
-                        "Ref": "SSLCertificateName"
-                      }
-                    ]
-                  ]
-                }
-              },
-              {
-                "Ref": "AWS::NoValue"
-              }
-            ]
-          }
-        ],
-        "HealthCheck": {
-          "Target": "HTTP:8080/status",
-          "Timeout": "29",
-          "Interval": "30",
-          "UnhealthyThreshold": "2",
-          "HealthyThreshold": "2"
-        },
-        "Scheme": "internet-facing",
-        "SecurityGroups": [
-          {
-            "Ref": "SecurityGroup"
+            "Key": "idle_timeout.timeout_seconds",
+            "Value": "240"
           }
         ],
         "Subnets": {
           "Ref": "ExternalSubnets"
-        }
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ]
       }
+    },
+    "LoadBalancerListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "MainTargetGroup"
+            }
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "LoadBalancer"
+        },
+        "Port": 80,
+        "Protocol": "HTTP"
+      }
+    },
+    "SynchronyListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Properties": {
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "SynchronyTargetGroup"
+            }
+          }
+        ],
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/synchrony/*"
+            ]
+          }
+        ],
+        "ListenerArn": {
+          "Ref": "LoadBalancerListener"
+        },
+        "Priority": 1
+      }
+    },
+    "MainTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 8080,
+        "Protocol": "HTTP",
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "HealthCheckIntervalSeconds": 30,
+        "HealthCheckTimeoutSeconds": 10,
+        "HealthyThresholdCount": 4,
+        "Matcher": {
+          "HttpCode": "200"
+        },
+        "HealthCheckPath": "/status",
+        "HealthCheckPort": "8080",
+        "HealthCheckProtocol": "HTTP",
+        "TargetGroupAttributes": [
+            {
+              "Key": "stickiness.enabled",
+              "Value": "true"
+            },
+            {
+              "Key": "stickiness.type",
+              "Value": "lb_cookie"
+            }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MainTargetGroup"
+          },
+          {
+            "Key": "Cluster",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          }
+        ]
+      },
+      "DependsOn": [
+        "LoadBalancer"
+      ]
+    },
+    "SynchronyTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 8091,
+        "Protocol": "HTTP",
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "HealthCheckIntervalSeconds": 30,
+        "HealthCheckTimeoutSeconds": 10,
+        "HealthyThresholdCount": 4,
+        "Matcher": {
+          "HttpCode": "200"
+        },
+        "HealthCheckPath": "/synchrony/heartbeat",
+        "HealthCheckPort": "8091",
+        "HealthCheckProtocol": "HTTP",
+        "TargetGroupAttributes": [
+            {
+              "Key": "stickiness.enabled",
+              "Value": "true"
+            },
+            {
+              "Key": "stickiness.type",
+              "Value": "lb_cookie"
+            }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SynchronyTargetGroup"
+          },
+          {
+            "Key": "Cluster",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          }
+        ]
+      },
+      "DependsOn": [
+        "LoadBalancer"
+      ]
     },
     "SecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",

@@ -24,6 +24,7 @@ ATL_LOG=${ATL_LOG:?"The Atlassian log location must be supplied in ${ATL_FACTORY
 ATL_APP_DATA_MOUNT=${ATL_APP_DATA_MOUNT:?"The application data mount name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_INSTANCE_STORE_MOUNT=${ATL_INSTANCE_STORE_MOUNT:?"The instance store mount must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_HOST_NAME=$(atl_hostName)
+ATL_HOST_NAME=$(atl_toLowerCase ${ATL_HOST_NAME})
 
 ATL_CONFLUENCE_NAME=${ATL_CONFLUENCE_NAME:?"The CONFLUENCE name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_CONFLUENCE_SHORT_DISPLAY_NAME=${ATL_CONFLUENCE_SHORT_DISPLAY_NAME:?"The ${ATL_CONFLUENCE_NAME} short display name must be supplied in ${ATL_FACTORY_CONFIG}"}
@@ -112,10 +113,10 @@ function configureConfluenceHome {
 
 function configureDbProperties {
     atl_log "Configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB settings"
-    local PRODUCT_CONFIG_NAME="${ATL_CONFLUENCE_SHORT_DISPLAY_NAME}"
-    local CONFLUENCE_SETUP_STEP="db.first"
+    local PRODUCT_CONFIG_NAME="confluence"
+    local CONFLUENCE_SETUP_STEP="setupstart"
     local CONFLUENCE_SETUP_TYPE="custom"
-    local CONFLUENCE_BUILD_NUMBER="7101"
+    local CONFLUENCE_BUILD_NUMBER="0"
     cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -124,27 +125,29 @@ function configureDbProperties {
   <setupType>${CONFLUENCE_SETUP_TYPE}</setupType>
   <buildNumber>${CONFLUENCE_BUILD_NUMBER}</buildNumber>
   <properties>
+    <property name="confluence.database.choice">postgresql</property>
+    <property name="confluence.database.connection.type">database-type-standard</property>
     <property name="hibernate.connection.driver_class">${ATL_JDBC_DRIVER}</property>
     <property name="hibernate.connection.url">${ATL_JDBC_URL}</property>
     <property name="hibernate.connection.password">${ATL_JDBC_PASSWORD}</property>
     <property name="hibernate.connection.username">${ATL_JDBC_USER}</property>
-    <property name="hibernate.dialect">net.sf.hibernate.dialect.PostgreSQLDialect</property>
+    <property name="hibernate.dialect">defa</property>
 EOT
 
     if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
         cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
     <property name="confluence.cluster">true</property>
+    <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
+    <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.aws.ami.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
     <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
-    <property name="confluence.cluster.aws.host.header">????</property>
+    <property name="confluence.cluster.aws.host.header">ec2.amazonaws.com</property>
     <property name="confluence.cluster.aws.security.group.name">${ATL_HAZELCAST_GROUP_NAME}</property>
     <property name="confluence.cluster.aws.tag.key">${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY}</property>
     <property name="confluence.cluster.aws.tag.value">${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE}</property>
-
     <property name="confluence.cluster.join.type">aws</property>
-    <property name="confluence.cluster.name">${ATL_HAZELCAST_GROUP_NAME}</property>
+    <property name="confluence.cluster.name">${ATL_AWS_STACK_NAME}</property>
     <property name="confluence.cluster.ttl">1</property>
-
 EOT
     fi
     appendExternalConfigs
