@@ -176,6 +176,7 @@
     "HomeIops": {
       "Description": "Home directory IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB",
       "Type": "Number",
+      "Default": "100",
       "MinValue": "100",
       "MaxValue": "20000",
       "ConstraintDescription": "Must be in the range 100 - 20000."
@@ -245,6 +246,7 @@
     "RootIops": {
       "Description": "Root volume IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB",
       "Type": "Number",
+      "Default": "100",
       "MinValue": "100",
       "MaxValue": "20000",
       "ConstraintDescription": "Must be in the range 100 - 20000."
