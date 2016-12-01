@@ -45,6 +45,7 @@
             "HomeVolumeSnapshotId",
             "BitbucketProperties",
             "CatalinaOpts",
+            "AMIOpts",
             "HomeDeleteOnTermination",
             "RootSize",
             "RootVolumeType",
@@ -54,6 +55,9 @@
         }
       ],
       "ParameterLabels": {
+        "AMIOpts": {
+          "default": "AMI Options"
+        },
         "AssociatePublicIpAddress": {
           "default": "Assign public IP"
         },
@@ -118,6 +122,11 @@
     }
   },
   "Parameters": {
+    "AMIOpts": {
+      "Description": "A comma separated list of options to pass to the AMI",
+      "Type": "CommaDelimitedList",
+      "Default": ""
+    },
     "AssociatePublicIpAddress": {
       "Description": "Controls if the EC2 instance is assigned a public IP address",
       "Type": "String",
@@ -692,6 +701,14 @@
                           "ATL_SSL_SELF_CERT_ENABLED=true\n",
                           {
                             "Ref": "AWS::NoValue"
+                          }
+                        ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "\n",
+                          {
+                            "Ref": "AMIOpts"
                           }
                         ]
                       }

@@ -16,6 +16,8 @@ PARAMS+="~$(atl_param "BitbucketVersion" "${BITBUCKET_VERSION}")"
 PARAMS+="~$(atl_param "EbsOptimized" "${EBS_OPTIMIZED}")"
 PARAMS+="~$(atl_param "InstanceType" "${INSTANCE_TYPE}")"
 PARAMS+="~$(atl_param "HomeSize" "300")"
+PARAMS+="~$(atl_param "AMIOpts" "ATL_FORCE_HOST_NAME=true")"
+
 if [[ -n ${VOLUME_TYPE} ]]; then
     PARAMS+="~$(atl_param "HomeVolumeType" "${VOLUME_TYPE}")"
 fi
