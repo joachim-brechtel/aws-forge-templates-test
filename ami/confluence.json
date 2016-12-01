@@ -98,6 +98,9 @@
   },{
     "type": "shell",
     "script": "scripts/install-jq.sh"
+  },{
+    "type": "shell",
+    "script": "scripts/install-xmllint.sh"
   }, {
     "type": "shell",
     "script": "scripts/install-nginx.sh"

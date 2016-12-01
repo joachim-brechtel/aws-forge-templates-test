@@ -409,51 +409,51 @@
     },
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-9ee9c389",
+        "HVM64": "ami-65efd672",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-2adca845",
+        "HVM64": "ami-fd7a0d92",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-5eb9ea2d",
+        "HVM64": "ami-c65009b5",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-b98057d7",
+        "HVM64": "ami-6dea3d03",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-e8822889",
+        "HVM64": "ami-6d7dcd0c",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-7f1d8213",
+        "HVM64": "ami-ef31af83",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-0e14b76d",
+        "HVM64": "ami-6a75d809",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-ea704e89",
+        "HVM64": "ami-88122beb",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-central-1": {
-        "HVM64": "ami-bb01c4d4",
+        "HVM64": "ami-310acd5e",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-east-2": {
-        "HVM64": "ami-56693333",
+        "HVM64": "ami-aa88d2cf",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-7fdc891f",
+        "HVM64": "ami-fa00579a",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-7368c513",
+        "HVM64": "ami-9fcd64ff",
         "HVMG2": "NOT_SUPPORTED"
       }
     }
@@ -507,6 +507,373 @@
         ]
       }
     },
+    "SynchronyClusterNodeGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "DesiredCapacity": {
+          "Ref": "ClusterNodeMin"
+        },
+        "LaunchConfigurationName": {
+          "Ref": "SynchronyClusterNodeLaunchConfig"
+        },
+        "MaxSize": {
+          "Ref": "ClusterNodeMax"
+        },
+        "MinSize": {
+          "Ref": "ClusterNodeMin"
+        },
+        "TargetGroupARNs": [
+          {
+            "Ref": "SynchronyTargetGroup"
+          }
+        ],
+        "VPCZoneIdentifier": {
+          "Ref": "InternalSubnets"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Confluence Synchrony Node",
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "micros_service_id",
+            "Value": {
+              "Ref": "AWS::StackName"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "environment",
+            "Value": "Production",
+            "PropagateAtLaunch": true
+          }
+        ]
+      }
+    },
+    "SynchronyClusterNodeLaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "DependsOn": [
+        "EFSMountAz1",
+        "EFSMountAz2",
+        "DB"
+      ],
+      "Metadata": {
+        "Comment": "",
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "default": [
+              "0"
+            ]
+          },
+          "0": {
+            "files": {
+              "/etc/atl": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "CURL_OPTIONS=\"-L -s -f\" \n",
+                      "AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document) \n",
+                      "AWS_EC2_PRIVATE_IP=$(echo \"${AWS_INFO}\" | jq -r .privateIp) \n",
+                      "ATL_SYNCHRONY_WAITING_CONFIG_TIME=20\n",
+                      "ATL_SYNCHRONY_STACK_SPACE=-Xss2048k \n",
+                      "ATL_SYNCHRONY_MEMORY=-Xmx2g\n",
+                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin\n",
+                      "ATL_APP_DATA_MOUNT_ENABLED=false\n",
+                      "ATL_DB_PASSWORD=",
+                      {
+                        "Ref": "DBMasterUserPassword"
+                      },
+                      "\n",
+                      "ATL_DB_NAME=confluence\n",
+                      "ATL_DB_HOST=",
+                      {
+                        "Fn::GetAtt": [
+                          "DB",
+                          "Endpoint.Address"
+                        ]
+                      },
+                      "\n",
+                      "ATL_DB_PORT=",
+                      {
+                        "Fn::GetAtt": [
+                          "DB",
+                          "Endpoint.Port"
+                        ]
+                      },
+                      "\n",
+                      "ATL_JDBC_DRIVER=org.postgresql.Driver\n",
+                      "ATL_JDBC_URL=jdbc:postgresql://",
+                      {
+                        "Fn::GetAtt": [
+                          "DB",
+                          "Endpoint.Address"
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "DB",
+                          "Endpoint.Port"
+                        ]
+                      },
+                      "/confluence\n",
+                      "ATL_JDBC_USER=atlconfluence\n",
+                      "ATL_JDBC_PASSWORD=",
+                      {
+                        "Ref": "DBPassword"
+                      },
+                      "\n",
+                      "ATL_ENABLED_PRODUCTS=Synchrony\n",
+                      "ATL_ENABLED_SHARED_HOMES=\n",
+                      "ATL_CONFLUENCE_VERSION=",
+                      {
+                        "Ref": "ConfluenceVersion"
+                      },
+                      "\n",
+                      "ATL_CONFLUENCE_DATA_CENTER=true\n",
+                      "ATL_NGINX_ENABLED=false\n",
+                      "ATL_POSTGRES_ENABLED=false\n",
+                      "ATL_PROXY_NAME=",
+                      {
+                        "Fn::GetAtt": [
+                          "LoadBalancer",
+                          "DNSName"
+                        ]
+                      },
+                      "\n",
+                      "ATL_SSL_SELF_CERT_ENABLED=false\n",
+                      {
+                        "Fn::If": [
+                          "DoSSL",
+                          "ATL_SSL_PROXY=true\n",
+                          {
+                            "Ref": "AWS::NoValue"
+                          }
+                        ]
+                      },
+                      "ATL_AWS_STACK_NAME=",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=",
+                      {
+                        "Ref": "ConfluenceClusterNodeRole"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_GROUP_NAME=",
+                      {
+                        "Ref": "SecurityGroup"
+                      },
+                      "\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster\n",
+                      "ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "\n"
+                    ]
+                  ]
+                }
+              },
+              "/etc/cfn/cfn-hup.conf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[main]\n",
+                      "stack=",
+                      {
+                        "Ref": "AWS::StackId"
+                      },
+                      "\n",
+                      "region=",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "\n"
+                    ]
+                  ]
+                },
+                "mode": "000400",
+                "owner": "root",
+                "group": "root"
+              },
+              "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[cfn-auto-reloader-hook]\n",
+                      "triggers=post.update\n",
+                      "path=Resources.SynchronyClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                      "action=/opt/aws/bin/cfn-init -v ",
+                      "         --stack ",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "         --resource SynchronyClusterNodeLaunchConfig ",
+                      "         --region ",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "\n",
+                      "runas=root\n"
+                    ]
+                  ]
+                }
+              }
+            },
+            "commands": {
+              "010_make_mount_point": {
+                "command": "mkdir -p /media/atl",
+                "ignoreErrors": "false"
+              },
+              "020_add_nfs_mount": {
+                "command": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "echo ",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).",
+                            {
+                              "Ref": "ElasticFileSystem"
+                            },
+                            ".efs.",
+                            {
+                              "Ref": "AWS::Region"
+                            },
+                            ".amazonaws.com"
+                          ]
+                        ]
+                      },
+                      ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
+                    ]
+                  ]
+                },
+                "ignoreErrors": "false"
+              },
+              "030_mount_all": {
+                "command": "mount -a",
+                "ignoreErrors": "false"
+              },
+              "040_make_shared_home_dir": {
+                "command": "mkdir -p /media/atl/confluence/shared-home",
+                "ignoreErrors": "false"
+              }
+            },
+            "services": {
+              "sysvinit": {
+                "cfn-hup": {
+                  "enabled": "true",
+                  "ensureRunning": "true",
+                  "files": [
+                    "/etc/cfn/cfn-hup.conf",
+                    "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+                  ]
+                },
+                "collectd": {
+                  "Fn::If": [
+                    "DoCollectd",
+                    {
+                      "enabled": "true",
+                      "ensureRunning": "true"
+                    },
+                    {
+                      "Ref": "AWS::NoValue"
+                    }
+                  ]
+                },
+                "rpcbind": {
+                  "enabled": "true",
+                  "ensureRunning": "true",
+                  "packages": {
+                    "yum": [
+                      "nfs-utils"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Properties": {
+        "IamInstanceProfile": {
+          "Ref": "ConfluenceClusterNodeInstanceProfile"
+        },
+        "AssociatePublicIpAddress": {
+          "Ref": "AssociatePublicIpAddress"
+        },
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvdf",
+            "Ebs": {},
+            "NoDevice": true
+          }
+        ],
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegionArch2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "AWSInstanceType2Arch",
+                {
+                  "Ref": "ClusterNodeInstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "ClusterNodeInstanceType"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum update -y aws-cfn-bootstrap\n",
+                "/opt/aws/bin/cfn-init -v ",
+                "         --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                "         --resource SynchronyClusterNodeLaunchConfig ",
+                "         --region ",
+                {
+                  "Ref": "AWS::Region"
+                }
+              ]
+            ]
+          }
+        }
+      }
+    },
     "ClusterNodeGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
@@ -525,9 +892,6 @@
         "TargetGroupARNs": [
           {
             "Ref": "MainTargetGroup"
-          },
-          {
-            "Ref": "SynchronyTargetGroup"
           }
         ],
         "VPCZoneIdentifier": {
@@ -1082,14 +1446,14 @@
         "HealthCheckPort": "8080",
         "HealthCheckProtocol": "HTTP",
         "TargetGroupAttributes": [
-            {
-              "Key": "stickiness.enabled",
-              "Value": "true"
-            },
-            {
-              "Key": "stickiness.type",
-              "Value": "lb_cookie"
-            }
+          {
+            "Key": "stickiness.enabled",
+            "Value": "true"
+          },
+          {
+            "Key": "stickiness.type",
+            "Value": "lb_cookie"
+          }
         ],
         "Tags": [
           {
@@ -1126,14 +1490,14 @@
         "HealthCheckPort": "8091",
         "HealthCheckProtocol": "HTTP",
         "TargetGroupAttributes": [
-            {
-              "Key": "stickiness.enabled",
-              "Value": "true"
-            },
-            {
-              "Key": "stickiness.type",
-              "Value": "lb_cookie"
-            }
+          {
+            "Key": "stickiness.enabled",
+            "Value": "true"
+          },
+          {
+            "Key": "stickiness.type",
+            "Value": "lb_cookie"
+          }
         ],
         "Tags": [
           {
