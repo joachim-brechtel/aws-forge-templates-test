@@ -7,6 +7,7 @@ set -e
 
 trap 'atl_error ${LINENO}' ERR
 
+# We are using ALB so Confluence will startup without Synchrony-Proxy and using Synchrony at port 8091 of LB
 function start {
     atl_log "=== BEGIN: service atl-init-confluence start ==="
     atl_log "Initialising ${ATL_CONFLUENCE_FULL_DISPLAY_NAME}"
@@ -18,6 +19,7 @@ function start {
         updateHostName "${ATL_PROXY_NAME}"
     fi
     configureConfluenceHome
+    configureConfluenceEnvironmentVariables
     if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
         createConfluenceDbAndRole
     elif [[ -n "${ATL_DB_NAME}" ]]; then
@@ -27,6 +29,16 @@ function start {
     goCONF
 
     atl_log "=== END:   service atl-init-confluence start ==="
+}
+
+function configureConfluenceEnvironmentVariables (){
+   atl_log "=== BEGIN: service configureConfluenceEnvironmentVariables ==="
+   cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
+
+   CATALINA_OPTS="-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${CATALINA_OPTS}"
+   EXPORT CATALINA_OPTS
+EOT
+   atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
 }
 
 function createInstanceStoreDirs {
@@ -53,13 +65,17 @@ function createInstanceStoreDirs {
 }
 
 function configureSharedHome {
+    atl_log "=== BEGIN: service atl-init-confluence configureSharedHome ==="
     local CONFLUENCE_SHARED="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home"
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${CONFLUENCE_SHARED}"; then
+        atl_log "Linking ${CONFLUENCE_SHARED} to ${ATL_CONFLUENCE_SHARED_HOME}"
         mkdir -p "${CONFLUENCE_SHARED}"
-        chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1 
+        chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
         atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
     fi
+    atl_log "=== END:   service atl-init-confluence configureSharedHome ==="
 }
 
 function configureConfluenceHome {
@@ -95,15 +111,14 @@ function configureDbProperties {
     <property name="hibernate.connection.url">${ATL_JDBC_URL}</property>
     <property name="hibernate.connection.password">${ATL_JDBC_PASSWORD}</property>
     <property name="hibernate.connection.username">${ATL_JDBC_USER}</property>
-    <property name="hibernate.dialect">defa</property>
+    <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect</property>
 EOT
 
     if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
         cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
-    <property name="confluence.cluster">true</property>
     <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
-    <property name="confluence.cluster.aws.ami.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
+    <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
     <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
     <property name="confluence.cluster.aws.host.header">ec2.amazonaws.com</property>
     <property name="confluence.cluster.aws.security.group.name">${ATL_HAZELCAST_GROUP_NAME}</property>
@@ -129,7 +144,7 @@ function appendExternalConfigs {
         declare -a PROP_ARR
         readarray -t PROP_ARR <<<"${ATL_CONFLUENCE_PROPERTIES}"
         for prop in PROP_ARR; do
-            su "${ATL_BITBUCKET_USER}" -c "echo \"${prop}\" >> "${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "echo \"${prop}\" >> "${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\" >> "${ATL_LOG}" 2>&1
         done
     fi
 }

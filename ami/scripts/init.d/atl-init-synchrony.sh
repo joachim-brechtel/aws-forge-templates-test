@@ -14,7 +14,7 @@ ATL_SYNCHRONY_WAITING_CONFIG_TIME=${ATL_SYNCHRONY_WAITING_CONFIG_TIME:?"The time
 ATL_SYNCHRONY_SERVICE_NAME="synchrony"
 ATL_CONFLUENCE_SHARED_CONFIG_FILE="${ATL_CONFLUENCE_SHARED_HOME}/confluence.cfg.xml"
 ATL_CONFLUENCE_JRE_HOME="${ATL_CONFLUENCE_INSTALL_DIR}/jre/bin"
-ATL_SYNCHRONY_JAR_PATH="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/othes/synchrony-standalone.jar"
+ATL_SYNCHRONY_JAR_PATH="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/packages/synchrony-standalone.jar"
 # potential bug if we bump new version of driver ???
 ATL_POSTGRES_DRIVER_PATH="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib/postgresql-9.4.1210.jar"
 
@@ -23,6 +23,7 @@ SYNCHRONY_JWT_PUBLIC_KEY=""
 
 _RUNJAVA="${ATL_CONFLUENCE_JRE_HOME}/java"
 SYNCHRONY_CLASSPATH="${ATL_SYNCHRONY_JAR_PATH}:${ATL_POSTGRES_DRIVER_PATH}"
+AWS_EC2_PRIVATE_IP=$(curl -f --silent http://169.254.169.254/latest/meta-data/local-ipv4 || echo "")
 
 # main method of this service
 function start {
@@ -63,12 +64,12 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Dreza.database.url=${ATL_JDBC_URL} \
 -Dreza.database.username=${ATL_JDBC_USER} \
 -Dreza.database.password=${ATL_JDBC_PASSWORD} \
--Dreza.bind=localhost \
+-Dreza.bind=${AWS_EC2_PRIVATE_IP} \
 -Dreza.cluster.bind=${AWS_EC2_PRIVATE_IP} \
 -Dcluster.interfaces=${AWS_EC2_PRIVATE_IP} \
 -Dreza.cluster.base.port=25500 \
 -Dreza.cluster.bind=${AWS_EC2_PRIVATE_IP} \
--Dreza.service.url=http://${AWS_EC2_PRIVATE_IP}:8091/synchrony \
+-Dreza.service.url=${ATL_SYNCHRONY_SERVICE_URL} \
 -Dreza.context.path=/synchrony \
 -Dreza.port=8091 \
 -Dcluster.name=Synchrony-Cluster \
@@ -151,13 +152,16 @@ EOT
 
 # prepare Confluence Share home link inside Confluence Home folder
 function configureSharedHome {
+    atl_log "=== BEGIN: service atl-init-confluence configureSharedHome ==="
     local CONFLUENCE_SHARED="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home"
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${CONFLUENCE_SHARED}"; then
         mkdir -p "${CONFLUENCE_SHARED}"
         chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
         atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
     fi
+    atl_log "=== END:   service atl-init-confluence configureSharedHome ==="
 }
 
 # prepare Confluence Home
