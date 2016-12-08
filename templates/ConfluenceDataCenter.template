@@ -19,7 +19,9 @@
           "Parameters": [
             "ClusterNodeInstanceType",
             "ClusterNodeMin",
-            "ClusterNodeMax"
+            "ClusterNodeMax",
+            "SynchronyClusterNodeMin",
+            "SynchronyClusterNodeMax"
           ]
         },
         {
@@ -65,6 +67,12 @@
         },
         "CatalinaOpts": {
           "default": "Catalina options"
+        },
+        "SynchronyClusterNodeMax": {
+          "default": "Maximum number of Synchrony cluster nodes"
+        },
+        "SynchronyClusterNodeMin": {
+          "default": "Minimum number of Synchrony cluster nodes"
         },
         "ClusterNodeMax": {
           "default": "Maximum number of cluster nodes"
@@ -132,6 +140,14 @@
     "ClusterNodeMin": {
       "Type": "Number",
       "Default": "1"
+    },
+    "SynchronyClusterNodeMax": {
+      "Type": "Number",
+      "Default": "1"
+    },
+    "SynchronyClusterNodeMin": {
+      "Type": "Number",
+      "Default": "0"
     },
     "ClusterNodeInstanceType": {
       "Type": "String",
@@ -409,51 +425,51 @@
     },
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-65efd672",
+        "HVM64": "ami-6864627f",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-fd7a0d92",
+        "HVM64": "ami-d1b5c2be",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-c65009b5",
+        "HVM64": "ami-9decb7ee",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-6dea3d03",
+        "HVM64": "ami-8622f5e8",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-6d7dcd0c",
+        "HVM64": "ami-42adcf25",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-ef31af83",
+        "HVM64": "ami-eede4782",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-6a75d809",
+        "HVM64": "ami-bfb31fdc",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-88122beb",
+        "HVM64": "ami-3e675f5d",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-central-1": {
-        "HVM64": "ami-310acd5e",
+        "HVM64": "ami-37fb3d58",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-east-2": {
-        "HVM64": "ami-aa88d2cf",
+        "HVM64": "ami-9abce6ff",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-fa00579a",
+        "HVM64": "ami-51d68131",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-9fcd64ff",
+        "HVM64": "ami-7f1fb71f",
         "HVMG2": "NOT_SUPPORTED"
       }
     }
@@ -511,16 +527,16 @@
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
         "DesiredCapacity": {
-          "Ref": "ClusterNodeMin"
+          "Ref": "SynchronyClusterNodeMin"
         },
         "LaunchConfigurationName": {
           "Ref": "SynchronyClusterNodeLaunchConfig"
         },
         "MaxSize": {
-          "Ref": "ClusterNodeMax"
+          "Ref": "SynchronyClusterNodeMax"
         },
         "MinSize": {
-          "Ref": "ClusterNodeMin"
+          "Ref": "SynchronyClusterNodeMin"
         },
         "TargetGroupARNs": [
           {
@@ -573,13 +589,34 @@
                   "Fn::Join": [
                     "",
                     [
-                      "CURL_OPTIONS=\"-L -s -f\" \n",
-                      "AWS_INFO=$(curl ${CURL_OPTIONS} http://169.254.169.254/latest/dynamic/instance-identity/document) \n",
-                      "AWS_EC2_PRIVATE_IP=$(echo \"${AWS_INFO}\" | jq -r .privateIp) \n",
+                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://s3-ap-southeast-2.amazonaws.com/aws-deployment-test/releases/confluence/atlassian-confluence-6.1.0-SNAPSHOT-linux-x64.bin\n",
+                      "ATL_SYNCHRONY_SERVICE_URL=",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            {
+                              "Fn::If": [
+                                "DoSSL",
+                                "https",
+                                "http"
+                              ]
+                            },
+                            "://",
+                            {
+                              "Fn::GetAtt": [
+                                "LoadBalancer",
+                                "DNSName"
+                              ]
+                            },
+                            "/synchrony"
+                          ]
+                        ]
+                      },
+                      "\n",
                       "ATL_SYNCHRONY_WAITING_CONFIG_TIME=20\n",
                       "ATL_SYNCHRONY_STACK_SPACE=-Xss2048k \n",
                       "ATL_SYNCHRONY_MEMORY=-Xmx2g\n",
-                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin\n",
                       "ATL_APP_DATA_MOUNT_ENABLED=false\n",
                       "ATL_DB_PASSWORD=",
                       {
@@ -666,11 +703,6 @@
                       "ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=",
                       {
                         "Ref": "AWS::Region"
-                      },
-                      "\n",
-                      "ATL_HAZELCAST_GROUP_NAME=",
-                      {
-                        "Ref": "SecurityGroup"
                       },
                       "\n",
                       "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster\n",
@@ -935,7 +967,31 @@
                   "Fn::Join": [
                     "",
                     [
-                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin\n",
+                      "ATL_SYNCHRONY_SERVICE_URL=",
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            {
+                              "Fn::If": [
+                                "DoSSL",
+                                "https",
+                                "http"
+                              ]
+                            },
+                            "://",
+                            {
+                              "Fn::GetAtt": [
+                                "LoadBalancer",
+                                "DNSName"
+                              ]
+                            },
+                            "/synchrony/v1"
+                          ]
+                        ]
+                      },
+                      "\n",
+                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://s3-ap-southeast-2.amazonaws.com/aws-deployment-test/releases/confluence/atlassian-confluence-6.1.0-SNAPSHOT-linux-x64.bin\n",
                       "ATL_APP_DATA_MOUNT_ENABLED=false\n",
                       "ATL_DB_PASSWORD=",
                       {
@@ -1022,11 +1078,6 @@
                       "ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=",
                       {
                         "Ref": "AWS::Region"
-                      },
-                      "\n",
-                      "ATL_HAZELCAST_GROUP_NAME=",
-                      {
-                        "Ref": "SecurityGroup"
                       },
                       "\n",
                       "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster\n",
@@ -1540,6 +1591,18 @@
             "IpProtocol": "tcp",
             "FromPort": "443",
             "ToPort": "443",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "25500",
+            "ToPort": "25500",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "5801",
+            "ToPort": "5801",
             "CidrIp": "0.0.0.0/0"
           },
           {

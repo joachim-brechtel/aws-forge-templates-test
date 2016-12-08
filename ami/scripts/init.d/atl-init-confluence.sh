@@ -35,8 +35,8 @@ function configureConfluenceEnvironmentVariables (){
    atl_log "=== BEGIN: service configureConfluenceEnvironmentVariables ==="
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
-   CATALINA_OPTS="-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${CATALINA_OPTS}"
-   EXPORT CATALINA_OPTS
+CATALINA_OPTS="-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false \${CATALINA_OPTS}"
+export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
 }
@@ -120,8 +120,7 @@ EOT
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
     <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
-    <property name="confluence.cluster.aws.host.header">ec2.amazonaws.com</property>
-    <property name="confluence.cluster.aws.security.group.name">${ATL_HAZELCAST_GROUP_NAME}</property>
+    <property name="confluence.cluster.aws.host.header">ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com</property>
     <property name="confluence.cluster.aws.tag.key">${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY}</property>
     <property name="confluence.cluster.aws.tag.value">${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE}</property>
     <property name="confluence.cluster.join.type">aws</property>

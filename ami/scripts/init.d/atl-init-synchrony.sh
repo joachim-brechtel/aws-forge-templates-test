@@ -41,8 +41,8 @@ function waitForConfluenceConfigInSharedHome() {
 	  sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
 	  atl_log "====== :   Keep waiting for ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds ======"
 	done
-	SYNCHRONY_JWT_PRIVATE_KEY=$(xmllint --nocdata --xpath '//properties/property[@name="jwt.private.key"]/text()' ${ATL_CONFLUENCE_SHARED_CONFIG_FILE})
-    SYNCHRONY_JWT_PUBLIC_KEY=$(xmllint --nocdata --xpath '//properties/property[@name="jwt.public.key"]/text()' ${ATL_CONFLUENCE_SHARED_CONFIG_FILE})
+	SYNCHRONY_JWT_PRIVATE_KEY=$(xmllint --nocdata --xpath '//properties/property[@name="jwt.private.key"]/text()' ${ATL_CONFLUENCE_SHARED_CONFIG_FILE}) >> ${ATL_LOG} 2>&1
+    SYNCHRONY_JWT_PUBLIC_KEY=$(xmllint --nocdata --xpath '//properties/property[@name="jwt.public.key"]/text()' ${ATL_CONFLUENCE_SHARED_CONFIG_FILE}) >> ${ATL_LOG} 2>&1
 	while [[ -z ${SYNCHRONY_JWT_PRIVATE_KEY} ]]; do
 	    atl_log "====== :   Could not load value for jwt.private.key will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
 	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
@@ -97,7 +97,9 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Dstatsd.host=localhost \
 -Dstatsd.port=8125"
     atl_log "Starting Synchrony"
-    ${_RUNJAVA} ${SYNCHRONY_PROPERTIES} synchrony.core sql & >> ${ATL_LOG} 2>&1
+    (${_RUNJAVA} ${SYNCHRONY_PROPERTIES} synchrony.core sql & ) >> ${ATL_LOG} 2>&1
+    SYNCHRONY_PID=$!
+    echo ${SYNCHRONY_PID} > ${ATL_CONFLUENCE_HOME}/synchrony.pid
     atl_log "Synchrony started successfully"
 }
 
