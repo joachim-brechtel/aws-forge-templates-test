@@ -112,6 +112,8 @@ function configureDbProperties {
     <property name="hibernate.connection.password">${ATL_JDBC_PASSWORD}</property>
     <property name="hibernate.connection.username">${ATL_JDBC_USER}</property>
     <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect</property>
+    <property name="webwork.multipart.saveDir">\${localHome}/temp</property>
+    <property name="attachments.dir">\${confluenceHome}/attachments</property>
 EOT
 
     if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
