@@ -96,6 +96,9 @@
         "ConfluenceVersion": {
           "default": "Version *"
         },
+        "ConfluenceDownloadUrl": {
+          "default": "https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin"
+        },
         "KeyName": {
           "default": "Key Name *"
         },
@@ -238,6 +241,11 @@
       "AllowedValues": [
         "6.0.1"
       ]
+    },
+    "ConfluenceDownloadUrl": {
+      "Description": "This is URL to download Confluence if we don't provide S3 bucket and Confluence version",
+      "Type": "String",
+      "ConstraintDescription": "Must be a valid Confluence version number. For example: 6.0.1 or higher",
     },
     "KeyName": {
       "Description": "The EC2 Key Pair to allow SSH access to the instances",
@@ -388,6 +396,9 @@
         "Arch": "HVM64"
       },
       "m4.10xlarge": {
+        "Arch": "HVM64"
+      },
+      "m4.16xlarge": {
         "Arch": "HVM64"
       },
       "r3.large": {
@@ -573,14 +584,20 @@
                   "Fn::Join": [
                     "",
                     [
-                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=https://www.atlassian.com/software/confluence/downloads/binary/atlassian-confluence-6.0.1-x64.bin\n",
-                      "ATL_APP_DATA_MOUNT_ENABLED=false\n",
+                      "ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=",
+                      {
+                        "Ref": "ConfluenceDownloadUrl"
+                      },
+                      "\n",
+                      "ATL_APP_DATA_MOUNT_ENABLED=false",
+                      "\n",
                       "ATL_DB_PASSWORD=",
                       {
                         "Ref": "DBMasterUserPassword"
                       },
                       "\n",
-                      "ATL_DB_NAME=confluence\n",
+                      "ATL_DB_NAME=confluence",
+                      "\n",
                       "ATL_DB_HOST=",
                       {
                         "Fn::GetAtt": [
@@ -597,7 +614,8 @@
                         ]
                       },
                       "\n",
-                      "ATL_JDBC_DRIVER=org.postgresql.Driver\n",
+                      "ATL_JDBC_DRIVER=org.postgresql.Driver",
+                      "\n",
                       "ATL_JDBC_URL=jdbc:postgresql://",
                       {
                         "Fn::GetAtt": [
@@ -612,23 +630,30 @@
                           "Endpoint.Port"
                         ]
                       },
-                      "/confluence\n",
-                      "ATL_JDBC_USER=atlconfluence\n",
+                      "/confluence",
+                      "\n",
+                      "ATL_JDBC_USER=atlconfluence",
+                      "\n",
                       "ATL_JDBC_PASSWORD=",
                       {
                         "Ref": "DBPassword"
                       },
                       "\n",
-                      "ATL_ENABLED_PRODUCTS=Confluence\n",
-                      "ATL_ENABLED_SHARED_HOMES=\n",
+                      "ATL_ENABLED_PRODUCTS=Confluence",
+                      "\n",
+                      "ATL_ENABLED_SHARED_HOMES=",
+                      "\n",
                       "ATL_CONFLUENCE_VERSION=",
                       {
                         "Ref": "ConfluenceVersion"
                       },
                       "\n",
-                      "ATL_CONFLUENCE_DATA_CENTER=true\n",
-                      "ATL_NGINX_ENABLED=false\n",
-                      "ATL_POSTGRES_ENABLED=false\n",
+                      "ATL_CONFLUENCE_DATA_CENTER=true",
+                      "\n",
+                      "ATL_NGINX_ENABLED=false",
+                      "\n",
+                      "ATL_POSTGRES_ENABLED=false",
+                      "\n",
                       "ATL_PROXY_NAME=",
                       {
                         "Fn::GetAtt": [
@@ -637,7 +662,8 @@
                         ]
                       },
                       "\n",
-                      "ATL_SSL_SELF_CERT_ENABLED=false\n",
+                      "ATL_SSL_SELF_CERT_ENABLED=false",
+                      "\n",
                       {
                         "Fn::If": [
                           "DoSSL",
@@ -682,7 +708,8 @@
                   "Fn::Join": [
                     "",
                     [
-                      "[main]\n",
+                      "[main]",
+                      "\n",
                       "stack=",
                       {
                         "Ref": "AWS::StackId"
@@ -705,9 +732,12 @@
                   "Fn::Join": [
                     "",
                     [
-                      "[cfn-auto-reloader-hook]\n",
-                      "triggers=post.update\n",
-                      "path=Resources.ClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                      "[cfn-auto-reloader-hook]",
+                      "\n",
+                      "triggers=post.update",
+                      "\n",
+                      "path=Resources.ClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init",
+                      "\n",
                       "action=/opt/aws/bin/cfn-init -v ",
                       "         --stack ",
                       {
@@ -719,7 +749,8 @@
                         "Ref": "AWS::Region"
                       },
                       "\n",
-                      "runas=root\n"
+                      "runas=root",
+                      "\n"
                     ]
                   ]
                 }
@@ -850,8 +881,10 @@
             "Fn::Join": [
               "",
               [
-                "#!/bin/bash -xe\n",
-                "yum update -y aws-cfn-bootstrap\n",
+                "#!/bin/bash -xe",
+                "\n",
+                "yum update -y aws-cfn-bootstrap",
+                "\n",
                 "/opt/aws/bin/cfn-init -v ",
                 "         --stack ",
                 {
