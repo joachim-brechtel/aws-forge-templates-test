@@ -156,7 +156,7 @@
     },
     "CatalinaOpts": {
       "Type": "String",
-      "Default": ""
+      "Default": "Java options passed to the JVM that runs Confluence."
     },
     "DBInstanceClass": {
       "Description": "RDS instance type",
@@ -183,7 +183,8 @@
       "Default": "",
       "Description": "Database admin account password.",
       "Type": "String",
-      "MaxLength": "41",
+      "MaxLength": "128",
+      "MinLength": "8",
       "AllowedPattern": "[a-zA-Z0-9]*",
       "ConstraintDescription": "Must be at least 8 alphanumeric characters."
     },
@@ -191,9 +192,10 @@
       "Default": "",
       "Description": "Database user account password.",
       "Type": "String",
-      "MaxLength": "41",
+      "MaxLength": "128",
+      "MinLength": "8",
       "AllowedPattern": "[a-zA-Z0-9]*",
-      "ConstraintDescription": "Must contain only alphanumeric characters.",
+      "ConstraintDescription": "Must be at least 8 alphanumeric characters.",
       "NoEcho": "true"
     },
     "DBStorage": {
