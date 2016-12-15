@@ -69,7 +69,7 @@
         },
         "CidrBlock": {
           "default": "0.0.0.0/0"
-        }
+        },
         "ClusterNodeMax": {
           "default": "Maximum number of cluster nodes"
         },
