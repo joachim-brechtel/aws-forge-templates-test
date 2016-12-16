@@ -26,7 +26,7 @@
     "instance_store_mount":     "/media/ephemeral0",
     "app_data_mount":           "/media/atl",
     "app_data_block_device":    "/dev/xvdf",
-    "app_data_fs_type":         "zfs",
+    "app_data_fs_type":         "unknown",
 
     "release_s3_bucket":        "atlassian-software",
     "release_s3_path":          "releases/confluence",
@@ -98,6 +98,9 @@
   },{
     "type": "shell",
     "script": "scripts/install-jq.sh"
+  },{
+    "type": "shell",
+    "script": "scripts/install-xmllint.sh"
   }, {
     "type": "shell",
     "script": "scripts/install-nginx.sh"
@@ -145,6 +148,13 @@
   }, {
     "type": "shell",
     "inline": "sudo mv /tmp/atl-functions /etc/init.d/atl-functions && sudo chown root:root /etc/init.d/atl-functions"
+  },{
+    "type": "file",
+    "source": "scripts/init.d/atl-confluence-common",
+    "destination": "/tmp/atl-confluence-common"
+  }, {
+    "type": "shell",
+    "inline": "sudo mv /tmp/atl-confluence-common /etc/init.d/atl-confluence-common && sudo chown root:root /etc/init.d/atl-confluence-common"
   }, {
     "type": "file",
     "source": "scripts/bin/atl-update-host-name.sh",
@@ -193,6 +203,17 @@
     "environment_vars": [
       "POSTGRES_VERSION={{user `postgres_version`}}",
       "INIT_SCRIPT=/tmp/atl-init-confluence.sh"
+    ]
+  }, {
+    "type": "file",
+    "source": "scripts/init.d/atl-init-synchrony.sh",
+    "destination": "/tmp/atl-init-synchrony.sh"
+  }, {
+    "type": "shell",
+    "script": "scripts/install-atl-init-product-service.sh",
+    "environment_vars": [
+      "POSTGRES_VERSION={{user `postgres_version`}}",
+      "INIT_SCRIPT=/tmp/atl-init-synchrony.sh"
     ]
   }, {
     "type": "file",
