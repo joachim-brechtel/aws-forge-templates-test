@@ -15,9 +15,8 @@ ATL_SYNCHRONY_SERVICE_NAME="synchrony"
 ATL_CONFLUENCE_SHARED_CONFIG_FILE="${ATL_CONFLUENCE_SHARED_HOME}/confluence.cfg.xml"
 ATL_CONFLUENCE_JRE_HOME="${ATL_CONFLUENCE_INSTALL_DIR}/jre/bin"
 ATL_SYNCHRONY_JAR_PATH="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/packages/synchrony-standalone.jar"
-# potential bug if we bump new version of driver ???
-ATL_POSTGRES_DRIVER_PATH="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib/postgresql-9.4.1210.jar"
-
+# find the fisrt postgres driver in lib folder
+ATL_POSTGRES_DRIVER_PATH=$(ls -t ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib/postgresql*.jar | head -n 1)
 SYNCHRONY_JWT_PRIVATE_KEY=""
 SYNCHRONY_JWT_PUBLIC_KEY=""
 SYNCHRONY_PID="${ATL_CONFLUENCE_HOME}/synchrony.pid"
@@ -41,7 +40,7 @@ function stop() {
 }
 
 function waitForConfluenceConfigInSharedHome() {
-    atl_log "=== BEGIN: Waiting for confluence.cfg.xml avalaible in shared home folder ==="
+    atl_log "=== BEGIN: Waiting for confluence.cfg.xml available in shared home folder ==="
     while [[ ! -f ${ATL_CONFLUENCE_SHARED_CONFIG_FILE} ]]; do
 	  sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
 	  atl_log "====== :   Keep waiting for ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds ======"
