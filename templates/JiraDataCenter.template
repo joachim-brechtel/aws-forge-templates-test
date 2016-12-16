@@ -410,68 +410,80 @@
     },
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-4a86c95d",
+        "HVM64": "ami-75b7b962",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-a62b5fc9",
+        "HVM64": "ami-c1e592ae",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "eu-west-2": {
+        "HVM64": "ami-72d6dc16",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-2cecac5f",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "ap-southeast-1": {
-        "HVM64": "ami-85d275e6",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "ap-southeast-2": {
-        "HVM64": "ami-d99eadba",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "eu-central-1": {
-        "HVM64": "ami-556b943a",
+        "HVM64": "ami-aae8ced9",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-bdb266d3",
+        "HVM64": "ami-e19f498f",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-d0ed35b1",
+        "HVM64": "ami-20e28c47",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-cb0290a7",
+        "HVM64": "ami-59e27a35",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ca-central-1": {
+        "HVM64": "ami-0921936d",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-southeast-1": {
+        "HVM64": "ami-bc61cedf",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-southeast-2": {
+        "HVM64": "ami-7f4b701c",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "eu-central-1": {
+        "HVM64": "ami-de66a7b1",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "us-east-2": {
+        "HVM64": "ami-87d48ee2",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-d4a1e8b4",
+        "HVM64": "ami-3ca5f35c",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-cf1dc5af",
+        "HVM64": "ami-e3883d83",
         "HVMG2": "NOT_SUPPORTED"
       }
     },
-    "JIRAProduct2NameAndVersion" : {
+    "JIRAProduct2NameAndVersion": {
       "Software": {
-        "name" : "jira-software",
-        "version" : "7.2.3",
-        "shortdisplayname" : "\"JIRA SW\"",
-        "fulldisplayname" : "\"Atlassian JIRA Software\""
+        "name": "jira-software",
+        "version": "7.2.3",
+        "shortdisplayname": "\"JIRA SW\"",
+        "fulldisplayname": "\"Atlassian JIRA Software\""
       },
       "ServiceDesk": {
-        "name" : "servicedesk",
-        "version" : "3.2.3",
-        "shortdisplayname" : "\"JIRA SD\"",
-        "fulldisplayname" : "\"Atlassian JIRA Service Desk\""
+        "name": "servicedesk",
+        "version": "3.2.3",
+        "shortdisplayname": "\"JIRA SD\"",
+        "fulldisplayname": "\"Atlassian JIRA Service Desk\""
       },
       "Core": {
-        "name" : "jira-core",
-        "version" : "7.2.3",
-        "shortdisplayname" : "\"JIRA Core\"",
-        "fulldisplayname" : "\"Atlassian JIRA Core\""
+        "name": "jira-core",
+        "version": "7.2.3",
+        "shortdisplayname": "\"JIRA Core\"",
+        "fulldisplayname": "\"Atlassian JIRA Core\""
       }
     }
   },

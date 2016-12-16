@@ -213,22 +213,29 @@ function configureNginx {
     atl_addNginxProductMapping "${ATL_JIRA_NGINX_PATH}" 8080
 }
 
-function installJIRA {
-    atl_log "Checking if ${ATL_JIRA_SHORT_DISPLAY_NAME} has already been installed"
-    if [[ -d "${ATL_JIRA_INSTALL_DIR}" ]]; then
-        local ERROR_MESSAGE="${ATL_JIRA_SHORT_DISPLAY_NAME} install directory ${ATL_JIRA_INSTALL_DIR} already exists - aborting installation"
-        atl_log "${ERROR_MESSAGE}"
-        atl_fatal_error "${ERROR_MESSAGE}"
+function prepareInstaller {
+    ATL_LOG_HEADER="[prepareInstaller]: "
+    atl_log "${ATL_LOG_HEADER} Preparing an installer"
+
+    atl_log "${ATL_LOG_HEADER} Checking if installer has been downloaded already"
+    if [[ -f $ATL_APP_DATA_MOUNT/installer ]]; then
+        atl_log "${ATL_LOG_HEADER} Using existing installer from EFS mount"
+        cp $ATL_APP_DATA_MOUNT/installer $(atl_tempDir)/installer
+    else
+        atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} ${ATL_JIRA_VERSION} from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL}"
+        if ! curl -L -f --silent "${ATL_JIRA_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+        then
+            local ERROR_MESSAGE="Could not download installer from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL} - aborting installation"
+            atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
+            atl_fatal_error "${ERROR_MESSAGE}"
+        fi
+        cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/installer
     fi
 
-    atl_log "Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} ${ATL_JIRA_VERSION} from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL}"
-    if ! curl -L -f --silent "${ATL_JIRA_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
-    then
-        local ERROR_MESSAGE="Could not download installer from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL} - aborting installation"
-        atl_log "${ERROR_MESSAGE}"
-        atl_fatal_error "${ERROR_MESSAGE}"
-    fi
     chmod +x "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+
+    atl_log "${ATL_LOG_HEADER} Preparing installer configuration"
+
     cat <<EOT >> "$(atl_tempDir)/installer.varfile"
 launch.application\$Boolean=false
 rmiPort\$Long=8005
@@ -246,6 +253,19 @@ EOT
 
     cp $(atl_tempDir)/installer.varfile /tmp/installer.varfile.bkp
 
+    atl_log "${ATL_LOG_HEADER} Installer configuration preparation completed"
+}
+
+function installJIRA {
+    atl_log "Checking if ${ATL_JIRA_SHORT_DISPLAY_NAME} has already been installed"
+    if [[ -d "${ATL_JIRA_INSTALL_DIR}" ]]; then
+        local ERROR_MESSAGE="${ATL_JIRA_SHORT_DISPLAY_NAME} install directory ${ATL_JIRA_INSTALL_DIR} already exists - aborting installation"
+        atl_log "${ERROR_MESSAGE}"
+        atl_fatal_error "${ERROR_MESSAGE}"
+    fi
+
+    prepareInstaller
+
     atl_log "Creating ${ATL_JIRA_SHORT_DISPLAY_NAME} install directory"
     mkdir -p "${ATL_JIRA_INSTALL_DIR}"
 
@@ -256,7 +276,7 @@ EOT
     atl_log "Cleaning up"
     rm -rf "$(atl_tempDir)"/installer* >> "${ATL_LOG}" 2>&1
 
-    chown -R "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_INSTALL_DIR}"
+    chown -R "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_INSTALL_DIR}" 
 
     atl_log "${ATL_JIRA_SHORT_DISPLAY_NAME} installation completed"
 }
