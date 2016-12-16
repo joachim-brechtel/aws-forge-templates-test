@@ -18,6 +18,7 @@ else
     ATL_JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${ATL_JIRA_VERSION}-x64.bin"
 fi
 ATL_JIRA_INSTALLER_S3_PATH="${ATL_RELEASE_S3_PATH}/${ATL_JIRA_INSTALLER}"
+ATL_JIRA_RELEASES_S3_URL="http://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_RELEASE_S3_PATH}"
 ATL_JIRA_INSTALLER_DOWNLOAD_URL="${ATL_JIRA_INSTALLER_DOWNLOAD_URL:-"https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_JIRA_INSTALLER_S3_PATH}"}"
 
 ATL_LOG=${ATL_LOG:?"The Atlassian log location must be supplied in ${ATL_FACTORY_CONFIG}"}
@@ -213,23 +214,73 @@ function configureNginx {
     atl_addNginxProductMapping "${ATL_JIRA_NGINX_PATH}" 8080
 }
 
+function preserveInstaller {
+    local ATL_LOG_HEADER="[preserveInstaller]:"
+
+    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
+    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
+
+    atl_log "${ATL_LOG_HEADER} preserving ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata"
+    cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER
+    cp $(atl_tempDir)/version $ATL_APP_DATA_MOUNT/jira.version
+    atl_log "${ATL_LOG_HEADER} ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata has been preserved"
+}
+
+function restoreInstaller {
+    local ATL_LOG_HEADER="[restoreInstaller]:"
+
+    local JIRA_VERSION=$(cat $ATL_APP_DATA_MOUNT/jira.version)
+    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
+    atl_log "${ATL_LOG_HEADER} Using existing installer ${JIRA_INSTALLER} from EFS mount"
+
+    atl_log "${ATL_LOG_HEADER} Ready to restore ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER}"
+
+    if [[ -f $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER ]]; then
+        cp $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER $(atl_tempDir)/installer
+    else
+        local msg="${ATL_LOG_HEADER} ${ATL_JIRA_SHORT_DISPLAY_NAME} installer $JIRA_INSTALLER has been requested, but unable to locate it in shared mount directory"
+        atl_log "${msg}" 
+        atl_fatal_error "${msg}"
+    fi
+
+    atl_log "${ATL_LOG_HEADER} Restoration of ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} completed"
+}
+
+function downloadInstaller {
+    local ATL_LOG_HEADER="[downloadInstaller]: "
+
+    atl_log "${ATL_LOG_HEADER} Downloading installer description from ${ATL_JIRA_RELEASES_S3_URL}/latest"
+    if ! curl -L -f --silent "${ATL_JIRA_RELEASES_S3_URL}/latest" \
+        -o "$(atl_tempDir)/version" >> "${ATL_LOG}" 2>&1
+    then
+        local ERROR_MESSAGE="Could not download installer description from ${ATL_JIRA_RELEASES_S3_URL} - aborting installation"
+        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
+        atl_fatal_error "${ERROR_MESSAGE}"
+    fi
+
+    local JIRA_VERSION=$(cat "$(atl_tempDir)/version")
+    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
+
+    atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
+    if ! curl -L -f --silent "${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}" \
+        -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+    then
+        local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from ${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER} - aborting installation"
+        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
+        atl_fatal_error "${ERROR_MESSAGE}"
+    fi
+}
+
 function prepareInstaller {
-    ATL_LOG_HEADER="[prepareInstaller]: "
+    local ATL_LOG_HEADER="[prepareInstaller]: "
     atl_log "${ATL_LOG_HEADER} Preparing an installer"
 
     atl_log "${ATL_LOG_HEADER} Checking if installer has been downloaded already"
-    if [[ -f $ATL_APP_DATA_MOUNT/$ATL_JIRA_INSTALLER ]]; then
-        atl_log "${ATL_LOG_HEADER} Using existing installer from EFS mount"
-        cp $ATL_APP_DATA_MOUNT/$ATL_JIRA_INSTALLER $(atl_tempDir)/installer
+    if [[ -f $ATL_APP_DATA_MOUNT/jira.version ]]; then
+        restoreInstaller
     else
-        atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} ${ATL_JIRA_VERSION} from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL}"
-        if ! curl -L -f --silent "${ATL_JIRA_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
-        then
-            local ERROR_MESSAGE="Could not download installer from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL} - aborting installation"
-            atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
-            atl_fatal_error "${ERROR_MESSAGE}"
-        fi
-        cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/$ATL_JIRA_INSTALLER
+        downloadInstaller
+        preserveInstaller
     fi
 
     chmod +x "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
