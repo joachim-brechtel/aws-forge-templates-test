@@ -218,9 +218,9 @@ function prepareInstaller {
     atl_log "${ATL_LOG_HEADER} Preparing an installer"
 
     atl_log "${ATL_LOG_HEADER} Checking if installer has been downloaded already"
-    if [[ -f $ATL_APP_DATA_MOUNT/installer ]]; then
+    if [[ -f $ATL_APP_DATA_MOUNT/$ATL_JIRA_INSTALLER ]]; then
         atl_log "${ATL_LOG_HEADER} Using existing installer from EFS mount"
-        cp $ATL_APP_DATA_MOUNT/installer $(atl_tempDir)/installer
+        cp $ATL_APP_DATA_MOUNT/$ATL_JIRA_INSTALLER $(atl_tempDir)/installer
     else
         atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} ${ATL_JIRA_VERSION} from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL}"
         if ! curl -L -f --silent "${ATL_JIRA_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
@@ -229,7 +229,7 @@ function prepareInstaller {
             atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
             atl_fatal_error "${ERROR_MESSAGE}"
         fi
-        cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/installer
+        cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/$ATL_JIRA_INSTALLER
     fi
 
     chmod +x "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
