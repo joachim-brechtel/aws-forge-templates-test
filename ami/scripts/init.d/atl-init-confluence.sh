@@ -7,6 +7,8 @@ set -e
 
 trap 'atl_error ${LINENO}' ERR
 
+ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
+
 # We are using ALB so Confluence will startup without Synchrony-Proxy and using Synchrony at port 8091 of LB
 function start {
     atl_log "=== BEGIN: service atl-init-confluence start ==="
@@ -122,7 +124,7 @@ EOT
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
     <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
-    <property name="confluence.cluster.aws.host.header">ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com</property>
+    <property name="confluence.cluster.aws.host.header">${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER}</property>
     <property name="confluence.cluster.aws.tag.key">${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY}</property>
     <property name="confluence.cluster.aws.tag.value">${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE}</property>
     <property name="confluence.cluster.join.type">aws</property>

@@ -20,6 +20,7 @@ ATL_POSTGRES_DRIVER_PATH="${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib/p
 
 SYNCHRONY_JWT_PRIVATE_KEY=""
 SYNCHRONY_JWT_PUBLIC_KEY=""
+SYNCHRONY_PID="${ATL_CONFLUENCE_HOME}/synchrony.pid"
 
 _RUNJAVA="${ATL_CONFLUENCE_JRE_HOME}/java"
 SYNCHRONY_CLASSPATH="${ATL_SYNCHRONY_JAR_PATH}:${ATL_POSTGRES_DRIVER_PATH}"
@@ -31,8 +32,12 @@ function start {
     atl_log "Initialising Synchrony for ${ATL_CONFLUENCE_FULL_DISPLAY_NAME}"
     installConfluence
     configureConfluenceHome
-    goSynchrony
+    startSynchrony
     atl_log "=== END:   service atl-init-synchrony start ==="
+}
+
+function stop() {
+    stopSynchrony
 }
 
 function waitForConfluenceConfigInSharedHome() {
@@ -54,7 +59,7 @@ function waitForConfluenceConfigInSharedHome() {
 }
 
 # start Synchrony service
-function goSynchrony {
+function startSynchrony {
     atl_log "Starting ${ATL_SYNCHRONY_SERVICE_NAME} service"
     waitForConfluenceConfigInSharedHome
     SYNCHRONY_PROPERTIES="\
@@ -97,10 +102,68 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Dstatsd.host=localhost \
 -Dstatsd.port=8125"
     atl_log "Starting Synchrony"
+
+    # make sure we don't start Synchrony if there is a running process there
+    if [ ! -z ${SYNCHRONY_PID} ]; then
+        if [ ! -f ${SYNCHRONY_PID} ]; then
+            if [ -s "$SYNCHRONY_PID" ]; then
+                atl_log "Existing Synchrony process ID found"
+                if [ -r "$CATALINA_PID" ]; then
+                    PID=`cat "$CATALINA_PID"`
+                    ps -p $PID >/dev/null 2>&1
+                    if [ $? -eq 0 ] ; then
+                        atl_log "Synchrony appears to still be running with PID $PID. Start aborted."
+                        atl_log "If the following process is not a Synchrony process, remove the PID file and try again:"
+                        ps -f -p $PID
+                        exit 1
+                    else
+                        atl_log "Please remove ${SYNCHRONY_PID} and try to start Synchrony again"
+                        exit 1
+                    fi
+                else
+                    atl_log "Unable to read PID file ${SYNCHRONY_PID}. Start aborted."
+                    exit 1
+                fi
+            fi
+        fi
+    fi
+
     (${_RUNJAVA} ${SYNCHRONY_PROPERTIES} synchrony.core sql & ) >> ${ATL_LOG} 2>&1
-    SYNCHRONY_PID=$!
-    echo ${SYNCHRONY_PID} > ${ATL_CONFLUENCE_HOME}/synchrony.pid
+    echo $! > ${SYNCHRONY_PID}
     atl_log "Synchrony started successfully"
+}
+
+function stopSynchrony() {
+    atl_log "Stopping ${ATL_SYNCHRONY_SERVICE_NAME} service"
+    SLEEP=10
+    if [ ! -z "$SYNCHRONY_PID" ]; then
+        if [ -f "$SYNCHRONY_PID" ]; then
+            while [ $SLEEP -ge 0 ]; do
+                kill -0 `cat "$SYNCHRONY_PID"` >/dev/null 2>&1
+                if [ $? -gt 0 ]; then
+                    rm -f "$SYNCHRONY_PID" >/dev/null 2>&1
+                    if [ $? != 0 ]; then
+                        atl_log "The PID file could not be removed or cleared."
+                    fi
+                    atl_log "${ATL_SYNCHRONY_SERVICE_NAME} stopped."
+                    break
+                fi
+                if [ $SLEEP -gt 0 ]; then
+                    sleep 1
+                fi
+                if [ $SLEEP -eq 0 ]; then
+                    atl_log "${ATL_SYNCHRONY_SERVICE_NAME} did not stop in time."
+                    rm -f "$SYNCHRONY_PID" >/dev/null 2>&1
+                    kill -3 `cat "$CATALINA_PID"`
+                    if [ $? != 0 ]; then
+                        atl_log "The ${ATL_SYNCHRONY_SERVICE_NAME} service could not be stopped"
+                    fi
+                fi
+                SLEEP=`expr $SLEEP - 1 `
+            done
+        fi
+    fi
+    atl_log "Synchrony stopped successfully"
 }
 
 # we have to get Synchrony uber jar from Confluence. So just download and install Confluence without running it
@@ -121,18 +184,18 @@ function installConfluence {
     fi
     chmod +x "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
     cat <<EOT >> "$(atl_tempDir)/installer.varfile"
-launch.application\$Boolean=false
-rmiPort\$Long=8005
 app.defaultHome=${ATL_CONFLUENCE_HOME}
 app.install.service\$Boolean=true
-existingInstallationDir=${ATL_CONFLUENCE_INSTALL_DIR}
-sys.confirmedUpdateInstallationString=false
-sys.languageId=en
-sys.installationDir=${ATL_CONFLUENCE_INSTALL_DIR}
-executeLauncherAction\$Boolean=true
-httpPort\$Long=8080
-portChoice=default
 executeLauncherAction\$Boolean=false
+executeLauncherAction\$Boolean=true
+existingInstallationDir=${ATL_CONFLUENCE_INSTALL_DIR}
+httpPort\$Long=8080
+launch.application\$Boolean=false
+portChoice=default
+rmiPort\$Long=8005
+sys.confirmedUpdateInstallationString=false
+sys.installationDir=${ATL_CONFLUENCE_INSTALL_DIR}
+sys.languageId=en
 EOT
 
     cp $(atl_tempDir)/installer.varfile /tmp/installer.varfile.bkp
@@ -184,7 +247,7 @@ case "$1" in
     start)
         $1
         ;;
-    goSynchrony)
+    startSynchrony)
         $1
         ;;
     stop)
