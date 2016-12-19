@@ -10,25 +10,15 @@
 
     "config_location":          "/etc/sysconfig/atl",
     "log_location":             "/var/log/atl.log",
-    "name":                     "jira-software",
-    "short_display_name":       "JIRA",
-    "full_display_name":        "Atlassian JIRA Software",
-    "version":                  "latest",
-    "user":                     "jira",
-    "db_name":                  "jira",
-    "db_user":                  "atljira",
+    "name":                     "jira",
     "app_data_dir":             "/var/atlassian/application-data",
     "home_dir":                 "/var/atlassian/application-data/jira",
-    "db_dir":                   "/var/atlassian/application-data/db",
     "install_dir":              "/opt/atlassian/jira",
     "instance_store_block_device": "/dev/xvdb",
     "instance_store_mount":     "/media/ephemeral0",
     "app_data_mount":           "/media/atl",
     "app_data_block_device":    "/dev/xvdf",
     "app_data_fs_type":         "zfs",
-
-    "release_s3_bucket":        "atlassian-software",
-    "release_s3_path":          "snapshots/jira",
 
     "postgres_version":         "9.3"
   },
