@@ -12,14 +12,7 @@ ATL_USER_CONFIG=/etc/atl
 [[ -r "${ATL_FACTORY_CONFIG}" ]] && . "${ATL_FACTORY_CONFIG}"
 [[ -r "${ATL_USER_CONFIG}" ]] && . "${ATL_USER_CONFIG}"
 
-if [[ "x${ATL_JIRA_VERSION}" == "xlatest" ]]; then
-    ATL_JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-x64.bin"
-else
-    ATL_JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${ATL_JIRA_VERSION}-x64.bin"
-fi
-ATL_JIRA_INSTALLER_S3_PATH="${ATL_RELEASE_S3_PATH}/${ATL_JIRA_INSTALLER}"
 ATL_JIRA_RELEASES_S3_URL="http://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_RELEASE_S3_PATH}"
-ATL_JIRA_INSTALLER_DOWNLOAD_URL="${ATL_JIRA_INSTALLER_DOWNLOAD_URL:-"https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_JIRA_INSTALLER_S3_PATH}"}"
 
 ATL_LOG=${ATL_LOG:?"The Atlassian log location must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_APP_DATA_MOUNT=${ATL_APP_DATA_MOUNT:?"The application data mount name must be supplied in ${ATL_FACTORY_CONFIG}"}
@@ -29,33 +22,27 @@ ATL_HOST_NAME=$(atl_hostName)
 ATL_JIRA_NAME=${ATL_JIRA_NAME:?"The JIRA name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_SHORT_DISPLAY_NAME=${ATL_JIRA_SHORT_DISPLAY_NAME:?"The ${ATL_JIRA_NAME} short display name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_FULL_DISPLAY_NAME=${ATL_JIRA_FULL_DISPLAY_NAME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} short display name must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_VERSION=${ATL_JIRA_VERSION:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} version must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_USER=${ATL_JIRA_USER:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} user account must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_DB_NAME=${ATL_JIRA_DB_NAME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db name must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_DB_USER=${ATL_JIRA_DB_USER:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db user must be supplied in ${ATL_FACTORY_CONFIG}"}
+ATL_JIRA_DB_NAME=${ATL_DB_NAME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db name must be supplied in ${ATL_FACTORY_CONFIG}"}
+ATL_JIRA_DB_USER=${ATL_DB_USER:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db user must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_INSTALL_DIR=${ATL_JIRA_INSTALL_DIR:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} install dir must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_INSTALLER_DOWNLOAD_URL=${ATL_JIRA_INSTALLER_DOWNLOAD_URL:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} installer download URL must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_HOME=${ATL_JIRA_HOME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} home dir must be supplied in ${ATL_FACTORY_CONFIG}"}
-if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
-    ATL_JIRA_NGINX_PATH=${ATL_JIRA_NGINX_PATH:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} home dir must be supplied in ${ATL_FACTORY_CONFIG}"}
-fi
 ATL_JIRA_SHARED_HOME="${ATL_JIRA_HOME}/shared"
 ATL_JIRA_SERVICE_NAME="jira"
+
+ATL_JIRA_USER="jira" #you don't get to choose user name. Installer creates user 'jira' and that's it
 
 function start {
     atl_log "=== BEGIN: service atl-init-jira start ==="
     atl_log "Initialising ${ATL_JIRA_FULL_DISPLAY_NAME}"
 
     installJIRA
-    if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
-        configureNginx
-    elif [[ -n "${ATL_PROXY_NAME}" ]]; then
+
+    if [[ -n "${ATL_PROXY_NAME}" ]]; then
         updateHostName "${ATL_PROXY_NAME}"
     fi
+
     configureJIRAHome
-    if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
-        createJIRADbAndRole
-    elif [[ -n "${ATL_DB_NAME}" ]]; then
+    if [[ -n "${ATL_DB_NAME}" ]]; then
         configureRemoteDb
     fi
 
@@ -128,16 +115,7 @@ function configureJIRAHome {
     atl_log "Configuring ${ATL_JIRA_HOME}"
     mkdir -p "${ATL_JIRA_HOME}" >> "${ATL_LOG}" 2>&1
 
-    if [[ "x${ATL_JIRA_DATA_CENTER}" = "xtrue" ]]; then 
-        configureSharedHome
-    else
-        ownMount
-        linkAppData "data"
-        linkAppData "plugins"
-        linkAppData "logos"
-        linkAppData "import"
-        linkAppData "export"
-    fi
+    configureSharedHome
 
     initInstanceData "caches"
     initInstanceData "tmp"
