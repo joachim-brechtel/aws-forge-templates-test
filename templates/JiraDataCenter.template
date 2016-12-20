@@ -469,19 +469,16 @@
     "JIRAProduct2NameAndVersion": {
       "Software": {
         "name": "jira-software",
-        "version": "7.2.3",
         "shortdisplayname": "\"JIRA SW\"",
         "fulldisplayname": "\"Atlassian JIRA Software\""
       },
       "ServiceDesk": {
         "name": "servicedesk",
-        "version": "3.2.3",
         "shortdisplayname": "\"JIRA SD\"",
         "fulldisplayname": "\"Atlassian JIRA Service Desk\""
       },
       "Core": {
         "name": "jira-core",
-        "version": "7.2.3",
         "shortdisplayname": "\"JIRA Core\"",
         "fulldisplayname": "\"Atlassian JIRA Core\""
       }
