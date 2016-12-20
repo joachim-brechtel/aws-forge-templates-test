@@ -25,7 +25,13 @@ function atl_regionMapping {
     echo "\"${REGION}\": {\"HVM64\": \"${AMI_ID}\", \"HVMG2\": \"NOT_SUPPORTED\" }"
 }
 
-function atl_replaceAmiMapping {
+function atl_replaceJSONAmiMapping {
     local MAPPING_JSON=${1:?"A mapping must be specified"}
     jq ".Mappings.AWSRegionArch2AMI = { ${MAPPING_JSON} }"
+}
+
+function atl_replaceYAMLAmiMapping {
+    local MAPPING_JSON=${1:?"A mapping must be specified"}
+    local MAPPING_YAML=$(echo "{${MAPPING_JSON}}" | python -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' | sed 's/^/    /')
+    perl -0777 -pe "s/AWSRegionArch2AMI:((  .*|\n)*)/AWSRegionArch2AMI:\n${MAPPING_YAML}\n/g"
 }

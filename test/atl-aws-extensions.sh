@@ -61,7 +61,7 @@ function atl_createSubnets {
   select yn in "Yes" "No"; do
     case $yn in
         Yes)
-          local AZS=( $(atl_getAvailabilityZones | tr "\\\," "\n") )
+          local AZS=( $(atl_queryAvailabilityZones) )
           subnet_1=$(aws --region ${AWS_REGION} ec2 create-subnet \
                         --vpc-id $1 \
                         --cidr-block 10.0.0.0/24 \
@@ -127,10 +127,6 @@ function atl_deleteVPC {
   echo "Deleted VPC '${VPC_ID}'"
 }
 
-function atl_deleteAvailabilityZone {
-  _removeProp "azs" "${AWS_REGION}"
-}
-
 function atl_ensureInternetGatewayAttached {
   local VPC_ID=${1:?"A VPC ID must be specified"}
   local IG_ID=$(aws --region "${AWS_REGION}" ec2 describe-internet-gateways \
@@ -160,10 +156,6 @@ function atl_getSubnets {
   _getProp "subnet" "${AWS_REGION}"  
 }
 
-function atl_getAvailabilityZones {
-  _getProp "azs" "${AWS_REGION}"
-}
-
 function atl_getStackName {
   STACK_NAME="$(whoami)-${1%.*}-$(date +%s)"
   echo "${STACK_NAME}"
@@ -178,13 +170,8 @@ function atl_propUsage {
 
 function atl_queryAvailabilityZones {
   local AZS=$(aws --region ${AWS_REGION} ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' | jq '.[0:2] | join(",")' | atl_unquote)
-  AZS=${AZS/,/\\,}
-  atl_saveAvailabilityZones "${AZS}"
+  AZS=${AZS/,/ }
   echo "${AZS}"
-}
-
-function atl_saveAvailabilityZones {
-  atl_addProp "azs" ${1:?"Availability Zones must be specified"}
 }
 
 function atl_runCleanup {
@@ -195,7 +182,6 @@ function atl_runCleanup {
           aws --region "${AWS_REGION}" cloudformation delete-stack --stack-name "${STACK_NAME}"
           _waitForDelete "${STACK_NAME}"
           atl_deleteSubnets
-          atl_deleteAvailabilityZone
           atl_deleteVPC
           atl_deleteKeyPair
           break;;

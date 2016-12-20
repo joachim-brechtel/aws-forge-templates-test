@@ -24,6 +24,7 @@ ATL_LOG=${ATL_LOG:?"The Atlassian log location must be supplied in ${ATL_FACTORY
 ATL_APP_DATA_MOUNT=${ATL_APP_DATA_MOUNT:?"The application data mount name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_INSTANCE_STORE_MOUNT=${ATL_INSTANCE_STORE_MOUNT:?"The instance store mount must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_HOST_NAME=$(atl_hostName)
+ATL_FORCE_HOST_NAME=${ATL_FORCE_HOST_NAME:-"false"}
 
 ATL_BITBUCKET_NAME=${ATL_BITBUCKET_NAME:?"The Bitbucket name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_BITBUCKET_SHORT_DISPLAY_NAME=${ATL_BITBUCKET_SHORT_DISPLAY_NAME:?"The ${ATL_BITBUCKET_NAME} short display name must be supplied in ${ATL_FACTORY_CONFIG}"}
@@ -186,7 +187,7 @@ function configureRemoteDb {
     atl_log "Configuring remote DB for use with ${ATL_BITBUCKET_SHORT_DISPLAY_NAME}"
 
     if [[ -n "${ATL_DB_PASSWORD}" ]]; then
-        atl_configureDbPassword "${ATL_DB_PASSWORD}" "${ATL_DB_NAME}" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
+        atl_configureDbPassword "${ATL_DB_PASSWORD}" "*" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
         if atl_roleExists ${ATL_JDBC_USER} ${ATL_DB_NAME} ${ATL_DB_HOST} ${ATL_DB_PORT}; then
             atl_log "${ATL_BITBUCKET_DB_USER} role already exists. Skipping role creation."
         else
@@ -197,7 +198,7 @@ function configureRemoteDb {
 }
 
 function configureNginx {
-    updateHostName "${ATL_HOST_NAME}"
+    updateHostName "${ATL_HOST_NAME}" "${ATL_FORCE_HOST_NAME}"
     atl_addNginxProductMapping "${ATL_BITBUCKET_NGINX_PATH}" 7990
 }
 
@@ -240,7 +241,7 @@ EOT
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
         configureNginx
     elif [[ -n "${ATL_PROXY_NAME}" ]]; then
-        updateHostName "${ATL_PROXY_NAME}"
+        updateHostName "${ATL_PROXY_NAME}" "${ATL_FORCE_HOST_NAME}"
     fi
 
     atl_log "Creating dependency between atl-init-20-instance-store and ${ATL_BITBUCKET_SERVICE_NAME} services"
