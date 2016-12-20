@@ -222,7 +222,7 @@ function restoreInstaller {
 
     local JIRA_VERSION=$(readProductVersion $ATL_APP_DATA_MOUNT/jira.version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
-    atl_log "${ATL_LOG_HEADER} Using existing installer ${JIRA_INSTALLER} from EFS mount"
+    atl_log "${ATL_LOG_HEADER} Using existing installer ${JIRA_INSTALLER} from ${ATL_APP_DATA_MOUNT} mount"
 
     atl_log "${ATL_LOG_HEADER} Ready to restore ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER}"
 
