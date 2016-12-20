@@ -134,7 +134,7 @@ Parameters:
   DBMasterUserPassword:
     AllowedPattern: "[a-zA-Z0-9]*"
     ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Default: "123456789"
+    Default: "postgres"
     Description: Database admin account password.
     NoEcho: True
     MinLength: 8
