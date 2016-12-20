@@ -391,7 +391,7 @@ Resources:
       LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
       MaxSize: !Ref ClusterNodeMax
       MinSize: !Ref ClusterNodeMin
-      TargetGroupARNs: !Ref MainTargetGroup
+      TargetGroupARNs: [!Ref MainTargetGroup]
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
@@ -429,51 +429,30 @@ Resources:
                         - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1"
                         - Protocol: !If [DoSSL, "https", "http"]
                           LoadBalancerName: !GetAtt LoadBalancer.DNSName
-                    - "\n"
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
-                    - "\n"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
-                    - "\n"
                     - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
-                    - "\n"
                     - "ATL_DB_NAME=confluence"
-                    - "\n"
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
-                    - "\n"
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
-                    - "\n"
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
-                    - "\n"
                     - !Sub
                       - "ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence"
                       - DBEndpointAddress: !GetAtt DB.Endpoint.Address
                         DBEndpointPort: !GetAtt DB.Endpoint.Port
-                    - "\n"
                     - "ATL_JDBC_USER=atlconfluence"
-                    - "\n"
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
-                    - "\n"
                     - "ATL_ENABLED_PRODUCTS=Confluence"
-                    - "\n"
                     - "ATL_ENABLED_SHARED_HOMES="
-                    - "\n"
                     - !Sub ["ATL_CONFLUENCE_VERSION=${ConfluenceVersion}", ConfluenceVersion: !Ref ConfluenceVersion]
-                    - "\n"
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
-                    - "\n"
                     - "ATL_NGINX_ENABLED=false"
-                    - "\n"
                     - "ATL_POSTGRES_ENABLED=false"
-                    - "\n"
                     - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !GetAtt LoadBalancer.DNSName]
-                    - "\n"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
-                    - "\n"
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - "\n"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
-                    - "\n"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
@@ -615,8 +594,8 @@ Resources:
       DesiredCapacity: !Ref SynchronyClusterNodeMin
       LaunchConfigurationName: !Ref SynchronyClusterNodeLaunchConfig
       MaxSize: !Ref SynchronyClusterNodeMax
-      MinSize: !Ref SynchronyClusterNodeMax
-      TargetGroupARNs: !Ref SynchronyTargetGroup
+      MinSize: !Ref SynchronyClusterNodeMin
+      TargetGroupARNs: [!Ref SynchronyTargetGroup]
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
@@ -657,57 +636,33 @@ Resources:
                       - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1"
                       - Protocol: !If [DoSSL, "https", "http"]
                         LoadBalancerName: !GetAtt LoadBalancer.DNSName
-                    - "\n"
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
-                    - "\n"
                     - "ATL_SYNCHRONY_WAITING_CONFIG_TIME=20"
-                    - "\n"
                     - "ATL_SYNCHRONY_STACK_SPACE=-Xss2048k"
-                    - "\n"
                     - "ATL_SYNCHRONY_MEMORY=-Xmx2g"
-                    - "\n"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
-                    - "\n"
                     - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
-                    - "\n"
                     - "ATL_DB_NAME=confluence"
-                    - "\n"
                     - !Sub ["ATL_DB_HOST=$DbHost", DbHost: !GetAtt DB.Endpoint.Address]
-                    - "\n"
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
-                    - "\n"
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
-                    - "\n"
                     - !Sub
                       - "ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence"
                       - DBEndpointAddress: !GetAtt DB.Endpoint.Address
                         DBEndpointPort: !GetAtt DB.Endpoint.Port
-                    - "\n"
                     - "ATL_JDBC_USER=atlconfluence"
-                    - "\n"
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
-                    - "\n"
                     - "ATL_ENABLED_PRODUCTS=Synchrony"
-                    - "\n"
                     - "ATL_ENABLED_SHARED_HOMES="
-                    - "\n"
                     - !Sub ["ATL_CONFLUENCE_VERSION=${ConfluenceVersion}", ConfluenceVersion: !Ref ConfluenceVersion]
-                    - "\n"
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
-                    - "\n"
                     - "ATL_NGINX_ENABLED=false"
-                    - "\n"
                     - "ATL_POSTGRES_ENABLED=false"
-                    - "\n"
                     - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !GetAtt LoadBalancer.DNSName]
-                    - "\n"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
-                    - "\n"
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - "\n"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
-                    - "\n"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
@@ -796,9 +751,9 @@ Resources:
               - "#!/bin/bash -xe\n"
               - "yum update -y aws-cfn-bootstrap\n"
               - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
+              - !Sub [" --resource SynchronyClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
+              - !Sub [" --resource SynchronyClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
   SynchronyClusterNodeScaleUpPolicy:
     Type: "AWS::AutoScaling::ScalingPolicy"
     Properties:
@@ -963,7 +918,7 @@ Resources:
           Value: lb_cookie
       Tags:
         - Key: Name
-          Value: MainTargetGroup
+          Value: SynchronyTargetGroup
         - Key: Cluster
           Value: !Ref "AWS::StackName"
     DependsOn:
