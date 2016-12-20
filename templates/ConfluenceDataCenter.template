@@ -184,6 +184,7 @@ Parameters:
   ConfluenceVersion:
     AllowedPattern: "(\\d+\\.\\d+\\.\\d+(-?.*))"
     AllowedValues:
+      - 6.0.1
       - 6.1.0-M5
     ConstraintDescription: "Must be a valid Confluence version number. For example: 6.1.0-m5 or higher"
     Description: The version of Confluence to install
@@ -229,11 +230,11 @@ Conditions:
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
   DoRestoreFromRDSSnapshot:
-      !Not [!Equals [!Ref DBSnapshotId, ""]]
+    !Not [!Equals [!Ref DBSnapshotId, ""]]
   DoSetDBMasterUserPassword:
-    !Equals [!Ref DBMasterUserPassword, ""]
+    !Not [!Equals [!Ref DBMasterUserPassword, ""]]
   DoSSL:
-    !Equals [!Ref SSLCertificateName, ""]
+    !Not [!Equals [!Ref SSLCertificateName, ""]]
 Mappings:
   AWSInstanceType2Arch:
     c3.large:
@@ -297,38 +298,47 @@ Mappings:
     x1.32xlarge:
       Arch: HVM64
   AWSRegionArch2AMI:
-    us-east-1:
-      HVM64: ami-27bdfb30
-      HVMG2: NOT_SUPPORTED
-    ap-south-1:
-      HVM64: ami-e03c488f
-      HVMG2: NOT_SUPPORTED
-    eu-west-1:
-      HVM64: ami-30d09743
-      HVMG2: NOT_SUPPORTED
-    ap-southeast-1:
-      HVM64: ami-efa90d8c
-      HVMG2: NOT_SUPPORTED
-    ap-southeast-2:
-      HVM64: ami-6a5d6e09
-      HVMG2: NOT_SUPPORTED
-    eu-central-1:
-      HVM64: ami-300bf75f
+    ap-northeast-1:
+      HVM64: ami-cd90f8aa
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-f86fba96
+      HVM64: ami-f5b0669b
       HVMG2: NOT_SUPPORTED
-    ap-northeast-1:
-      HVM64: ami-0b924d6a
+    ap-south-1:
+      HVM64: ami-05d0a76a
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      HVM64: ami-def957bd
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-2:
+      HVM64: ami-63e7dc00
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-f923919d
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      HVM64: ami-cdfc3ca2
+      HVMG2: NOT_SUPPORTED
+    eu-west-1:
+      HVM64: ami-0c4d6d7f
+      HVMG2: NOT_SUPPORTED
+    eu-west-2:
+      HVM64: ami-37e8e253
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-19f96b75
+      HVM64: ami-7849d114
+      HVMG2: NOT_SUPPORTED
+    us-east-1:
+      HVM64: ami-1bbdb70c
+      HVMG2: NOT_SUPPORTED
+    us-east-2:
+      HVM64: ami-f9cf959c
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-a0de90c0
+      HVM64: ami-75065715
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-82d10fe2
+      HVM64: ami-536ade33
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -340,7 +350,7 @@ Resources:
           - Effect: Allow
             Principal:
               Service: [ec2.amazonaws.com]
-              Action: ["sts:AssumeRole"]
+            Action: ["sts:AssumeRole"]
       Path: /
       Policies:
         - PolicyName: BitbucketClusterNodePolicy
@@ -372,7 +382,7 @@ Resources:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
       Path: /
-      Roles: !Ref ConfluenceClusterNodeRole
+      Roles: [!Ref ConfluenceClusterNodeRole]
 # Confluence node config
   ClusterNodeGroup:
     Type: "AWS::AutoScaling::AutoScalingGroup"
@@ -424,7 +434,7 @@ Resources:
                     - "\n"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "\n"
-                    - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", ConfluenceDownloadUrl: !Ref DBMasterUserPassword]
+                    - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
                     - "\n"
                     - "ATL_DB_NAME=confluence"
                     - "\n"
@@ -658,7 +668,7 @@ Resources:
                     - "\n"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "\n"
-                    - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", ConfluenceDownloadUrl: !Ref DBMasterUserPassword]
+                    - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
                     - "\n"
                     - "ATL_DB_NAME=confluence"
                     - "\n"
@@ -838,19 +848,19 @@ Resources:
     Type: "AWS::EFS::FileSystem"
     Properties:
       FileSystemTags:
-        Key: Application
-        Value: !Ref "AWS::StackId"
+        - Key: Application
+          Value: !Ref "AWS::StackId"
   EFSMountAz1:
     Type: "AWS::EFS::MountTarget"
     Properties:
       FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups: !Ref SecurityGroup
+      SecurityGroups: [!Ref SecurityGroup]
       SubnetId: !Select [0, !Ref InternalSubnets]
   EFSMountAz2:
     Type: "AWS::EFS::MountTarget"
     Properties:
       FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups: !Ref SecurityGroup
+      SecurityGroups: [!Ref SecurityGroup]
       SubnetId: !Select [1, !Ref InternalSubnets]
 # Database
   DB:
@@ -867,7 +877,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref "AWS::NoValue"]
       MultiAZ: !Ref DBMultiAZ
-      VPCSecurityGroups: !Ref SecurityGroup
+      VPCSecurityGroups: [!Ref SecurityGroup]
       Tags:
         - Key: Name
           Value: Confluence PostgreSQL Database
@@ -881,16 +891,16 @@ Resources:
     Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
     Properties:
       LoadBalancerAttributes:
-        Key: idle_timeout.timeout_seconds
-        Value: 300
+        - Key: idle_timeout.timeout_seconds
+          Value: 300
       Subnets: !Ref ExternalSubnets
-      SecurityGroups: !Ref SecurityGroup
+      SecurityGroups: [!Ref SecurityGroup]
   LoadBalancerListener:
     Type: "AWS::ElasticLoadBalancingV2::Listener"
     Properties:
       DefaultActions:
-        Type: forward
-        TargetGroupArn: !Ref MainTargetGroup
+        - Type: forward
+          TargetGroupArn: !Ref MainTargetGroup
       LoadBalancerArn: !Ref LoadBalancer
       Port: !If [DoSSL, "443", "80"]
       Protocol: !If [DoSSL, HTTPS, HTTP]
@@ -898,16 +908,16 @@ Resources:
     Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
     Properties:
       Actions:
-        Type: forward
-        TargetGroupArn: !Ref SynchronyTargetGroup
+        - Type: forward
+          TargetGroupArn: !Ref SynchronyTargetGroup
       Conditions:
-        Field: path-pattern
-        Values:
-          - "/synchrony/*"
+        - Field: path-pattern
+          Values:
+            - "/synchrony/*"
       ListenerArn: !Ref LoadBalancerListener
       Priority: 1
   MainTargetGroup:
-    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
     Properties:
       Port: "8080"
       Protocol: HTTP
@@ -933,7 +943,7 @@ Resources:
     DependsOn:
       - LoadBalancer
   SynchronyTargetGroup:
-    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
     Properties:
       Port: "8091"
       Protocol: HTTP
@@ -978,7 +988,7 @@ Resources:
           CidrIp: !Ref CidrBlock
         - IpProtocol: tcp
           FromPort: 25500
-          ToPort: 425500
+          ToPort: 25500
           CidrIp: !Ref CidrBlock
         - IpProtocol: tcp
           FromPort: 5801
