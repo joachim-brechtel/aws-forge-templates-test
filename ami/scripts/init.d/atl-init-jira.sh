@@ -192,10 +192,23 @@ function configureNginx {
     atl_addNginxProductMapping "${ATL_JIRA_NGINX_PATH}" 8080
 }
 
+function readProductVersion {
+    if [[ "x" = "x$1" ]]; then
+        atl_fatal_error "[readProductVersion]: versions file location is requried"
+    fi
+
+    source $1
+
+    local VERSION_NAME="ATL_LATEST_$(echo ${ATL_JIRA_NAME} | tr '-' '_' | tr '[:lower:]' '[:upper:]')_VERSION"
+    local PRODUCT_VERSION="${!VERSION_NAME}"
+
+    echo $PRODUCT_VERSION
+}
+
 function preserveInstaller {
     local ATL_LOG_HEADER="[preserveInstaller]:"
 
-    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
+    local JIRA_VERSION=$(readProductVersion $(atl_tempDir)/version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
 
     atl_log "${ATL_LOG_HEADER} preserving ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata"
@@ -207,7 +220,7 @@ function preserveInstaller {
 function restoreInstaller {
     local ATL_LOG_HEADER="[restoreInstaller]:"
 
-    local JIRA_VERSION=$(cat $ATL_APP_DATA_MOUNT/jira.version)
+    local JIRA_VERSION=$(readProductVersion $ATL_APP_DATA_MOUNT/jira.version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
     atl_log "${ATL_LOG_HEADER} Using existing installer ${JIRA_INSTALLER} from EFS mount"
 
@@ -236,7 +249,7 @@ function downloadInstaller {
         atl_fatal_error "${ERROR_MESSAGE}"
     fi
 
-    local JIRA_VERSION=$(cat "$(atl_tempDir)/version")
+    local JIRA_VERSION=$(readProductVersion $(atl_tempDir)/version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
 
     atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
