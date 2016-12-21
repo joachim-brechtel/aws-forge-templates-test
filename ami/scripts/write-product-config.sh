@@ -1,26 +1,34 @@
 #!/bin/bash
 set -e
 
+
+# Some parameters are optional as they can come from Cloud Formation template
+#
+# We try not to define a parameter twice (in a template and in an AMI)
+# to avoid confusion
+#
+# Optional parameters marked with OPTIONAL comment
+#
 LOCATION=${LOCATION:?"The config location must be supplied"}
 LOG=${LOG:?"The Atlassian log location must be supplied"}
-VERSION=${VERSION-"latest"} #we don't really want to enforce this
-USER=${USER-""} #we don't really want to enforce this
+VERSION=${VERSION-"latest"} #OPTIONAL
+USER=${USER-""} #OPTIONAL
 HOME=${HOME:?"The product home must be supplied"}
 APP_DATA_BLOCK_DEVICE=${APP_DATA_BLOCK_DEVICE:?"The app data block device must be supplied"}
 APP_DATA_MOUNT=${APP_DATA_MOUNT:?"The app data mount must be supplied"}
 APP_DATA_FS_TYPE=${APP_DATA_FS_TYPE:?"The app data filesystem type must be suppled"}
 APP_DATA_DIR=${APP_DATA_DIR:?"The app data mount must be supplied"}
 NAME=${NAME:?"The product name must be supplied"}
-SHORT_DISPLAY_NAME=${SHORT_DISPLAY_NAME-""} #we don't really want to enforce this
-FULL_DISPLAY_NAME=${FULL_DISPLAY_NAME-""} #we we don't really want to enforce this
-DB_DIR=${DB_DIR-""} #we don't really want to enforce this
-DB_NAME=${DB_NAME-""} #we don't really want to enforce this
-DB_USER=${DB_USER-""} #we don't really want to enforce this
+SHORT_DISPLAY_NAME=${SHORT_DISPLAY_NAME-""} #OPTIONAL
+FULL_DISPLAY_NAME=${FULL_DISPLAY_NAME-""} #OPTIONAL
+DB_DIR=${DB_DIR-""} #OPTIONAL
+DB_NAME=${DB_NAME-""} #OPTIONAL
+DB_USER=${DB_USER-""} #OPTIONAL
 INSTALL_DIR=${INSTALL_DIR:?"The product install dir must be supplied"}
 INSTANCE_STORE_BLOCK_DEVICE=${INSTANCE_STORE_BLOCK_DEVICE:?"The instance store block device must be supplied"}
 INSTANCE_STORE_MOUNT=${INSTANCE_STORE_MOUNT:?"The instance store mount must be supplied"}
-RELEASE_S3_BUCKET=${RELEASE_S3_BUCKET-"atlassian-software"} #we don't really want to enforce this
-RELEASE_S3_PATH=${RELEASE_S3_PATH-""} #we don't really want to enforce this
+RELEASE_S3_BUCKET=${RELEASE_S3_BUCKET-"atlassian-software"} #OPTIONAL
+RELEASE_S3_PATH=${RELEASE_S3_PATH-""} #OPTIONAL
 
 echo "Writing first boot environment variables to ${LOCATION}"
 cat <<EOT | sudo tee "${LOCATION}" > /dev/null
