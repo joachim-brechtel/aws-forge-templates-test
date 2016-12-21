@@ -12,7 +12,6 @@ ATL_USER_CONFIG=/etc/atl
 [[ -r "${ATL_FACTORY_CONFIG}" ]] && . "${ATL_FACTORY_CONFIG}"
 [[ -r "${ATL_USER_CONFIG}" ]] && . "${ATL_USER_CONFIG}"
 
-ATL_JIRA_RELEASES_S3_URL="https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_RELEASE_S3_PATH}"
 
 ATL_LOG=${ATL_LOG:?"The Atlassian log location must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_APP_DATA_MOUNT=${ATL_APP_DATA_MOUNT:?"The application data mount name must be supplied in ${ATL_FACTORY_CONFIG}"}
@@ -30,6 +29,8 @@ ATL_JIRA_SHARED_HOME="${ATL_JIRA_HOME}/shared"
 ATL_JIRA_SERVICE_NAME="jira"
 
 ATL_JIRA_USER="jira" #you don't get to choose user name. Installer creates user 'jira' and that's it
+
+ATL_JIRA_RELEASES_S3_URL="https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_RELEASE_S3_PATH}/${ATL_JIRA_NAME}"
 
 function start {
     atl_log "=== BEGIN: service atl-init-jira start ==="
@@ -158,18 +159,6 @@ EOT
     atl_log "Done configuring ${ATL_JIRA_SHORT_DISPLAY_NAME} to use the ${ATL_JIRA_SHORT_DISPLAY_NAME} DB role ${ATL_JIRA_DB_USER}"
 }
 
-function createJIRADbAndRole {
-    if atl_roleExists ${ATL_JIRA_DB_USER}; then
-        atl_log "${ATL_JIRA_DB_USER} role already exists. Skipping database and role creation. Skipping dbconfig.xml update"
-    else
-        local PASSWORD=$(cat /proc/sys/kernel/random/uuid)
-
-        atl_createRole "${ATL_JIRA_SHORT_DISPLAY_NAME}" "${ATL_JIRA_DB_USER}" "${PASSWORD}"
-        atl_createDb "${ATL_JIRA_SHORT_DISPLAY_NAME}" "${ATL_JIRA_DB_NAME}" "${ATL_JIRA_DB_USER}"
-        configureDbProperties "org.postgresql.Driver" "jdbc:postgresql://localhost/${ATL_JIRA_DB_NAME}" "${ATL_JIRA_DB_USER}" "${PASSWORD}"
-    fi
-}
-
 function configureRemoteDb {
     atl_log "Configuring remote DB for use with ${ATL_JIRA_SHORT_DISPLAY_NAME}"
 
@@ -187,40 +176,22 @@ function configureRemoteDb {
     fi
 }
 
-function configureNginx {
-    updateHostName "${ATL_HOST_NAME}"
-    atl_addNginxProductMapping "${ATL_JIRA_NGINX_PATH}" 8080
-}
-
-function readProductVersion {
-    if [[ "x" = "x$1" ]]; then
-        atl_fatal_error "[readProductVersion]: versions file location is requried"
-    fi
-
-    source $1
-
-    local VERSION_NAME="ATL_LATEST_$(echo ${ATL_JIRA_NAME} | tr '-' '_' | tr '[:lower:]' '[:upper:]')_VERSION"
-    local PRODUCT_VERSION="${!VERSION_NAME}"
-
-    echo $PRODUCT_VERSION
-}
-
 function preserveInstaller {
     local ATL_LOG_HEADER="[preserveInstaller]:"
 
-    local JIRA_VERSION=$(readProductVersion $(atl_tempDir)/version)
+    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
 
     atl_log "${ATL_LOG_HEADER} preserving ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata"
     cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER
-    cp $(atl_tempDir)/version $ATL_APP_DATA_MOUNT/jira.version
+    cp $(atl_tempDir)/version $ATL_APP_DATA_MOUNT/$ATL_JIRA_NAME.version
     atl_log "${ATL_LOG_HEADER} ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata has been preserved"
 }
 
 function restoreInstaller {
     local ATL_LOG_HEADER="[restoreInstaller]:"
 
-    local JIRA_VERSION=$(readProductVersion $ATL_APP_DATA_MOUNT/jira.version)
+    local JIRA_VERSION=$(cat $ATL_APP_DATA_MOUNT/$ATL_JIRA_NAME.version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
     atl_log "${ATL_LOG_HEADER} Using existing installer ${JIRA_INSTALLER} from ${ATL_APP_DATA_MOUNT} mount"
 
@@ -240,21 +211,23 @@ function restoreInstaller {
 function downloadInstaller {
     local ATL_LOG_HEADER="[downloadInstaller]: "
 
-    atl_log "${ATL_LOG_HEADER} Downloading installer description from ${ATL_JIRA_RELEASES_S3_URL}/latest"
-    if ! curl -L -f --silent "${ATL_JIRA_RELEASES_S3_URL}/latest" \
+    local VERSION_FILE_URL="${ATL_JIRA_RELEASES_S3_URL}/latest"
+
+    atl_log "${ATL_LOG_HEADER} Downloading installer description from ${VERSION_FILE_URL}"
+    if ! curl -L -f --silent "${VERSION_FILE_URL}" \
         -o "$(atl_tempDir)/version" >> "${ATL_LOG}" 2>&1
     then
-        local ERROR_MESSAGE="Could not download installer description from ${ATL_JIRA_RELEASES_S3_URL} - aborting installation"
+        local ERROR_MESSAGE="Could not download installer description from ${VERSION_FILE_URL} - aborting installation"
         atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
     fi
 
-    local JIRA_VERSION=$(readProductVersion $(atl_tempDir)/version)
+    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
-    local ATL_INSTALLER_URL="${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}"
+    local JIRA_INSTALLER_URL="${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}"
 
     atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
-    if ! curl -L -f --silent "${ATL_INSTALLER_URL}" \
+    if ! curl -L -f --silent "${JIRA_INSTALLER_URL}" \
         -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
     then
         local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from  - aborting installation"
@@ -268,7 +241,7 @@ function prepareInstaller {
     atl_log "${ATL_LOG_HEADER} Preparing an installer"
 
     atl_log "${ATL_LOG_HEADER} Checking if installer has been downloaded already"
-    if [[ -f $ATL_APP_DATA_MOUNT/jira.version ]]; then
+    if [[ -f $ATL_APP_DATA_MOUNT/$ATL_JIRA_NAME.version ]]; then
         restoreInstaller
     else
         downloadInstaller
