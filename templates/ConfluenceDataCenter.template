@@ -426,7 +426,7 @@ Resources:
                   - "\n"
                   -
                     - !Sub
-                        - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony"
+                        - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1"
                         - Protocol: !If [DoSSL, "https", "http"]
                           LoadBalancerName: !GetAtt LoadBalancer.DNSName
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
@@ -633,7 +633,7 @@ Resources:
                   - "\n"
                   -
                     - !Sub
-                      - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1"
+                      - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony"
                       - Protocol: !If [DoSSL, "https", "http"]
                         LoadBalancerName: !GetAtt LoadBalancer.DNSName
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
