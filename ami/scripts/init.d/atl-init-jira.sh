@@ -12,13 +12,6 @@ ATL_USER_CONFIG=/etc/atl
 [[ -r "${ATL_FACTORY_CONFIG}" ]] && . "${ATL_FACTORY_CONFIG}"
 [[ -r "${ATL_USER_CONFIG}" ]] && . "${ATL_USER_CONFIG}"
 
-if [[ "x${ATL_JIRA_VERSION}" == "xlatest" ]]; then
-    ATL_JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-x64.bin"
-else
-    ATL_JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${ATL_JIRA_VERSION}-x64.bin"
-fi
-ATL_JIRA_INSTALLER_S3_PATH="${ATL_RELEASE_S3_PATH}/${ATL_JIRA_INSTALLER}"
-ATL_JIRA_INSTALLER_DOWNLOAD_URL="${ATL_JIRA_INSTALLER_DOWNLOAD_URL:-"https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_JIRA_INSTALLER_S3_PATH}"}"
 
 ATL_LOG=${ATL_LOG:?"The Atlassian log location must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_APP_DATA_MOUNT=${ATL_APP_DATA_MOUNT:?"The application data mount name must be supplied in ${ATL_FACTORY_CONFIG}"}
@@ -28,33 +21,29 @@ ATL_HOST_NAME=$(atl_hostName)
 ATL_JIRA_NAME=${ATL_JIRA_NAME:?"The JIRA name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_SHORT_DISPLAY_NAME=${ATL_JIRA_SHORT_DISPLAY_NAME:?"The ${ATL_JIRA_NAME} short display name must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_FULL_DISPLAY_NAME=${ATL_JIRA_FULL_DISPLAY_NAME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} short display name must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_VERSION=${ATL_JIRA_VERSION:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} version must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_USER=${ATL_JIRA_USER:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} user account must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_DB_NAME=${ATL_JIRA_DB_NAME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db name must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_DB_USER=${ATL_JIRA_DB_USER:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db user must be supplied in ${ATL_FACTORY_CONFIG}"}
+ATL_JIRA_DB_NAME=${ATL_DB_NAME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db name must be supplied in ${ATL_FACTORY_CONFIG}"}
+ATL_JIRA_DB_USER=${ATL_DB_USER:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} db user must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_INSTALL_DIR=${ATL_JIRA_INSTALL_DIR:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} install dir must be supplied in ${ATL_FACTORY_CONFIG}"}
-ATL_JIRA_INSTALLER_DOWNLOAD_URL=${ATL_JIRA_INSTALLER_DOWNLOAD_URL:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} installer download URL must be supplied in ${ATL_FACTORY_CONFIG}"}
 ATL_JIRA_HOME=${ATL_JIRA_HOME:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} home dir must be supplied in ${ATL_FACTORY_CONFIG}"}
-if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
-    ATL_JIRA_NGINX_PATH=${ATL_JIRA_NGINX_PATH:?"The ${ATL_JIRA_SHORT_DISPLAY_NAME} home dir must be supplied in ${ATL_FACTORY_CONFIG}"}
-fi
 ATL_JIRA_SHARED_HOME="${ATL_JIRA_HOME}/shared"
 ATL_JIRA_SERVICE_NAME="jira"
+
+ATL_JIRA_USER="jira" #you don't get to choose user name. Installer creates user 'jira' and that's it
+
+ATL_JIRA_RELEASES_S3_URL="https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_RELEASE_S3_PATH}/${ATL_JIRA_NAME}"
 
 function start {
     atl_log "=== BEGIN: service atl-init-jira start ==="
     atl_log "Initialising ${ATL_JIRA_FULL_DISPLAY_NAME}"
 
     installJIRA
-    if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
-        configureNginx
-    elif [[ -n "${ATL_PROXY_NAME}" ]]; then
+
+    if [[ -n "${ATL_PROXY_NAME}" ]]; then
         updateHostName "${ATL_PROXY_NAME}"
     fi
+
     configureJIRAHome
-    if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
-        createJIRADbAndRole
-    elif [[ -n "${ATL_DB_NAME}" ]]; then
+    if [[ -n "${ATL_DB_NAME}" ]]; then
         configureRemoteDb
     fi
 
@@ -127,16 +116,7 @@ function configureJIRAHome {
     atl_log "Configuring ${ATL_JIRA_HOME}"
     mkdir -p "${ATL_JIRA_HOME}" >> "${ATL_LOG}" 2>&1
 
-    if [[ "x${ATL_JIRA_DATA_CENTER}" = "xtrue" ]]; then 
-        configureSharedHome
-    else
-        ownMount
-        linkAppData "data"
-        linkAppData "plugins"
-        linkAppData "logos"
-        linkAppData "import"
-        linkAppData "export"
-    fi
+    configureSharedHome
 
     initInstanceData "caches"
     initInstanceData "tmp"
@@ -179,18 +159,6 @@ EOT
     atl_log "Done configuring ${ATL_JIRA_SHORT_DISPLAY_NAME} to use the ${ATL_JIRA_SHORT_DISPLAY_NAME} DB role ${ATL_JIRA_DB_USER}"
 }
 
-function createJIRADbAndRole {
-    if atl_roleExists ${ATL_JIRA_DB_USER}; then
-        atl_log "${ATL_JIRA_DB_USER} role already exists. Skipping database and role creation. Skipping dbconfig.xml update"
-    else
-        local PASSWORD=$(cat /proc/sys/kernel/random/uuid)
-
-        atl_createRole "${ATL_JIRA_SHORT_DISPLAY_NAME}" "${ATL_JIRA_DB_USER}" "${PASSWORD}"
-        atl_createDb "${ATL_JIRA_SHORT_DISPLAY_NAME}" "${ATL_JIRA_DB_NAME}" "${ATL_JIRA_DB_USER}"
-        configureDbProperties "org.postgresql.Driver" "jdbc:postgresql://localhost/${ATL_JIRA_DB_NAME}" "${ATL_JIRA_DB_USER}" "${PASSWORD}"
-    fi
-}
-
 function configureRemoteDb {
     atl_log "Configuring remote DB for use with ${ATL_JIRA_SHORT_DISPLAY_NAME}"
 
@@ -208,27 +176,82 @@ function configureRemoteDb {
     fi
 }
 
-function configureNginx {
-    updateHostName "${ATL_HOST_NAME}"
-    atl_addNginxProductMapping "${ATL_JIRA_NGINX_PATH}" 8080
+function preserveInstaller {
+    local ATL_LOG_HEADER="[preserveInstaller]:"
+
+    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
+    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
+
+    atl_log "${ATL_LOG_HEADER} preserving ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata"
+    cp $(atl_tempDir)/installer $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER
+    cp $(atl_tempDir)/version $ATL_APP_DATA_MOUNT/$ATL_JIRA_NAME.version
+    atl_log "${ATL_LOG_HEADER} ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} and metadata has been preserved"
 }
 
-function installJIRA {
-    atl_log "Checking if ${ATL_JIRA_SHORT_DISPLAY_NAME} has already been installed"
-    if [[ -d "${ATL_JIRA_INSTALL_DIR}" ]]; then
-        local ERROR_MESSAGE="${ATL_JIRA_SHORT_DISPLAY_NAME} install directory ${ATL_JIRA_INSTALL_DIR} already exists - aborting installation"
-        atl_log "${ERROR_MESSAGE}"
+function restoreInstaller {
+    local ATL_LOG_HEADER="[restoreInstaller]:"
+
+    local JIRA_VERSION=$(cat $ATL_APP_DATA_MOUNT/$ATL_JIRA_NAME.version)
+    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
+    atl_log "${ATL_LOG_HEADER} Using existing installer ${JIRA_INSTALLER} from ${ATL_APP_DATA_MOUNT} mount"
+
+    atl_log "${ATL_LOG_HEADER} Ready to restore ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER}"
+
+    if [[ -f $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER ]]; then
+        cp $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER $(atl_tempDir)/installer
+    else
+        local msg="${ATL_LOG_HEADER} ${ATL_JIRA_SHORT_DISPLAY_NAME} installer $JIRA_INSTALLER has been requested, but unable to locate it in shared mount directory"
+        atl_log "${msg}" 
+        atl_fatal_error "${msg}"
+    fi
+
+    atl_log "${ATL_LOG_HEADER} Restoration of ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} completed"
+}
+
+function downloadInstaller {
+    local ATL_LOG_HEADER="[downloadInstaller]: "
+
+    local VERSION_FILE_URL="${ATL_JIRA_RELEASES_S3_URL}/latest"
+
+    atl_log "${ATL_LOG_HEADER} Downloading installer description from ${VERSION_FILE_URL}"
+    if ! curl -L -f --silent "${VERSION_FILE_URL}" \
+        -o "$(atl_tempDir)/version" >> "${ATL_LOG}" 2>&1
+    then
+        local ERROR_MESSAGE="Could not download installer description from ${VERSION_FILE_URL} - aborting installation"
+        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
     fi
 
-    atl_log "Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} ${ATL_JIRA_VERSION} from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL}"
-    if ! curl -L -f --silent "${ATL_JIRA_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
+    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
+    local JIRA_INSTALLER_URL="${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}"
+
+    atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
+    if ! curl -L -f --silent "${JIRA_INSTALLER_URL}" \
+        -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
     then
-        local ERROR_MESSAGE="Could not download installer from ${ATL_JIRA_INSTALLER_DOWNLOAD_URL} - aborting installation"
-        atl_log "${ERROR_MESSAGE}"
+        local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from  - aborting installation"
+        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
     fi
+}
+
+function prepareInstaller {
+    local ATL_LOG_HEADER="[prepareInstaller]: "
+    atl_log "${ATL_LOG_HEADER} Preparing an installer"
+
+    atl_log "${ATL_LOG_HEADER} Checking if installer has been downloaded already"
+    if [[ -f $ATL_APP_DATA_MOUNT/$ATL_JIRA_NAME.version ]]; then
+        restoreInstaller
+    else
+        downloadInstaller
+        preserveInstaller
+    fi
+
     chmod +x "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+
+    atl_log "${ATL_LOG_HEADER} Preparing installer configuration"
+
     cat <<EOT >> "$(atl_tempDir)/installer.varfile"
 launch.application\$Boolean=false
 rmiPort\$Long=8005
@@ -246,6 +269,19 @@ EOT
 
     cp $(atl_tempDir)/installer.varfile /tmp/installer.varfile.bkp
 
+    atl_log "${ATL_LOG_HEADER} Installer configuration preparation completed"
+}
+
+function installJIRA {
+    atl_log "Checking if ${ATL_JIRA_SHORT_DISPLAY_NAME} has already been installed"
+    if [[ -d "${ATL_JIRA_INSTALL_DIR}" ]]; then
+        local ERROR_MESSAGE="${ATL_JIRA_SHORT_DISPLAY_NAME} install directory ${ATL_JIRA_INSTALL_DIR} already exists - aborting installation"
+        atl_log "${ERROR_MESSAGE}"
+        atl_fatal_error "${ERROR_MESSAGE}"
+    fi
+
+    prepareInstaller
+
     atl_log "Creating ${ATL_JIRA_SHORT_DISPLAY_NAME} install directory"
     mkdir -p "${ATL_JIRA_INSTALL_DIR}"
 
@@ -256,7 +292,7 @@ EOT
     atl_log "Cleaning up"
     rm -rf "$(atl_tempDir)"/installer* >> "${ATL_LOG}" 2>&1
 
-    chown -R "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_INSTALL_DIR}"
+    chown -R "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_INSTALL_DIR}" 
 
     atl_log "${ATL_JIRA_SHORT_DISPLAY_NAME} installation completed"
 }
