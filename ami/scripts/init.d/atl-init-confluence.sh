@@ -267,8 +267,6 @@ case "$1" in
     update-host-name)
         updateHostName $2
         ;;
-    stop)
-        ;;
     *)
         echo "Usage: $0 {start|init-instance-store-dirs|update-host-name}"
         RETVAL=1

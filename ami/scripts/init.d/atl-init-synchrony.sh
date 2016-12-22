@@ -250,9 +250,10 @@ case "$1" in
         $1
         ;;
     stop)
+        $1
         ;;
     *)
-        echo "Usage: $0 {start|init-instance-store-dirs|update-host-name}"
+        echo "Usage: $0 {start|stop}"
         RETVAL=1
 esac
 exit ${RETVAL}
