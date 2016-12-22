@@ -45,6 +45,7 @@
             "HomeVolumeSnapshotId",
             "BitbucketProperties",
             "CatalinaOpts",
+            "AMIOpts",
             "HomeDeleteOnTermination",
             "RootSize",
             "RootVolumeType",
@@ -54,6 +55,9 @@
         }
       ],
       "ParameterLabels": {
+        "AMIOpts": {
+          "default": "AMI Options"
+        },
         "AssociatePublicIpAddress": {
           "default": "Assign public IP"
         },
@@ -118,6 +122,11 @@
     }
   },
   "Parameters": {
+    "AMIOpts": {
+      "Description": "A comma separated list of options to pass to the AMI",
+      "Type": "CommaDelimitedList",
+      "Default": ""
+    },
     "AssociatePublicIpAddress": {
       "Description": "Controls if the EC2 instance is assigned a public IP address",
       "Type": "String",
@@ -176,6 +185,7 @@
     "HomeIops": {
       "Description": "Home directory IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB",
       "Type": "Number",
+      "Default": "100",
       "MinValue": "100",
       "MaxValue": "20000",
       "ConstraintDescription": "Must be in the range 100 - 20000."
@@ -245,6 +255,7 @@
     "RootIops": {
       "Description": "Root volume IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB",
       "Type": "Number",
+      "Default": "100",
       "MinValue": "100",
       "MaxValue": "20000",
       "ConstraintDescription": "Must be in the range 100 - 20000."
@@ -453,47 +464,51 @@
     },
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-27bdfb30",
+        "HVM64": "ami-609abf77",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-e03c488f",
+        "HVM64": "ami-04a0d46b",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-30d09743",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "ap-southeast-1": {
-        "HVM64": "ami-efa90d8c",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "ap-southeast-2": {
-        "HVM64": "ami-6a5d6e09",
-        "HVMG2": "NOT_SUPPORTED"
-      },
-      "eu-central-1": {
-        "HVM64": "ami-300bf75f",
+        "HVM64": "ami-172d7864",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-f86fba96",
+        "HVM64": "ami-ca2ffba4",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-0b924d6a",
+        "HVM64": "ami-3652ff57",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-19f96b75",
+        "HVM64": "ami-ef6ef283",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-southeast-1": {
+        "HVM64": "ami-8dc464ee",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-southeast-2": {
+        "HVM64": "ami-5a053939",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "eu-central-1": {
+        "HVM64": "ami-abed16c4",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "us-east-2": {
+        "HVM64": "ami-ea5f058f",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-a0de90c0",
+        "HVM64": "ami-ea440e8a",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-82d10fe2",
+        "HVM64": "ami-81db7ae1",
         "HVMG2": "NOT_SUPPORTED"
       }
     }
@@ -688,6 +703,14 @@
                             "Ref": "AWS::NoValue"
                           }
                         ]
+                      },
+                      {
+                        "Fn::Join": [
+                          "\n",
+                          {
+                            "Ref": "AMIOpts"
+                          }
+                        ]
                       }
                     ]
                   ]
@@ -815,7 +838,8 @@
                   "yum": {
                     "collectd": [],
                     "collectd-java": [],
-                    "collectd-generic-jmx": []
+                    "collectd-generic-jmx": [],
+                    "collectd-rrdtool": []
                   }
                 },
                 {

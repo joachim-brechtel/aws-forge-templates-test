@@ -51,6 +51,11 @@ fi
 
 atl_ensureInternetGatewayAttached "${VPC_ID}"
 
+if [[ -z $(atl_getAvailabilityZones) ]]; then
+    echo "Query and update Availability 1Zones"
+    atl_queryAvailabilityZones
+fi
+
 SUBNETS=${subnet:-$(atl_getSubnets)}
 if [[ -z ${SUBNETS} ]]; then
   echo "No subnet(s) found. Create subnets now for region '${AWS_REGION}'?"
@@ -74,6 +79,8 @@ else
   PARAMETERS_ARR+=($(atl_param "Subnet" "${SUBNET}"))
 fi
 IFS=$'~' PARAMETERS_ARR+=(${PARAMETERS})
+
+echo "Passing parameters ${PARAMETERS_ARR[@]}"
 
 aws --region "${AWS_REGION}" cloudformation create-stack \
     --stack-name "${STACK_NAME}" \

@@ -283,6 +283,16 @@ function initJira {
     service atl-init-jira start
 }
 
+function initConfluence {
+    atl_log "Starting service atl-init-confluence"
+    service atl-init-confluence start
+}
+
+function initSynchrony {
+    atl_log "Starting service atl-init-synchrony"
+    service atl-init-synchrony start
+}
+
 function reloadNginxConfig {
     atl_log "Reloading NGINX Configuration"
     service nginx reload
