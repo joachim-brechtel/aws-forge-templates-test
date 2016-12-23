@@ -187,16 +187,14 @@ Parameters:
   ConfluenceVersion:
     AllowedPattern: "(\\d+\\.\\d+\\.\\d+(-?.*))"
     AllowedValues:
-      - 6.0.1
-      - 6.1.0-M5
-    ConstraintDescription: "Must be a valid Confluence version number. For example: 6.1.0-m5 or higher"
+      - 6.1.0-m09
+    ConstraintDescription: "Must be a valid Confluence version number. For example: 6.1.0-m09 or higher"
     Description: The version of Confluence to install
     Type: String
   ConfluenceDownloadUrl:
-    Default: https://s3-ap-southeast-2.amazonaws.com/aws-deployment-test/releases/confluence/atlassian-confluence-6.1.0-SNAPSHOT-linux-x64.bin
-    Description: This is URL to download Confluence if we don't provide S3 bucket and Confluence version
+    Description: This is URL to download Confluence if we don't provide S3 bucket and Confluence version. This param is used to download custom Confluence version for testing purpose. Official version must be downloaded from release S3 bucket
     Type: String
-    ConstraintDescription: "Must be a valid Confluence version number. For example: 6.0.1 or higher"
+    ConstraintDescription: "Must be a valid Confluence download url from version 6.1.0-m09 or higher"
   KeyName:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
@@ -433,6 +431,8 @@ Resources:
                         - Protocol: !If [DoSSL, "https", "http"]
                           LoadBalancerName: !GetAtt LoadBalancer.DNSName
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
+                    - "ATL_RELEASE_S3_BUCKET=atlassian-software"
+                    - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
                     - "ATL_DB_NAME=confluence"
@@ -640,6 +640,8 @@ Resources:
                       - Protocol: !If [DoSSL, "https", "http"]
                         LoadBalancerName: !GetAtt LoadBalancer.DNSName
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
+                    - "ATL_RELEASE_S3_BUCKET=atlassian-software"
+                    - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SYNCHRONY_WAITING_CONFIG_TIME=20"
                     - "ATL_SYNCHRONY_STACK_SPACE=-Xss2048k"
                     - "ATL_SYNCHRONY_MEMORY=-Xmx2g"
