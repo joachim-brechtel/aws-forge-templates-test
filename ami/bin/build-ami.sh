@@ -74,6 +74,9 @@ case $ATL_PRODUCT_ID in
     jira)
         ATL_PRODUCT="JIRA"
         ;;
+    confluence)
+        ATL_PRODUCT="Confluence"
+        ;;
     *)
         echo "Unsupported product specified."
         exit 1

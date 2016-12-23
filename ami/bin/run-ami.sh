@@ -154,6 +154,33 @@ fi
 if [[ "jira" = "${ATL_PRODUCT_ID}" ]]; then
     echo "echo ATL_ENABLED_PRODUCTS=Jira | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
 fi
+if [[ "confluence" = "${ATL_PRODUCT_ID}" ]]; then
+    echo "echo ATL_ENABLED_PRODUCTS=Confluence | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
+    if [[ -n "${INSTALLER_DOWNLOAD_URL}" ]]; then
+        echo "echo ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${INSTALLER_DOWNLOAD_URL} | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
+        echo "Set installer download URL"
+    fi
+    if [[ -n "${ATL_ENTRIES}" ]]; then
+        for entry in "${ATL_ENTRIES}"; do
+            echo "echo \"${entry}\" | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
+        done
+        echo "Appended atl sysconfig entries"
+    fi
+fi
+if [[ "synchrony" = "${ATL_PRODUCT_ID}" ]]; then
+    echo "echo ATL_ENABLED_PRODUCTS=Synchrony | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
+    if [[ -n "${INSTALLER_DOWNLOAD_URL}" ]]; then
+        echo "echo ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${INSTALLER_DOWNLOAD_URL} | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
+        echo "Set installer download URL"
+    fi
+    if [[ -n "${ATL_ENTRIES}" ]]; then
+        for entry in "${ATL_ENTRIES}"; do
+            echo "echo \"${entry}\" | su -c \"tee -a /etc/sysconfig/atl\"" >> "${TMP_DIR}/user-init"
+        done
+        echo "Appended atl sysconfig entries"
+    fi
+fi
+
 echo "Done setting ${ATL_PRODUCT} specific parameters"
 
 echo "Spinning up new instance of ${AWS_AMI}"
