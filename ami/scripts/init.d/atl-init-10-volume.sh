@@ -113,7 +113,7 @@ EOF
                 /sbin/modprobe zfs >> "${ATL_LOG}" 2>&1
 
                 atl_log "Importing existing zpool"
-                zpool import tank >> "${ATL_LOG}" 2>&1
+                zpool import -f tank >> "${ATL_LOG}" 2>&1
 
                 if [[ "x${ATL_APP_NFS_SERVER}" == "xtrue" ]]; then
                     local sharenfs=on
