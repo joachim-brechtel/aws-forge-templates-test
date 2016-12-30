@@ -53,7 +53,7 @@
     "tags": {
       "Name": "{{user `full_display_name`}} {{isotime \"2006.01.02_1504\"}} (HVM)",
       "business_unit": "RD:Dev Tools Engineering",
-      "resource_owner": "cszmajda",
+      "resource_owner": "bplump",
       "service_name": "aws_ami_packer_builder"
     },
 
