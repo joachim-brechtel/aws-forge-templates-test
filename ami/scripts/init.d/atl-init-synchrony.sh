@@ -31,6 +31,7 @@ function start {
     atl_log "Initialising Synchrony for ${ATL_CONFLUENCE_FULL_DISPLAY_NAME}"
     installConfluence
     configureConfluenceHome
+    exportCatalinaOpts
     startSynchrony
     atl_log "=== END:   service atl-init-synchrony start ==="
 }
