@@ -46,7 +46,7 @@ function exportCatalinaOpts() {
 if [ -f ~/.bashrc ]; then
     . ~/.bashrc
 fi
-export CATALINA_OPTS="${ATL_CATALINA_OPT}"
+export CATALINA_OPTS="${ATL_CATALINA_OPTS}"
 
 EOT
     chmod 644 "/home/${ATL_CONFLUENCE_USER}/.bash_profile"
