@@ -21,6 +21,7 @@ function start {
         updateHostName "${ATL_PROXY_NAME}"
     fi
     configureConfluenceHome
+    exportCatalinaOpts
     configureConfluenceEnvironmentVariables
     if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
         createConfluenceDbAndRole

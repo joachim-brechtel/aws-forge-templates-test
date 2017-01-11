@@ -38,3 +38,18 @@ if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
 fi
 ATL_CONFLUENCE_SHARED_HOME="${ATL_CONFLUENCE_HOME}/shared-home"
 ATL_CONFLUENCE_SERVICE_NAME="confluence"
+
+function exportCatalinaOpts() {
+    atl_log "=== BEGIN: service exportCatalinaOpts ==="
+    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"/home/${ATL_CONFLUENCE_USER}/.bash_profile\"" > /dev/null 2>&1
+
+if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+fi
+export CATALINA_OPTS="${ATL_CATALINA_OPTS}"
+
+EOT
+    chmod 644 "/home/${ATL_CONFLUENCE_USER}/.bash_profile"
+    chown ${ATL_CONFLUENCE_USER}:${ATL_CONFLUENCE_USER} /home/${ATL_CONFLUENCE_USER}/.bash_profile
+    atl_log "=== END: service exportCatalinaOpts ==="
+}
