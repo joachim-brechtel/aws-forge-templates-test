@@ -194,6 +194,7 @@ Parameters:
   ConfluenceDownloadUrl:
     Description: This is URL to download Confluence if we don't provide S3 bucket and Confluence version. This param is used to download custom Confluence version for testing purpose. Official version must be downloaded from release S3 bucket
     Type: String
+    Default: ""
     ConstraintDescription: "Must be a valid Confluence download url from version 6.1.0-m09 or higher"
   KeyName:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
@@ -300,46 +301,46 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-821666e5
+      HVM64: ami-cd90f8aa
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-0325f36d
+      HVM64: ami-f5b0669b
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-af691fc0
+      HVM64: ami-05d0a76a
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-f8dd759b
+      HVM64: ami-def957bd
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-98686dfb
+      HVM64: ami-63e7dc00
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-7902b01d
+      HVM64: ami-f923919d
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-d16ba9be
+      HVM64: ami-cdfc3ca2
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-e0092793
+      HVM64: ami-0c4d6d7f
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-16f2f872
+      HVM64: ami-37e8e253
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-45168d29
+      HVM64: ami-7849d114
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-b47b61a3
+      HVM64: ami-1bbdb70c
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-f1e6bc94
+      HVM64: ami-f9cf959c
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-8e80d0ee
+      HVM64: ami-75065715
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-76388816
+      HVM64: ami-536ade33
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
