@@ -13,6 +13,6 @@ PARAMS=$(atl_param "AssociatePublicIpAddress" "true")
 PARAMS+="~$(atl_param "ConfluenceVersion" "${CONFLUENCE_VERSION}")"
 PARAMS+="~$(atl_param "DBMasterUserPassword" "${DB_MASTER_PASSWORD}")"
 PARAMS+="~$(atl_param "DBPassword" "${DB_PASSWORD}")"
-PARAMS+="~$(atl_param "ConfluenceDownloadUrl" "${CONFLUENCE_DOWNLOAD_URL}")"
+#PARAMS+="~$(atl_param "ConfluenceDownloadUrl" "${CONFLUENCE_DOWNLOAD_URL}")"
 
 ${BASEDIR}/create-stack.sh "ConfluenceDataCenter.template" "${PARAMS}" "true"
