@@ -457,17 +457,11 @@ Mappings:
     ap-southeast-2:
       HVM64: ami-f0ecd693
       HVMG2: NOT_SUPPORTED
-    ca-central-1:
-      HVM64: ami-bb1aa8df
-      HVMG2: NOT_SUPPORTED
     eu-central-1:
       HVM64: ami-ab72b1c4
       HVMG2: NOT_SUPPORTED
     eu-west-1:
       HVM64: ami-138ba660
-      HVMG2: NOT_SUPPORTED
-    eu-west-2:
-      HVM64: ami-a8f9f3cc
       HVMG2: NOT_SUPPORTED
     sa-east-1:
       HVM64: ami-44950e28
