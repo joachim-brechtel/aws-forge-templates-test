@@ -69,7 +69,7 @@ function initSharedVolume {
                 atl_log "Creating ZFS pool"
 
                 # Create ZFS volume
-                zpool create -o cachefile=none tank $(basename ${ATL_APP_DATA_BLOCK_DEVICE})  >> "${ATL_LOG}" 2>&1
+                zpool create tank $(basename ${ATL_APP_DATA_BLOCK_DEVICE}) >> "${ATL_LOG}" 2>&1
 
                 atl_log "Creating ZFS file system 'tank/atlassian-home'"
 

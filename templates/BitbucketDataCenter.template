@@ -443,40 +443,40 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-6c5c2b0b
+      HVM64: ami-27b5f340
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-b7e036d9
+      HVM64: ami-e75c8d89
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-3105735e
+      HVM64: ami-676b1a08
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-3d842d5e
+      HVM64: ami-06b90d65
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-f0ecd693
+      HVM64: ami-53303630
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-ab72b1c4
+      HVM64: ami-a03bf2cf
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-138ba660
+      HVM64: ami-17f8a371
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-44950e28
+      HVM64: ami-27abcf4b
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-62011d75
+      HVM64: ami-dbc73ccd
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-59f5af3c
+      HVM64: ami-cb0227ae
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-f2124292
+      HVM64: ami-b9a4f9d9
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-e6dd6c86
+      HVM64: ami-d813a8b8
       HVMG2: NOT_SUPPORTED
 Resources:
   BitbucketFileServerRole:
