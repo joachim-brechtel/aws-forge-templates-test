@@ -12,7 +12,7 @@ Metadata:
         Parameters: [ConfluenceVersion]
       - Label:
           default: Cluster nodes
-        Parameters: [ClusterNodeInstanceType, ClusterNodeMin, ClusterNodeMax, SynchronyClusterNodeMin, SynchronyClusterNodeMax]
+        Parameters: [ClusterNodeInstanceType, ClusterNodeMin, ClusterNodeMax, SynchronyClusterNodeMin, SynchronyClusterNodeMax, SynchronyNodeInstanceType]
       - Label:
           default: Database
         Parameters: [DBInstanceClass, DBMasterUserPassword, DBPassword, DBStorage, DBStorageType, DBIops, DBMultiAZ]
@@ -31,6 +31,8 @@ Metadata:
         default: Maximum number of Synchrony cluster nodes
       SynchronyClusterNodeMin:
         default: Minimum number of Synchrony cluster nodes
+      SynchronyNodeInstanceType:
+        default: Confluence cluster node instance type
       CidrBlock:
         default: 0.0.0.0/0
       ClusterNodeMax:
@@ -113,6 +115,25 @@ Parameters:
     Default: c3.xlarge
     Description: Instance type for the cluster nodes.
     Type: String
+  SynchronyNodeInstanceType:
+    AllowedValues:
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - x1.32xlarge
+    ConstraintDescription: "Must be an EC2 instance type in the C3, I2, R3, or X1 family, 'xlarge' or larger"
+    Default: c3.xlarge
+    Description: Instance type for the Synchrony nodes.
+    Type: String
   CatalinaOpts:
     Default: Java options passed to the JVM that runs Confluence.
     Type: String
@@ -188,6 +209,8 @@ Parameters:
     AllowedPattern: "(\\d+\\.\\d+\\.\\d+(-?.*))"
     AllowedValues:
       - 6.1.0-m09
+      - 6.1.0-m15
+      - 6.1.0-m19
     ConstraintDescription: "Must be a valid Confluence version number. For example: 6.1.0-m09 or higher"
     Description: The version of Confluence to install
     Type: String
@@ -747,9 +770,9 @@ Resources:
           - !Ref "AWS::Region"
           - !FindInMap
               - AWSInstanceType2Arch
-              - !Ref ClusterNodeInstanceType
+              - !Ref SynchronyNodeInstanceType
               - Arch
-      InstanceType: !Ref ClusterNodeInstanceType
+      InstanceType: !Ref SynchronyNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
         Fn::Base64:
