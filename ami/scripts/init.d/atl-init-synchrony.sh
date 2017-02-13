@@ -87,7 +87,12 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Ddynamo.events.table.name=5 \
 -Ddynamo.snapshots.table.name=5 \
 -Ddynamo.secrets.table.name=5 \
+-Ddynamo.events2.table.name=5 \
+-Ddynamo.snapshots2.table.name=5 \
+-Ddynamo.chunks.table.name=5 \
 -Ddynamo.limits.table.name=5 \
+-Dredis.kv.cache2.host=5 \
+-Dredis.kv.cache2.port=5 \
 -Ddynamo.events.app.read.provisioned.default=5 \
 -Ddynamo.events.app.write.provisioned.default=5 \
 -Ddynamo.snapshots.app.read.provisioned.default=5 \
