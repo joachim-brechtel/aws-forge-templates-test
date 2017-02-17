@@ -38,7 +38,7 @@ function configureConfluenceEnvironmentVariables (){
    atl_log "=== BEGIN: service configureConfluenceEnvironmentVariables ==="
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
-CATALINA_OPTS="-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false \${CATALINA_OPTS}"
+CATALINA_OPTS="-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false \${ATL_CATALINA_OPTS} \${CATALINA_OPTS}"
 export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
