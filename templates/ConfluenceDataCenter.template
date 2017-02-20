@@ -323,46 +323,46 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-97d39cf0
+      HVM64: ami-e2531a85
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-62df0f0c
+      HVM64: ami-3ff52551
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-f3e5949c
+      HVM64: ami-1fd9a870
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-b8a711db
+      HVM64: ami-d64dfbb5
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-22757541
+      HVM64: ami-86c6c6e5
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-358a3751
+      HVM64: ami-fd873a99
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-3f529950
+      HVM64: ami-b0b973df
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-2ec7e748
+      HVM64: ami-d783a0b1
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-04312460
+      HVM64: ami-01253065
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-f399fe9f
+      HVM64: ami-b5d5b2d9
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-fce229ea
+      HVM64: ami-51e43047
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-00cbee65
+      HVM64: ami-a8dcf9cd
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-d77c23b7
+      HVM64: ami-34b9e654
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-ba57d1da
+      HVM64: ami-fcb1309c
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -444,6 +444,13 @@ Resources:
                   collectd-generic-jmx: []
               - !Ref "AWS::NoValue"
           files:
+            # Need to help Collectd which jvm to use
+            /etc/ld.so.conf.d/confluence.conf:
+              content:
+                !Join
+                  - "\n"
+                  -
+                    - /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.131.x86_64/jre/lib/amd64/server/
             /etc/atl:
               content:
                 !Join
@@ -652,6 +659,7 @@ Resources:
                   collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
+                  collectd-rrdtool: []
               - Ref "AWS::NoValue"
           files:
             /etc/atl:
