@@ -662,6 +662,13 @@ Resources:
                   collectd-rrdtool: []
               - Ref "AWS::NoValue"
           files:
+            # Need to help Collectd which jvm to use
+            /etc/ld.so.conf.d/confluence.conf:
+              content:
+                !Join
+                  - "\n"
+                  -
+                    - /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.131.x86_64/jre/lib/amd64/server/
             /etc/atl:
               content:
                 !Join
