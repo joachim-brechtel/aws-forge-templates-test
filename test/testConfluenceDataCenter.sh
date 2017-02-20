@@ -6,7 +6,7 @@ source $BASEDIR/atl-aws-extensions.sh
 
 DB_PASSWORD="confluence"
 DB_MASTER_PASSWORD="postgres"
-CONFLUENCE_VERSION="6.1.0-m09"
+CONFLUENCE_VERSION="6.1.0-m19"
 CONFLUENCE_DOWNLOAD_URL="https://s3-ap-southeast-2.amazonaws.com/aws-deployment-test/releases/confluence/atlassian-confluence-6.1.0-m09-linux-x64.bin"
 
 PARAMS=$(atl_param "AssociatePublicIpAddress" "true")
