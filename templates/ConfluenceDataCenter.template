@@ -323,46 +323,46 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-97d39cf0
+      HVM64: ami-8cd29beb
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-62df0f0c
+      HVM64: ami-c4fd2daa
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-f3e5949c
+      HVM64: ami-c9c0b1a6
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-b8a711db
+      HVM64: ami-cc299faf
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-22757541
+      HVM64: ami-c2e2e2a1
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-358a3751
+      HVM64: ami-327cc156
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-3f529950
+      HVM64: ami-13d3197c
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-2ec7e748
+      HVM64: ami-6b3f1d0d
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-04312460
+      HVM64: ami-c52134a1
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-f399fe9f
+      HVM64: ami-f024429c
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-fce229ea
+      HVM64: ami-cafc2bdc
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-00cbee65
+      HVM64: ami-09d8fd6c
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-d77c23b7
+      HVM64: ami-75de8115
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-ba57d1da
+      HVM64: ami-a37afbc3
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -652,6 +652,7 @@ Resources:
                   collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
+                  collectd-rrdtool: []
               - Ref "AWS::NoValue"
           files:
             /etc/atl:
@@ -999,7 +1000,7 @@ Outputs:
     Description: The name of the auto scaling group of Synchrony cluster nodes
     Value: !Ref SynchronyClusterNodeGroup
   URL:
-    Description: The URL of the Bitbucket Data Center instance
+    Description: The URL of the Confluence Data Center instance
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [DoSSL, "https", "http"]
