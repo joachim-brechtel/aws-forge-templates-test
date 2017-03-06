@@ -55,7 +55,7 @@ function start {
     fi
 
     if [[ -n "${ATL_BITBUCKET_PROPERTIES}" ]]; then
-        appendBitbucketProperties
+        appendBitbucketProperties "${ATL_BITBUCKET_PROPERTIES}"
     fi
 
     installBitbucket
@@ -74,7 +74,7 @@ function appendBitbucketProperties {
     if  >"${EDIT_PATH}"; then
         atl_log "Initialising config properties ${ATL_BITBUCKET_FULL_DISPLAY_NAME}"    
         declare -a PROP_ARR
-        readarray -t PROP_ARR <<<"${ATL_BITBUCKET_PROPERTIES}"
+        readarray -t PROP_ARR <<<"$1"
         su "${ATL_BITBUCKET_USER}" -c "cp -f \"${PROP_PATH}\" \"${EDIT_PATH}\"" >> "${ATL_LOG}" 2>&1
         for prop in "${PROP_ARR[@]}"
         do
@@ -262,10 +262,26 @@ function startBitbucket {
 }
 
 function updateHostName {
-    atl_configureTomcatConnector "${1}" "7990" "7991" "${ATL_BITBUCKET_USER}" \
-        "${ATL_APP_DATA_MOUNT}/${ATL_BITBUCKET_NAME}/shared" \
-        "${ATL_BITBUCKET_INSTALL_DIR}/atlassian-bitbucket/WEB-INF" \
-        "${2}"
+    local hostname="$1" 
+    local secure=false
+    local scheme=http
+    local proxyPort=80
+    local additionalConnector=""
+    if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_SELF_CERT_ENABLED})" || "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_PROXY})" ]]; then
+        secure=true
+        scheme=https
+        proxyPort=443
+        additionalConnector="server.additional-connector.1.port=7991"
+    fi
+
+    appendBitbucketProperties "
+server.proxy-port=${proxyPort}
+server.proxy-name=${hostname}
+server.scheme=${scheme}
+server.secure=${secure}
+server.require-ssl=${secure}
+${additionalConnector}
+"
 
     STATUS="$(service "${ATL_BITBUCKET_SERVICE_NAME}" status || true)"
     if [[ "${STATUS}" =~ .*\ is\ running ]]; then
@@ -282,7 +298,7 @@ case "$1" in
         createInstanceStoreDirs $2
         ;;
     update-host-name)
-        updateHostName $2 "true"
+        updateHostName $2
         ;;
     stop)
         ;;
