@@ -7,7 +7,7 @@ source $BASEDIR/atl-aws-extensions.sh
 CATALINA_OPTS="-Dcom.sun.management.jmxremote.port=3333 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dconfluence.hazelcast.jmx.enable=true -Dconfluence.hibernate.jmx.enable=true"
 DB_PASSWORD="confluence"
 DB_MASTER_PASSWORD="postgres"
-CONFLUENCE_VERSION="6.1.0-beta7"
+CONFLUENCE_VERSION="6.1.0-rc1"
 CONFLUENCE_DOWNLOAD_URL="https://s3-ap-southeast-2.amazonaws.com/aws-deployment-test/releases/confluence/atlassian-confluence-6.1.0-m09-linux-x64.bin"
 
 PARAMS=$(atl_param "AssociatePublicIpAddress" "true")
