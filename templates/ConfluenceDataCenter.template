@@ -3,7 +3,7 @@
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: QS(0034) Atlassian Confluence Data Center Oct,19,2016
+Description: QS(5027) Atlassian Confluence Data Center Oct,19,2016
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -34,7 +34,7 @@ Metadata:
       SynchronyNodeInstanceType:
         default: Confluence cluster node instance type
       CidrBlock:
-        default: Permitted IP range
+        default: 0.0.0.0/0
       ClusterNodeMax:
         default: Maximum number of cluster nodes
       ClusterNodeMin:
@@ -53,8 +53,6 @@ Metadata:
         default: Database storage type
       DBIops:
         default: RDS Provisioned IOPS
-      DBMultiAZ:
-        default: Enable RDS Multi-AZ deployment
       DBSnapshotId:
         default: Database snapshot ID to restore
       ConfluenceVersion:
@@ -81,7 +79,8 @@ Parameters:
   CidrBlock:
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-    Description: The CIDR IP range that is permitted to access the Confluence URL. Use 0.0.0.0/0 if you want public access from the internet.
+    Default: 0.0.0.0/0
+    Description: The CIDR IP range that is permitted to access the Bitbucket URL. Use 0.0.0.0/0 if you want public access from the internet.
     Type: String
     MinLength: 9
     MaxLength: 18
@@ -114,11 +113,10 @@ Parameters:
       - x1.32xlarge
     ConstraintDescription: "Must be an EC2 instance type in the C3, I2, R3, or X1 family, 'xlarge' or larger"
     Default: c3.xlarge
-    Description: Confluence cluster node instance type.
+    Description: Instance type for the cluster nodes.
     Type: String
   SynchronyNodeInstanceType:
     AllowedValues:
-      - c3.large
       - c3.xlarge
       - c3.2xlarge
       - c3.4xlarge
@@ -133,8 +131,8 @@ Parameters:
       - r3.8xlarge
       - x1.32xlarge
     ConstraintDescription: "Must be an EC2 instance type in the C3, I2, R3, or X1 family, 'xlarge' or larger"
-    Default: c3.large
-    Description: Synchrony cluster node instance type.
+    Default: c3.xlarge
+    Description: Instance type for the Synchrony nodes.
     Type: String
   CatalinaOpts:
     Description: Java options passed to the JVM that runs Confluence.
@@ -160,7 +158,6 @@ Parameters:
   DBMasterUserPassword:
     AllowedPattern: "[a-zA-Z0-9]*"
     ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Default: "postgres"
     Description: Database admin account password.
     NoEcho: True
     MinLength: 8
@@ -169,7 +166,6 @@ Parameters:
   DBPassword:
     AllowedPattern: "[a-zA-Z0-9]*"
     ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Default: "confluence"
     Description: "Database admin account password."
     NoEcho: True
     MinLength: 8
@@ -232,7 +228,7 @@ Parameters:
       - true
       - false
     ConstraintDescription: Must be 'true' or 'false'.
-    Description: Start the collectd service
+    Description: Should the collectd service be started
     Default: true
     Type: String
   ExternalSubnets:
@@ -441,7 +437,6 @@ Resources:
                   collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
-                  collectd-rrdtool: []
               - !Ref "AWS::NoValue"
           files:
             /etc/atl:
