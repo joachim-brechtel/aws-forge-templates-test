@@ -3,7 +3,7 @@
 _ATL_TEMP_DIR=$(mktemp -d)
 chmod 1777 "${_ATL_TEMP_DIR}"
 function atl_tempDir {
-    echo ${_ATL_TEMP_DIR}
+    echo "${_ATL_TEMP_DIR}"
 }
 
 trap "rm -rf $_ATL_TEMP_DIR" EXIT

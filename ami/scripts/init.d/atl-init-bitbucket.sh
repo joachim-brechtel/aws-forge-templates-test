@@ -261,7 +261,7 @@ function startBitbucket {
     service "${ATL_BITBUCKET_SERVICE_NAME}" start >> "${ATL_LOG}" 2>&1
 }
 
-function updateHostName {
+function configureSpringBootConnector {
     local hostname="$1" 
     local secure=false
     local scheme=http
@@ -282,6 +282,19 @@ server.secure=${secure}
 server.require-ssl=${secure}
 ${additionalConnector}
 "
+}
+
+function updateHostName {
+    declare -a semver
+    IFS='.'; read -ra semver <<< "${ATL_BITBUCKET_VERSION}"
+    if [[ ${semver[0]} -ge 5 ]]; then
+            configureSpringBootConnector "${1}"
+    else
+        atl_configureTomcatConnector "${1}" "7990" "7991" "${ATL_BITBUCKET_USER}" \
+            "${ATL_APP_DATA_MOUNT}/${ATL_BITBUCKET_NAME}/shared" \
+            "${ATL_BITBUCKET_INSTALL_DIR}/atlassian-bitbucket/WEB-INF" \
+            "${2}"
+    fi
 
     STATUS="$(service "${ATL_BITBUCKET_SERVICE_NAME}" status || true)"
     if [[ "${STATUS}" =~ .*\ is\ running ]]; then
@@ -298,7 +311,7 @@ case "$1" in
         createInstanceStoreDirs $2
         ;;
     update-host-name)
-        updateHostName $2
+        updateHostName $2 "true"
         ;;
     stop)
         ;;
