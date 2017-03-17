@@ -990,6 +990,9 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
+  ALBName:
+    Description: The name of the load balancer of Confluence cluster nodes
+    Value: !GetAtt LoadBalancer.LoadBalancerName
   ClusterNodeGroup:
     Description: The name of the auto scaling group of Confluence cluster nodes
     Value: !Ref ClusterNodeGroup
