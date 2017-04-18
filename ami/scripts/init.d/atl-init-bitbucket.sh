@@ -227,6 +227,8 @@ app.defaultInstallDir=${ATL_BITBUCKET_INSTALL_DIR}
 launch.application\$Boolean=false
 executeLauncherAction\$Boolean=false
 elasticsearch.install.service\$Boolean=${ATL_BITBUCKET_BUNDLED_ELASTICSEARCH_ENABLED}
+confirm.disable.plugins\$Boolean=true
+container.configuration.ignore\$Boolean=true
 EOT
 
     cp $(atl_tempDir)/installer.varfile /tmp/installer.varfile.bkp
