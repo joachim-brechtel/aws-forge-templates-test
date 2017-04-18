@@ -444,40 +444,46 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-feeeb399
+      HVM64: ami-f3b19e94
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-13c1127d
+      HVM64: ami-5201d33c
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-53f3833c
+      HVM64: ami-4ecebd21
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-1276c471
+      HVM64: ami-9c358cff
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-3fdbd65c
+      HVM64: ami-30cdc453
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-6cd16d08
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-6479ae0b
+      HVM64: ami-8e815ce1
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-cc4e78aa
+      HVM64: ami-039d9965
+      HVMG2: NOT_SUPPORTED
+    eu-west-2:
+      HVM64: ami-d7c6d2b3
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-eccfae80
+      HVM64: ami-3f284553
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-478e2651
+      HVM64: ami-cfaa3ad9
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-ac587cc9
+      HVM64: ami-4c9fbb29
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-9f4e16ff
+      HVM64: ami-fe9ebb9e
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-9b50d9fb
+      HVM64: ami-869c01e6
       HVMG2: NOT_SUPPORTED
 Resources:
   BitbucketFileServerRole:
