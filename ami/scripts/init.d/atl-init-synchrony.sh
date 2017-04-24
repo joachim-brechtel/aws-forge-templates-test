@@ -29,9 +29,16 @@ AWS_EC2_PRIVATE_IP=$(curl -f --silent http://169.254.169.254/latest/meta-data/lo
 function start {
     atl_log "=== BEGIN: service atl-init-synchrony start ==="
     atl_log "Initialising Synchrony for ${ATL_CONFLUENCE_FULL_DISPLAY_NAME}"
-    installConfluence
-    configureConfluenceHome
-    exportCatalinaOpts
+    if installConfluence; then
+        configureConfluenceHome;
+        exportCatalinaOpts;
+    else
+        atl_log "Skip install Confluence...And start Synchrony straight away"
+    fi
+
+    # re-enable atl-init-40-products as we want it will help to start Synchrony when restarting
+    sudo chkconfig --add "atl-init-40-products"
+    sudo chkconfig "atl-init-40-products" on
     startSynchrony
     atl_log "=== END:   service atl-init-synchrony start ==="
 }
@@ -174,10 +181,17 @@ function stopSynchrony() {
 # we have to get Synchrony uber jar from Confluence. So just download and install Confluence without running it
 function installConfluence {
     atl_log "Checking if ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} has already been installed"
+
+    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
+    echo /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.131.x86_64/jre/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
+    sudo ldconfig
+    service collectd restart
+    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
+
     if [[ -d "${ATL_CONFLUENCE_INSTALL_DIR}" ]]; then
         local ERROR_MESSAGE="${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} install directory ${ATL_CONFLUENCE_INSTALL_DIR} already exists - aborting installation"
         atl_log "${ERROR_MESSAGE}"
-        atl_fatal_error "${ERROR_MESSAGE}"
+        return 1
     fi
 
     atl_log "Downloading ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} ${ATL_CONFLUENCE_VERSION} from ${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}"
@@ -190,7 +204,7 @@ function installConfluence {
     chmod +x "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
     cat <<EOT >> "$(atl_tempDir)/installer.varfile"
 app.defaultHome=${ATL_CONFLUENCE_HOME}
-app.install.service\$Boolean=true
+app.install.service\$Boolean=false
 executeLauncherAction\$Boolean=false
 executeLauncherAction\$Boolean=true
 existingInstallationDir=${ATL_CONFLUENCE_INSTALL_DIR}
@@ -218,6 +232,7 @@ EOT
     chown -R "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_INSTALL_DIR}"
 
     atl_log "${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} installation completed"
+    return 0
 }
 
 # prepare Confluence Share home link inside Confluence Home folder
