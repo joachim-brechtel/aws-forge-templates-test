@@ -67,6 +67,7 @@
     "vpc_id": "{{user `vpc_id`}}",
     "subnet_id": "{{user `subnet_id`}}",
     "associate_public_ip_address": true,
+    "user_data": "repo_releasever: 2016.09",
 
     "ssh_username": "ec2-user",
 
@@ -98,7 +99,7 @@
 
   "provisioners": [{
     "type": "shell",
-    "inline": "sudo yum -y -q update"
+    "inline": "sudo yum -y -x 'kernel*' update --security"
   },{
     "type": "shell",
     "script": "scripts/install-git.sh",
