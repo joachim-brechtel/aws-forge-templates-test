@@ -55,7 +55,7 @@ function start {
     fi
 
     if [[ -n "${ATL_BITBUCKET_PROPERTIES}" ]]; then
-        appendBitbucketProperties
+        appendBitbucketProperties "${ATL_BITBUCKET_PROPERTIES}"
     fi
 
     installBitbucket
@@ -74,7 +74,7 @@ function appendBitbucketProperties {
     if  >"${EDIT_PATH}"; then
         atl_log "Initialising config properties ${ATL_BITBUCKET_FULL_DISPLAY_NAME}"    
         declare -a PROP_ARR
-        readarray -t PROP_ARR <<<"${ATL_BITBUCKET_PROPERTIES}"
+        readarray -t PROP_ARR <<<"$1"
         su "${ATL_BITBUCKET_USER}" -c "cp -f \"${PROP_PATH}\" \"${EDIT_PATH}\"" >> "${ATL_LOG}" 2>&1
         for prop in "${PROP_ARR[@]}"
         do
@@ -227,6 +227,8 @@ app.defaultInstallDir=${ATL_BITBUCKET_INSTALL_DIR}
 launch.application\$Boolean=false
 executeLauncherAction\$Boolean=false
 elasticsearch.install.service\$Boolean=${ATL_BITBUCKET_BUNDLED_ELASTICSEARCH_ENABLED}
+confirm.disable.plugins\$Boolean=true
+container.configuration.ignore\$Boolean=true
 EOT
 
     cp $(atl_tempDir)/installer.varfile /tmp/installer.varfile.bkp
@@ -261,11 +263,40 @@ function startBitbucket {
     service "${ATL_BITBUCKET_SERVICE_NAME}" start >> "${ATL_LOG}" 2>&1
 }
 
+function configureSpringBootConnector {
+    local hostname="$1" 
+    local secure=false
+    local scheme=http
+    local proxyPort=80
+    local additionalConnector=""
+    if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_SELF_CERT_ENABLED})" || "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_PROXY})" ]]; then
+        secure=true
+        scheme=https
+        proxyPort=443
+        additionalConnector="server.additional-connector.1.port=7991"
+    fi
+
+    appendBitbucketProperties "
+server.proxy-port=${proxyPort}
+server.proxy-name=${hostname}
+server.scheme=${scheme}
+server.secure=${secure}
+server.require-ssl=${secure}
+${additionalConnector}
+"
+}
+
 function updateHostName {
-    atl_configureTomcatConnector "${1}" "7990" "7991" "${ATL_BITBUCKET_USER}" \
-        "${ATL_APP_DATA_MOUNT}/${ATL_BITBUCKET_NAME}/shared" \
-        "${ATL_BITBUCKET_INSTALL_DIR}/atlassian-bitbucket/WEB-INF" \
-        "${2}"
+    declare -a semver
+    IFS='.'; read -ra semver <<< "${ATL_BITBUCKET_VERSION}"
+    if [[ ${semver[0]} -ge 5 ]]; then
+            configureSpringBootConnector "${1}"
+    else
+        atl_configureTomcatConnector "${1}" "7990" "7991" "${ATL_BITBUCKET_USER}" \
+            "${ATL_APP_DATA_MOUNT}/${ATL_BITBUCKET_NAME}/shared" \
+            "${ATL_BITBUCKET_INSTALL_DIR}/atlassian-bitbucket/WEB-INF" \
+            "${2}"
+    fi
 
     STATUS="$(service "${ATL_BITBUCKET_SERVICE_NAME}" status || true)"
     if [[ "${STATUS}" =~ .*\ is\ running ]]; then

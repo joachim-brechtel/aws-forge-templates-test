@@ -48,6 +48,7 @@ Metadata:
           - HomeDeleteOnTermination
           - DBMaster
           - StartCollectd
+          - CreateBucket
           - ESBucketName
     ParameterLabels:
       AMIOpts:
@@ -443,40 +444,40 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-27b5f340
+      HVM64: ami-985378ff
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-e75c8d89
+      HVM64: ami-55598b3b
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-676b1a08
+      HVM64: ami-cd7a08a2
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-06b90d65
+      HVM64: ami-a410a8c7
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-53303630
+      HVM64: ami-777b7314
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-a03bf2cf
+      HVM64: ami-8f8955e0
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-17f8a371
+      HVM64: ami-7b06071d
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-27abcf4b
+      HVM64: ami-d1b7dabd
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-dbc73ccd
+      HVM64: ami-903fa686
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-cb0227ae
+      HVM64: ami-8c4265e9
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-b9a4f9d9
+      HVM64: ami-e7d6f287
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-d813a8b8
+      HVM64: ami-83be21e3
       HVMG2: NOT_SUPPORTED
 Resources:
   BitbucketFileServerRole:
