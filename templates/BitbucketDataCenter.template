@@ -375,6 +375,8 @@ Conditions:
     !Equals [!Ref DBMaster, ""]
   IsHomeProvisionedIops:
     !Equals [!Ref HomeVolumeType, Provisioned IOPS]
+  IsVersion4X:
+    !Equals ["4", !Select [0, !Split [".", !Ref BitbucketVersion]]]
   RestoreRDSOrStandby:
     !Or [Condition: RestoreFromRDSSnapshot, Condition: StandbyMode]
   SetDBMasterUserPassword:
@@ -1035,8 +1037,8 @@ Resources:
     Type: "AWS::ElasticLoadBalancing::LoadBalancer"
     Properties:
       AppCookieStickinessPolicy:
-        - CookieName: JSESSIONID
-          PolicyName: JSessionIdStickiness
+        - CookieName: !If [IsVersion4X, JSESSIONID, BITBUCKETSESSIONID]
+          PolicyName: SessionStickiness
       ConnectionDrainingPolicy:
         Enabled: true
         Timeout: 300
@@ -1048,7 +1050,7 @@ Resources:
           Protocol: HTTP
           InstancePort: !If [SetupSSL, 7991, 7990]
           InstanceProtocol: HTTP
-          PolicyNames: [JSessionIdStickiness]
+          PolicyNames: [SessionStickiness]
         - !If
             - SetupSSL
             - LoadBalancerPort: 443
