@@ -881,6 +881,15 @@ Resources:
   LoadBalancerListener:
     Type: "AWS::ElasticLoadBalancingV2::Listener"
     Properties:
+      Certificates:
+        - CertificateArn:
+            !If
+              - DoSSL
+              - !Sub
+                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
+                - AccountId: !Ref "AWS::AccountId"
+                  SSLCertificateName: !Ref SSLCertificateName
+              - !Ref "AWS::NoValue"
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref MainTargetGroup
