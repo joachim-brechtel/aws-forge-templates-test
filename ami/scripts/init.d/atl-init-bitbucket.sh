@@ -254,10 +254,24 @@ EOT
     atl_log "${ATL_BITBUCKET_SHORT_DISPLAY_NAME} installation completed"
 }
 
+function isSpringBoot {
+    declare -a semver
+    IFS='.'; read -ra semver <<< "${ATL_BITBUCKET_VERSION}"
+    if [[ ${semver[0]} -ge 5 ]]; then
+        # 0 = true
+        return 0
+    else
+        # non-0 = false
+        return 1
+    fi
+}
+
 function startBitbucket {
-    if [[ "x${ATL_BITBUCKET_BUNDLED_ELASTICSEARCH_ENABLED}" == "xtrue" ]]; then
-        atl_log "Starting ${ATL_BITBUCKET_SHORT_DISPLAY_NAME} Search service"
-        service "${ATL_BITBUCKET_SERVICE_NAME}_search" start >> "${ATL_LOG}" 2>&1 || echo "${ATL_BITBUCKET_SERVICE_NAME}_search failed to start" >> ${ATL_LOG}
+    if ! isSpringBoot; then
+        if [[ "x${ATL_BITBUCKET_BUNDLED_ELASTICSEARCH_ENABLED}" == "xtrue" ]]; then
+            atl_log "Starting ${ATL_BITBUCKET_SHORT_DISPLAY_NAME} Search service"
+            service "${ATL_BITBUCKET_SERVICE_NAME}_search" start >> "${ATL_LOG}" 2>&1 || echo "${ATL_BITBUCKET_SERVICE_NAME}_search failed to start" >> ${ATL_LOG}
+        fi
     fi
     atl_log "Starting ${ATL_BITBUCKET_SHORT_DISPLAY_NAME} service"
     service "${ATL_BITBUCKET_SERVICE_NAME}" start >> "${ATL_LOG}" 2>&1
@@ -286,10 +300,8 @@ ${additionalConnector}
 "
 }
 
-function updateHostName {
-    declare -a semver
-    IFS='.'; read -ra semver <<< "${ATL_BITBUCKET_VERSION}"
-    if [[ ${semver[0]} -ge 5 ]]; then
+function updateHostName {   
+    if isSpringBoot; then
             configureSpringBootConnector "${1}"
     else
         atl_configureTomcatConnector "${1}" "7990" "7991" "${ATL_BITBUCKET_USER}" \
