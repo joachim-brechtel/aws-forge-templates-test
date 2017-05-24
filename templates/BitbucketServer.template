@@ -464,59 +464,59 @@
     },
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-f84334ee",
+        "HVM64": "ami-457b3b53",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-3b106d54",
+        "HVM64": "ami-503e423f",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-2": {
-        "HVM64": "ami-595b4c3d",
+        "HVM64": "ami-923522f6",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-a0515fc6",
+        "HVM64": "ami-d10612b7",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-83f22fed",
+        "HVM64": "ami-52924e3c",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-ad281aca",
+        "HVM64": "ami-a3c9f3c4",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-c20669ae",
+        "HVM64": "ami-0eec8262",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ca-central-1": {
-        "HVM64": "ami-da863abe",
+        "HVM64": "ami-a255e9c6",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-dd1194be",
+        "HVM64": "ami-79a0261a",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-600d0703",
+        "HVM64": "ami-16160275",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-central-1": {
-        "HVM64": "ami-593de336",
+        "HVM64": "ami-6c954e03",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-east-2": {
-        "HVM64": "ami-caf9deaf",
+        "HVM64": "ami-536a4c36",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-b8c3e5d8",
+        "HVM64": "ami-49391929",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-1c680d7c",
+        "HVM64": "ami-0384e463",
         "HVMG2": "NOT_SUPPORTED"
       }
     }
