@@ -1059,7 +1059,7 @@ Resources:
               InstancePort: 7990
               InstanceProtocol: HTTP
               PolicyNames:
-                - JSessionIdStickiness
+                - SessionStickiness
               SSLCertificateId: !Sub
                 - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
                 - AccountId: !Ref "AWS::AccountId"
