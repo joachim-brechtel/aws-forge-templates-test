@@ -38,7 +38,7 @@
         },
         {
           "Label": {
-            "default": "Networking"
+            "default": "Networkingg"
           },
           "Parameters": [
             "VPC",
@@ -99,6 +99,9 @@
         },
         "KeyName": {
           "default": "Key Name *"
+        },
+        "CustomDnsName": {
+          "default": "Existing DNS name (optional)"
         },
         "SSLCertificateName": {
           "default": "SSL Certificate Name"
@@ -245,7 +248,7 @@
       "ConstraintDescription": "Must be the name of an existing EC2 Key Pair."
     },
     "CustomDnsName": {
-      "Description": "Custom DNS name which will be used to access Jira (optional)",
+      "Description": "Use custom existing DNS name for your JIRA Data Center intance. Please note: it must be existing DNS name, JIRA can't create it for you.",
       "Type": "String"
     },
     "SSLCertificateName": {
@@ -1131,8 +1134,8 @@
     }
   },
   "Outputs": {
-    "URL": {
-      "Description": "The URL of the JIRA Data Center instance",
+    "JIRAURL": {
+      "Description": "The URL of JIRA Data Center instance",
       "Value": {
         "Fn::Join": [
           "",
@@ -1159,6 +1162,30 @@
                 }
               ]
             }
+          ]
+        ]
+      }
+    },
+    "LoadBalancerURL": {
+      "Description": "The URL of JIRA Data Center load balancer",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            {
+              "Fn::If": [
+                "DoSSL",
+                "https",
+                "http"
+              ]
+            },
+            "://",
+            {
+              "Fn::GetAtt": [
+                "LoadBalancer",
+                "DNSName"
+              ]
+            },
           ]
         ]
       }
