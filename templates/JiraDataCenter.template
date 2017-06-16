@@ -38,7 +38,7 @@
         },
         {
           "Label": {
-            "default": "Networkingg"
+            "default": "Networking"
           },
           "Parameters": [
             "VPC",
@@ -248,7 +248,7 @@
       "ConstraintDescription": "Must be the name of an existing EC2 Key Pair."
     },
     "CustomDnsName": {
-      "Description": "Use custom existing DNS name for your JIRA Data Center intance. Please note: it must be existing DNS name, JIRA can't create it for you.",
+      "Description": "Use custom existing DNS name for your JIRA Data Center instance. Please note: you must own the domain and configure it to point at the load balancer.",
       "Type": "String"
     },
     "SSLCertificateName": {
@@ -1167,7 +1167,7 @@
       }
     },
     "LoadBalancerURL": {
-      "Description": "The URL of JIRA Data Center load balancer",
+      "Description": "The Load Balancer URL",
       "Value": {
         "Fn::Join": [
           "",
