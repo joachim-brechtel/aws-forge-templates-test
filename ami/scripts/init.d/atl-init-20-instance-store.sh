@@ -34,18 +34,26 @@ function start {
     if [[ -n "${ATL_INSTANCE_STORE_MOUNT}" && -w "${ATL_INSTANCE_STORE_MOUNT}" ]]; then
 
         # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
-        if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
-            mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
-            if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
-                # Enable support for TRIM
-                if ! grep "${ATL_INSTANCE_STORE_MOUNT}.*discard"; then
-                    awk '{ if ($2 == "'${ATL_INSTANCE_STORE_MOUNT}'" && $4 !~ "discard") $4 = $4 ",discard"; print }' \
-                        /etc/fstab >/tmp/fstab && mv -f /tmp/fstab /etc/fstab
+        if ! grep -q "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
+            # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
+            if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
+                mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
+                if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
+                    # Enable support for TRIM
+                    if ! grep "${ATL_INSTANCE_STORE_MOUNT}.*discard"; then
+                        awk '{ if ($2 == "'${ATL_INSTANCE_STORE_MOUNT}'" && $4 !~ "discard") $4 = $4 ",discard"; print }' \
+                            /etc/fstab >/tmp/fstab && mv -f /tmp/fstab /etc/fstab
+                    fi
+                else
+                    echo "${ATL_INSTANCE_STORE_BLOCK_DEVICE}  ${ATL_INSTANCE_STORE_MOUNT} auto	discard,nofail,comment=atl-init-20-instance-store  0  2" >>/etc/fstab
                 fi
-            else
-                echo "${ATL_INSTANCE_STORE_BLOCK_DEVICE}  ${ATL_INSTANCE_STORE_MOUNT} auto	discard,nofail,comment=atl-init-20-instance-store  0  2" >>/etc/fstab
+
+                atl_log "Mounting to instance store"
+                mount "${ATL_INSTANCE_STORE_MOUNT}"
+                atl_log "Mounting to instance store ==> DONE"
             fi
-            mount "${ATL_INSTANCE_STORE_MOUNT}"
+        else
+            atl_log "Instance store is already mounted in fstab"
         fi
 
         for product in $(atl_enabled_products); do
