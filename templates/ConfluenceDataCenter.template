@@ -19,6 +19,9 @@ Metadata:
       - Label:
           default: Networking
         Parameters: [VPC, ExternalSubnets, InternalSubnets, AssociatePublicIpAddress, CidrBlock, KeyName, SSLCertificateName]
+    - Label:
+          default: DNS (Optional)
+          Parameters: [HostedZone]
       - Label:
           default: Advanced (Optional)
         Parameters: [CatalinaOpts, StartCollectd, DBSnapshotId, ConfluenceDownloadUrl]
@@ -63,6 +66,8 @@ Metadata:
         default: Confluence download URL
       KeyName:
         default: Key Name *
+      HostedZone:
+        default: R53 Hosted Zone (optional)
       SSLCertificateName:
         default: SSL Certificate Name
       ExternalSubnets:
@@ -218,6 +223,10 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  HostedZone:
+    ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
+    Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
+    Type: String
   SSLCertificateName:
     Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
     Default: ""
@@ -253,6 +262,8 @@ Conditions:
     !Not [!Equals [!Ref DBSnapshotId, ""]]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, ""]]
+  UseHostedZone:
+    !Not [!Equals [!Ref HostedZone, ""]]
   DoSSL:
     !Not [!Equals [!Ref SSLCertificateName, ""]]
 Mappings:
@@ -319,46 +330,46 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-924ba7f4
+      HVM64: ami-b45db1d2
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-edc41d83
+      HVM64: ami-35c71e5b
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-3a730855
+      HVM64: ami-61710a0e
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-f64cd095
+      HVM64: ami-cf44d8ac
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-910816f2
+      HVM64: ami-5d06183e
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-e1fa4485
+      HVM64: ami-d8fa44bc
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-35f7585a
+      HVM64: ami-ecf75883
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-46ba4f3f
+      HVM64: ami-3ca75245
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-f4342590
+      HVM64: ami-8a3524ee
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-ead3a486
+      HVM64: ami-fcd1a690
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-8994cef2
+      HVM64: ami-f9acf682
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-a60b2bc3
+      HVM64: ami-290b2b4c
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-ca143caa
+      HVM64: ami-42163e22
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-70907408
+      HVM64: ami-519d7929
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -513,10 +524,13 @@ Resources:
                   - ""
                   -
                     - "echo "
-                    - !Sub
-                        - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
-                        - ElasticFileSystem: !Ref ElasticFileSystem
-                          Region: !Ref "AWS::Region"
+                    - !If
+                      - UseHostedZone
+                      - !Ref EFSCname
+                      - !Sub
+                          - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
+                          - ElasticFileSystem: !Ref ElasticFileSystem
+                            Region: !Ref "AWS::Region"
                     - ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
@@ -728,10 +742,13 @@ Resources:
                   - ""
                   -
                     - "echo "
-                    - !Sub
-                        - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
-                        - ElasticFileSystem: !Ref ElasticFileSystem
-                          Region: !Ref "AWS::Region"
+                    - !If
+                      - UseHostedZone
+                      - !Ref EFSCname
+                      - !Sub
+                          - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
+                          - ElasticFileSystem: !Ref ElasticFileSystem
+                            Region: !Ref "AWS::Region"
                     - ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
@@ -845,6 +862,16 @@ Resources:
       FileSystemId: !Ref ElasticFileSystem
       SecurityGroups: [!Ref SecurityGroup]
       SubnetId: !Select [1, !Ref InternalSubnets]
+  EFSCname:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZone
+      Comment: Route53 cname for the efs
+      Name: !Join ['.', [!Ref "AWS::StackName", 'efs', !Ref 'HostedZone']]
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref "AWS::Region", 'amazonaws.com.']]
 # Database
   DB:
     Type: "AWS::RDS::DBInstance"
@@ -896,6 +923,16 @@ Resources:
       LoadBalancerArn: !Ref LoadBalancer
       Port: !If [DoSSL, "443", "80"]
       Protocol: !If [DoSSL, HTTPS, HTTP]
+  LoadBalancerCname:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZone
+      Comment: Route53 cname for the ALB
+      Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt LoadBalancer.DNSName
   SynchronyListenerRule:
     Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
     Properties:
