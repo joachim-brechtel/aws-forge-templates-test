@@ -33,28 +33,7 @@ function start {
 
     if [[ -n "${ATL_INSTANCE_STORE_MOUNT}" && -w "${ATL_INSTANCE_STORE_MOUNT}" ]]; then
 
-        # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
-        if ! grep -q "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
-            # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
-            if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
-                mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
-                if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
-                    # Enable support for TRIM
-                    if ! grep "${ATL_INSTANCE_STORE_MOUNT}.*discard"; then
-                        awk '{ if ($2 == "'${ATL_INSTANCE_STORE_MOUNT}'" && $4 !~ "discard") $4 = $4 ",discard"; print }' \
-                            /etc/fstab >/tmp/fstab && mv -f /tmp/fstab /etc/fstab
-                    fi
-                else
-                    echo "${ATL_INSTANCE_STORE_BLOCK_DEVICE}  ${ATL_INSTANCE_STORE_MOUNT} auto	discard,nofail,comment=atl-init-20-instance-store  0  2" >>/etc/fstab
-                fi
-
-                atl_log "Mounting to instance store"
-                mount "${ATL_INSTANCE_STORE_MOUNT}"
-                atl_log "Mounting to instance store ==> DONE"
-            fi
-        else
-            atl_log "Instance store is already mounted in fstab"
-        fi
+        prepareInstanceStoreMount
 
         for product in $(atl_enabled_products); do
             local LOWER_CASE_PRODUCT="$(atl_toLowerCase ${product})"
@@ -63,6 +42,9 @@ function start {
 
             if [[ ! -e "${ATL_INSTANCE_STORE_MOUNT}/${LOWER_CASE_PRODUCT}" ]]; then
                 if [[ "xfunction" == "x$(type -t create${SENTENCE_CASE_PRODUCT}InstanceStoreDirs)" ]]; then
+                    # Only prepare instance store mount when product really need it
+                    # atl_log "Preparing instance store mount for enabled product \"${SENTENCE_CASE_PRODUCT}\""
+
                     atl_log "Creating instance store directories for enabled product \"${SENTENCE_CASE_PRODUCT}\""
                     create${SENTENCE_CASE_PRODUCT}InstanceStoreDirs "${ATL_INSTANCE_STORE_MOUNT}/${LOWER_CASE_PRODUCT}"
                 else
@@ -77,6 +59,31 @@ function start {
     fi
 
     atl_log "=== END:   service atl-init-20-instance-store start ==="
+}
+
+function prepareInstanceStoreMount {
+    # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
+    if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
+        atl_log "Preparing to mount to instance store target. Starting format it"
+        # If we could not format it then just log the message then continue
+        mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
+        if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
+            # Enable support for TRIM
+            atl_log "Enable support for TRIM"
+            if ! grep "${ATL_INSTANCE_STORE_MOUNT}.*discard" /etc/fstab; then
+                awk '{ if ($2 == "'${ATL_INSTANCE_STORE_MOUNT}'" && $4 !~ "discard") $4 = $4 ",discard"; print }' \
+                    /etc/fstab > /tmp/fstab && mv -f /tmp/fstab /etc/fstab
+            fi
+        else
+            atl_log "Adding new entry into fstab file"
+            echo "${ATL_INSTANCE_STORE_BLOCK_DEVICE}  ${ATL_INSTANCE_STORE_MOUNT} auto	discard,nofail,comment=atl-init-20-instance-store  0  2" >>/etc/fstab
+        fi
+
+        atl_log "Mounting to instance store"
+        # if we cannot mount then just make sure we are having ATL_INSTANCE_STORE_MOUNT dir
+        mount "${ATL_INSTANCE_STORE_MOUNT}"
+        atl_log "Mounting to instance store ==> DONE"
+    fi
 }
 
 function createBitbucketInstanceStoreDirs {
