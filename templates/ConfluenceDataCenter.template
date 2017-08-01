@@ -19,7 +19,7 @@ Metadata:
       - Label:
           default: Networking
         Parameters: [VPC, ExternalSubnets, InternalSubnets, AssociatePublicIpAddress, CidrBlock, KeyName, SSLCertificateName]
-    - Label:
+      - Label:
           default: DNS (Optional)
           Parameters: [HostedZone]
       - Label:
@@ -460,7 +460,7 @@ Resources:
                     - !Sub
                         - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1"
                         - Protocol: !If [DoSSL, "https", "http"]
-                          LoadBalancerName: !GetAtt LoadBalancer.DNSName
+                          LoadBalancerName: !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
@@ -483,7 +483,7 @@ Resources:
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
                     - "ATL_NGINX_ENABLED=false"
                     - "ATL_POSTGRES_ENABLED=false"
-                    - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !GetAtt LoadBalancer.DNSName]
+                    - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
@@ -674,7 +674,7 @@ Resources:
                     - !Sub
                       - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony"
                       - Protocol: !If [DoSSL, "https", "http"]
-                        LoadBalancerName: !GetAtt LoadBalancer.DNSName
+                        LoadBalancerName: !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
@@ -700,7 +700,7 @@ Resources:
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
                     - "ATL_NGINX_ENABLED=false"
                     - "ATL_POSTGRES_ENABLED=false"
-                    - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !GetAtt LoadBalancer.DNSName]
+                    - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
@@ -1050,4 +1050,4 @@ Outputs:
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [DoSSL, "https", "http"]
-        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+        LoadBalancerDNSName: !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]
