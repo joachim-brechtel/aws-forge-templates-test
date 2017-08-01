@@ -42,8 +42,6 @@ function start {
 
             if [[ ! -e "${ATL_INSTANCE_STORE_MOUNT}/${LOWER_CASE_PRODUCT}" ]]; then
                 if [[ "xfunction" == "x$(type -t create${SENTENCE_CASE_PRODUCT}InstanceStoreDirs)" ]]; then
-                    # Only prepare instance store mount when product really need it
-                    # atl_log "Preparing instance store mount for enabled product \"${SENTENCE_CASE_PRODUCT}\""
                     atl_log "Creating instance store directories for enabled product \"${SENTENCE_CASE_PRODUCT}\""
                     create${SENTENCE_CASE_PRODUCT}InstanceStoreDirs "${ATL_INSTANCE_STORE_MOUNT}/${LOWER_CASE_PRODUCT}"
                 else
@@ -62,10 +60,10 @@ function start {
 
 function prepareInstanceStoreMount {
     # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
-    # more detail could be found in here http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html
+    # More details can be found at http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html
     if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
-        atl_log "Preparing to mount to instance store target. Starting format it"
-        # If we could not format it then just log the message then continue
+        atl_log "Preparing to mount to instance store target. Starting to format instance store target."
+        # If formatting unsuccessful, log message and continue
         mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
         if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
             # Enable support for TRIM
