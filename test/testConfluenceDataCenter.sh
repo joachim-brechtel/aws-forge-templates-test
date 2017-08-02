@@ -15,6 +15,10 @@ PARAMS+="~$(atl_param "ConfluenceVersion" "${CONFLUENCE_VERSION}")"
 PARAMS+="~$(atl_param "DBMasterUserPassword" "${DB_MASTER_PASSWORD}")"
 PARAMS+="~$(atl_param "DBPassword" "${DB_PASSWORD}")"
 PARAMS+="~$(atl_param "CatalinaOpts" "${CATALINA_OPTS}")"
+PARAMS+="~$(atl_param "CidrBlock" "0.0.0.0/0")"
+
+#PARAMS+="~$(atl_param "ClusterNodeInstanceType" "i2.xlarge")"
+#PARAMS+="~$(atl_param "SynchronyNodeInstanceType" "i2.xlarge")"
 #PARAMS+="~$(atl_param "ConfluenceDownloadUrl" "${CONFLUENCE_DOWNLOAD_URL}")"
 
 ${BASEDIR}/create-stack.sh "ConfluenceDataCenter.template" "${PARAMS}" "true"

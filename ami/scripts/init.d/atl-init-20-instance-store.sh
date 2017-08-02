@@ -33,20 +33,7 @@ function start {
 
     if [[ -n "${ATL_INSTANCE_STORE_MOUNT}" && -w "${ATL_INSTANCE_STORE_MOUNT}" ]]; then
 
-        # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
-        if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
-            mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
-            if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
-                # Enable support for TRIM
-                if ! grep "${ATL_INSTANCE_STORE_MOUNT}.*discard"; then
-                    awk '{ if ($2 == "'${ATL_INSTANCE_STORE_MOUNT}'" && $4 !~ "discard") $4 = $4 ",discard"; print }' \
-                        /etc/fstab >/tmp/fstab && mv -f /tmp/fstab /etc/fstab
-                fi
-            else
-                echo "${ATL_INSTANCE_STORE_BLOCK_DEVICE}  ${ATL_INSTANCE_STORE_MOUNT} auto	discard,nofail,comment=atl-init-20-instance-store  0  2" >>/etc/fstab
-            fi
-            mount "${ATL_INSTANCE_STORE_MOUNT}"
-        fi
+        prepareInstanceStoreMount
 
         for product in $(atl_enabled_products); do
             local LOWER_CASE_PRODUCT="$(atl_toLowerCase ${product})"
@@ -69,6 +56,31 @@ function start {
     fi
 
     atl_log "=== END:   service atl-init-20-instance-store start ==="
+}
+
+function prepareInstanceStoreMount {
+    # The instance store device may come to us preformatted, preconfigured in /etc/fstab, and premounted, but not always.
+    # More details can be found at http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html
+    if ! mount | grep "${ATL_INSTANCE_STORE_MOUNT}"; then
+        atl_log "Preparing to mount to instance store target. Starting to format instance store target."
+        # If formatting unsuccessful, log message and continue
+        mkfs.ext4 -F -E nodiscard "${ATL_INSTANCE_STORE_BLOCK_DEVICE}"
+        if grep "${ATL_INSTANCE_STORE_MOUNT}" /etc/fstab; then
+            # Enable support for TRIM
+            atl_log "Enable support for TRIM"
+            if ! grep "${ATL_INSTANCE_STORE_MOUNT}.*discard" /etc/fstab; then
+                awk '{ if ($2 == "'${ATL_INSTANCE_STORE_MOUNT}'" && $4 !~ "discard") $4 = $4 ",discard"; print }' \
+                    /etc/fstab > /tmp/fstab && mv -f /tmp/fstab /etc/fstab
+            fi
+        else
+            atl_log "Adding new entry into fstab file"
+            echo "${ATL_INSTANCE_STORE_BLOCK_DEVICE}  ${ATL_INSTANCE_STORE_MOUNT} auto	discard,nofail,comment=atl-init-20-instance-store  0  2" >>/etc/fstab
+        fi
+
+        atl_log "Mounting to instance store"
+        mount "${ATL_INSTANCE_STORE_MOUNT}"
+        atl_log "Mounting to instance store ==> DONE"
+    fi
 }
 
 function createBitbucketInstanceStoreDirs {
