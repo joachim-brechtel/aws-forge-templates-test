@@ -72,47 +72,27 @@ function startSynchrony {
     SYNCHRONY_PROPERTIES="\
 ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -classpath ${SYNCHRONY_CLASSPATH} \
--Dreza.cluster.impl=hazelcast-micros \
--Dreza.database.url=${ATL_JDBC_URL} \
--Dreza.database.username=${ATL_JDBC_USER} \
--Dreza.database.password=${ATL_JDBC_PASSWORD} \
--Dreza.bind=${AWS_EC2_PRIVATE_IP} \
--Dreza.cluster.bind=${AWS_EC2_PRIVATE_IP} \
+-Dsynchrony.cluster.impl=hazelcast-btf \
+-Dsynchrony.database.url=${ATL_JDBC_URL} \
+-Dsynchrony.database.username=${ATL_JDBC_USER} \
+-Dsynchrony.database.password=${ATL_JDBC_PASSWORD} \
+-Dsynchrony.bind=${AWS_EC2_PRIVATE_IP} \
+-Dsynchrony.cluster.bind=${AWS_EC2_PRIVATE_IP} \
 -Dcluster.interfaces=${AWS_EC2_PRIVATE_IP} \
--Dreza.cluster.base.port=25500 \
--Dreza.cluster.bind=${AWS_EC2_PRIVATE_IP} \
--Dreza.service.url=${ATL_SYNCHRONY_SERVICE_URL} \
--Dreza.context.path=/synchrony \
--Dreza.port=8091 \
+-Dsynchrony.cluster.base.port=25500 \
+-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} \
+-Dsynchrony.context.path=/synchrony \
+-Dsynchrony.port=8091 \
 -Dcluster.name=Synchrony-Cluster \
 -Dcluster.join.type=aws \
+-Dcluster.join.aws.iam=${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE} \
+-Dcluster.join.aws.region=${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION} \
+-Dcluster.join.aws.host.header=${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER} \
+-Dcluster.join.aws.tag.key=${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY} \
+-Dcluster.join.aws.tag.value=${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE} \
 -Djwt.private.key=${SYNCHRONY_JWT_PRIVATE_KEY} \
 -Djwt.public.key=${SYNCHRONY_JWT_PUBLIC_KEY} \
--Dip.whitelist=something \
--Dauth.tokens=dummy \
--Dopenid.return.uri=http://example.com \
--Ddynamo.events.table.name=5 \
--Ddynamo.snapshots.table.name=5 \
--Ddynamo.secrets.table.name=5 \
--Ddynamo.events2.table.name=5 \
--Ddynamo.snapshots2.table.name=5 \
--Ddynamo.chunks.table.name=5 \
--Ddynamo.limits.table.name=5 \
--Dredis.kv.cache2.host=5 \
--Dredis.kv.cache2.port=5 \
--Ddynamo.events.app.read.provisioned.default=5 \
--Ddynamo.events.app.write.provisioned.default=5 \
--Ddynamo.snapshots.app.read.provisioned.default=5 \
--Ddynamo.snapshots.app.write.provisioned.default=5 \
--Ddynamo.max.item.size=5 \
--Ds3.synchrony.bucket.name=5 \
--Ds3.synchrony.bucket.path=5 \
--Ds3.synchrony.eviction.bucket.name=5 \
--Ds3.synchrony.eviction.bucket.path=5 \
--Ds3.app.write.provisioned.default=100 \
--Ds3.app.read.provisioned.default=100 \
--Dstatsd.host=localhost \
--Dstatsd.port=8125"
+"
     atl_log "Starting Synchrony"
 
     # make sure we don't start Synchrony if there is a running process there
