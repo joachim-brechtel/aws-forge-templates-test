@@ -2,6 +2,9 @@
 
 set -e
 
+# in a case of "test", we just need to load functions into the testing context
+if ! [ "$1" == "test" ]; then
+
 . /etc/init.d/atl-functions
 . /etc/init.d/atl-confluence-common
 
@@ -24,6 +27,8 @@ SYNCHRONY_PID="${ATL_CONFLUENCE_HOME}/synchrony.pid"
 _RUNJAVA="${ATL_CONFLUENCE_JRE_HOME}/java"
 SYNCHRONY_CLASSPATH="${ATL_SYNCHRONY_JAR_PATH}:${ATL_POSTGRES_DRIVER_PATH}"
 AWS_EC2_PRIVATE_IP=$(curl -f --silent http://169.254.169.254/latest/meta-data/local-ipv4 || echo "")
+
+fi
 
 # main method of this service
 function start {
@@ -68,11 +73,41 @@ function waitForConfluenceConfigInSharedHome() {
 	atl_log "=== END: Waiting for confluence.cfg.xml avalaible in shared home folder ==="
 }
 
-# start Synchrony service
-function startSynchrony {
-    atl_log "Starting ${ATL_SYNCHRONY_SERVICE_NAME} service"
-    waitForConfluenceConfigInSharedHome
-    SYNCHRONY_PROPERTIES="\
+function parseSemVersion {
+    echo "$1" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'
+}
+
+function majorVersion {
+    echo "$1" | awk -F \. '{print $1}'
+}
+
+function minorVersion {
+    echo "$1" | awk -F \. '{print $2}'
+}
+
+function patchVersion {
+    echo "$1" | awk -F \. '{print $3}'
+}
+
+# Function compares 2 sem versions
+# param $1 - first version to compare (semver format, can be prefixed or suffixed, like "confluence-paret-6.5.0-m01")
+# param $2 - second version to compare (semver format, can be prefixed or suffixed, like "confluence-paret-6.5.0-m01")
+# return negative, if version1 < version2, positive, if version1 > version2 and 0, if versions are equal
+function compareVersions {
+    local version1=$(parseSemVersion $1)
+    local version2=$(parseSemVersion $2)
+    local diff=$(( $(majorVersion $version1)-$(majorVersion $version2) ))
+    if [ $diff -eq 0 ]; then
+        diff=$(( $(minorVersion $version1)-$(minorVersion $version2) ))
+        if [ $diff -eq 0 ]; then
+            diff=$(( $(patchVersion $version1)-$(patchVersion $version2) ))
+        fi
+    fi
+    echo $diff
+}
+
+function oldSynchronyStartupProperties {
+    echo "\
 ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -classpath ${SYNCHRONY_CLASSPATH} \
 -Dreza.cluster.impl=hazelcast-micros \
@@ -116,6 +151,44 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Ds3.app.read.provisioned.default=100 \
 -Dstatsd.host=localhost \
 -Dstatsd.port=8125"
+}
+
+function newSynchronyStartupProperties {
+    echo "\
+${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
+-classpath ${SYNCHRONY_CLASSPATH} \
+-Dsynchrony.cluster.impl=hazelcast-btf \
+-Dsynchrony.database.url=${ATL_JDBC_URL} \
+-Dsynchrony.database.username=${ATL_JDBC_USER} \
+-Dsynchrony.database.password=${ATL_JDBC_PASSWORD} \
+-Dsynchrony.bind=${AWS_EC2_PRIVATE_IP} \
+-Dsynchrony.cluster.bind=${AWS_EC2_PRIVATE_IP} \
+-Dcluster.interfaces=${AWS_EC2_PRIVATE_IP} \
+-Dsynchrony.cluster.base.port=25500 \
+-Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} \
+-Dsynchrony.context.path=/synchrony \
+-Dsynchrony.port=8091 \
+-Dcluster.name=Synchrony-Cluster \
+-Dcluster.join.type=aws \
+-Dcluster.join.aws.tag.key=${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY} \
+-Dcluster.join.aws.tag.value=${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE} \
+-Djwt.private.key=${SYNCHRONY_JWT_PRIVATE_KEY} \
+-Djwt.public.key=${SYNCHRONY_JWT_PUBLIC_KEY}"
+}
+
+function getSynchronyStartupProperties {
+    if [ "x$1" == "xlatest" ] || [ $(compareVersions "$1" "6.5.0") -gt -1 ]; then
+        newSynchronyStartupProperties
+    else
+        oldSynchronyStartupProperties
+    fi
+}
+
+# start Synchrony service
+function startSynchrony {
+    atl_log "Starting ${ATL_SYNCHRONY_SERVICE_NAME} service"
+    waitForConfluenceConfigInSharedHome
+    SYNCHRONY_PROPERTIES=$(getSynchronyStartupProperties "${ATL_CONFLUENCE_VERSION}")
     atl_log "Starting Synchrony"
 
     # make sure we don't start Synchrony if there is a running process there
@@ -276,8 +349,15 @@ case "$1" in
     stop)
         $1
         ;;
+    test)
+        RETVAL=0
+        ;;
     *)
         echo "Usage: $0 {start|stop}"
         RETVAL=1
 esac
-exit ${RETVAL}
+
+# in a case of "test", we just need to load functions into the testing context, and prevent exiting the testing script
+if ! [ "$1" == "test" ]; then
+    exit ${RETVAL}
+fi
