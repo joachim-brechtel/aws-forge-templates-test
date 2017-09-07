@@ -37,6 +37,9 @@ function start {
     if installConfluence; then
         configureConfluenceHome;
         exportCatalinaOpts;
+        # Need to reset those variables because it contains wrong value before we install Confluence
+        ATL_POSTGRES_DRIVER_PATH=$(ls -t ${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/lib/postgresql*.jar | head -n 1)
+        SYNCHRONY_CLASSPATH="${ATL_SYNCHRONY_JAR_PATH}:${ATL_POSTGRES_DRIVER_PATH}"
     else
         atl_log "Skip install Confluence...And start Synchrony straight away"
     fi
