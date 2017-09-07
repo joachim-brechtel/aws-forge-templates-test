@@ -859,7 +859,7 @@ Resources:
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
-                    - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
+                    - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=micros_service_id"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
             /etc/cfn/cfn-hup.conf:
               content:
