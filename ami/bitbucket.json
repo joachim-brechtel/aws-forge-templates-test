@@ -31,7 +31,7 @@
     "release_s3_bucket":        "atlassian-software",
     "release_s3_path":          "releases/bitbucket",
 
-    "git_version":              "2.7.4",
+    "git_version":              "2.13.5",
     "postgres_version":         "9.3",
 
     "diy_backup_display_name":  "Bitbucket DIY Backup",
