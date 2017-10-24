@@ -570,6 +570,16 @@
                       "ATL_APP_DATA_MOUNT_ENABLED=false\n",
                       "ATL_DB_NAME=jira\n",
                       "ATL_DB_USER=jira\n",
+                      {
+                          "Fn::Sub": [
+                              "ATL_CATALINA_OPTS=\"${CatalinaOpts}\"",
+                              {
+                                  "CatalinaOpts": {
+                                      "Ref": "CatalinaOpts"
+                                  }
+                              }
+                          ]
+                      },
                       "ATL_DB_PASSWORD=",
                       {
                         "Ref": "DBMasterUserPassword"

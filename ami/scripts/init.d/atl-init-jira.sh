@@ -43,6 +43,8 @@ function start {
     fi
 
     configureJIRAHome
+    exportCatalinaOpts
+    configureJiraEnvironmentVariables
     if [[ -n "${ATL_DB_NAME}" ]]; then
         configureRemoteDb
     fi
@@ -50,6 +52,31 @@ function start {
     goJIRA
 
     atl_log "=== END:   service atl-init-jira start ==="
+}
+
+function exportCatalinaOpts() {
+    atl_log "=== BEGIN: service exportCatalinaOpts ==="
+    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"/home/${ATL_JIRA_USER}/.bash_profile\"" > /dev/null 2>&1
+
+if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+fi
+export CATALINA_OPTS="${ATL_CATALINA_OPTS}"
+
+EOT
+    chmod 644 "/home/${ATL_JIRA_USER}/.bash_profile"
+    chown ${ATL_JIRA_USER}:${ATL_JIRA_USER} /home/${ATL_JIRA_USER}/.bash_profile
+    atl_log "=== END: service exportCatalinaOpts ==="
+}
+
+function configureJiraEnvironmentVariables (){
+   atl_log "=== BEGIN: service configureJiraEnvironmentVariables ==="
+   cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
+
+CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
+export CATALINA_OPTS
+EOT
+   atl_log "=== END: service configureJiraEnvironmentVariables ==="
 }
 
 function createInstanceStoreDirs {
