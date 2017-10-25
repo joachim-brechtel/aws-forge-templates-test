@@ -64,6 +64,7 @@
                     },
                     "Parameters": [
                         "CatalinaOpts",
+                        "JvmHeapOverride",
                         "StartCollectd"
                     ]
                 }
@@ -105,6 +106,9 @@
                 "JiraProduct": {
                     "default": "JIRA Product *"
                 },
+                "JvmHeapOverride": {
+                    "default": "JVM Heap Size Override"
+                },
                 "KeyName": {
                     "default": "Key Name *"
                 },
@@ -131,9 +135,9 @@
     },
     "Parameters": {
         "AssociatePublicIpAddress": {
+            "Default": "true",
             "Description": "Controls if the EC2 instances are assigned a public IP address",
             "Type": "String",
-            "Default": "true",
             "AllowedValues": [
                 "true",
                 "false"
@@ -141,45 +145,75 @@
             "ConstraintDescription": "Must be 'true' or 'false'."
         },
         "ClusterNodeMax": {
-            "Type": "Number",
-            "Default": "1"
+            "Default": "1",
+            "Type": "Number"
         },
         "ClusterNodeMin": {
-            "Type": "Number",
-            "Default": "1"
+            "Default": "1",
+            "Type": "Number"
         },
         "ClusterNodeInstanceType": {
-            "Type": "String",
             "Default": "c3.xlarge",
+            "Type": "String",
             "AllowedValues": [
                 "c3.xlarge",
                 "c3.2xlarge",
                 "c3.4xlarge",
                 "c3.8xlarge",
-                "i2.xlarge",
-                "i2.2xlarge",
-                "i2.4xlarge",
-                "i2.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "i3.large",
+                "i3.xlarge",
+                "i3.2xlarge",
+                "i3.4xlarge",
+                "i3.8xlarge",
+                "i3.xlarge",
+                "i3.2xlarge",
+                "i3.4xlarge",
+                "i3.8xlarge",
+                "m3.medium",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "m4.16xlarge",
+                "r3.large",
                 "r3.xlarge",
                 "r3.2xlarge",
                 "r3.4xlarge",
                 "r3.8xlarge",
+                "r4.large",
+                "r4.xlarge",
+                "r4.2xlarge",
+                "r4.4xlarge",
+                "r4.8xlarge",
                 "t2.medium",
                 "t2.large",
+                "t2.xlarge",
+                "t2.2xlarge",
+                "x1.16xlarge",
                 "x1.32xlarge"
             ],
             "ConstraintDescription": "Must be an EC2 instance type in the C3, I2, R3, or X1 family, 'xlarge' or larger",
             "Description": "Instance type for the cluster nodes."
         },
         "CatalinaOpts": {
-            "Type": "String",
-            "Default": ""
+            "Default": "",
+            "Type": "String"
         },
         "DBInstanceClass": {
+            "Default": "db.m4.xlarge",
             "Description": "RDS instance type",
             "Type": "String",
-            "Default": "db.m4.xlarge",
             "AllowedValues": [
+                "db.m3.medium",
+                "db.m3.large",
+                "db.m3.xlarge",
+                "db.m3.2xlarge",
                 "db.m4.large",
                 "db.m4.xlarge",
                 "db.m4.2xlarge",
@@ -196,8 +230,8 @@
             "ConstraintDescription": "Must be a valid RDS instance class, 'db.t2.medium' or larger."
         },
         "DBMasterUserPassword": {
-            "NoEcho": "true",
             "Default": "",
+            "NoEcho": "true",
             "Description": "Database admin account password.",
             "Type": "String",
             "MaxLength": "41",
@@ -214,14 +248,14 @@
             "NoEcho": "true"
         },
         "DBStorage": {
+            "Default": "10",
             "Description": "Database allocated storage size, in gigabytes (GB)",
-            "Type": "Number",
-            "Default": "10"
+            "Type": "Number"
         },
         "DBStorageType": {
+            "Default": "General Purpose (SSD)",
             "Description": "Database storage type",
             "Type": "String",
-            "Default": "General Purpose (SSD)",
             "AllowedValues": [
                 "General Purpose (SSD)",
                 "Provisioned IOPS"
@@ -229,8 +263,8 @@
             "ConstraintDescription": "Must be 'General Purpose (SSD)' or 'Provisioned IOPS'."
         },
         "DBMultiAZ": {
-            "Type": "String",
             "Default": "true",
+            "Type": "String",
             "AllowedValues": [
                 "true",
                 "false"
@@ -238,9 +272,9 @@
             "ConstraintDescription": "Must be 'true' or 'false'."
         },
         "DBIops": {
+            "Default": "1000",
             "Description": "Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00.",
             "Type": "Number",
-            "Default": "1000",
             "MinValue": "1000",
             "MaxValue": "30000",
             "ConstraintDescription": "Must be in the range 1000 - 30000."
@@ -254,6 +288,10 @@
                 "ServiceDesk",
                 "Core"
             ]
+        },
+        "JvmHeapOverride": {
+            "Default": "",
+            "Type": "String"
         },
         "KeyName": {
             "Description": "The EC2 Key Pair to allow SSH access to the instances",
@@ -271,16 +309,16 @@
             "Type": "String"
         },
         "SSLCertificateName": {
+            "Default": "",
             "Description": "The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
             "Type": "String",
             "MinLength": "0",
-            "MaxLength": "32",
-            "Default": ""
+            "MaxLength": "32"
         },
         "StartCollectd": {
+            "Default": "true",
             "Description": "Should the collectd service be started",
             "Type": "String",
-            "Default": "true",
             "AllowedValues": [
                 "true",
                 "false"
@@ -332,6 +370,30 @@
                 }
             ]
         },
+        "DoSSL": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "SSLCertificateName"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        },
+        "OverrideHeap": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "JvmHeapOverride"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        },
         "UsePublicIp": {
             "Fn::Equals": [
                 {
@@ -363,114 +425,177 @@
                     ]
                 }
             ]
-        },
-        "DoSSL": {
-            "Fn::Not": [
-                {
-                    "Fn::Equals": [
-                        {
-                            "Ref": "SSLCertificateName"
-                        },
-                        ""
-                    ]
-                }
-            ]
         }
     },
     "Mappings": {
         "AWSInstanceType2Arch": {
             "c3.large": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 3072
             },
             "c3.xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 6144
             },
             "c3.2xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "c3.4xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "c3.8xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "c4.large": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 3072
             },
             "c4.xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 6144
             },
             "c4.2xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "c4.4xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "c4.8xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "d2.xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "d2.2xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "d2.4xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "d2.8xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
-            "i2.xlarge": {
-                "Arch": "HVM64"
+            "i3.large": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
-            "i2.2xlarge": {
-                "Arch": "HVM64"
+            "i3.xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
-            "i2.4xlarge": {
-                "Arch": "HVM64"
+            "i3.2xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
-            "i2.8xlarge": {
-                "Arch": "HVM64"
+            "i3.4xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "i3.8xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "m3.medium": {
+                "Arch": "HVM64",
+                "Jvmheap": 3072
             },
             "m4.large": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 6144
             },
             "m4.xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "m4.2xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "m4.4xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "m4.10xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "m4.16xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "r3.large": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "r3.xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "r3.2xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "r3.4xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "r3.8xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "r4.large": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "r4.xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "r4.2xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "r4.4xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "r4.8xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "t2.medium": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 3072
             },
             "t2.large": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 6144
+            },
+            "t2.xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "t2.2xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
+            },
+            "x1.16xlarge": {
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             },
             "x1.32xlarge": {
-                "Arch": "HVM64"
+                "Arch": "HVM64",
+                "Jvmheap": 12288
             }
         },
         "AWSRegionArch2AMI": {
@@ -610,6 +735,30 @@
                                             "ATL_APP_DATA_MOUNT_ENABLED=false\n",
                                             "ATL_DB_NAME=jira\n",
                                             "ATL_DB_USER=jira\n",
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JVM_HEAP=${AtlJvmHeap}",
+                                                    {
+                                                        "AtlJvmHeap": {
+                                                            "Fn::If": [
+                                                                "OverrideHeap",
+                                                                {
+                                                                    "Ref": "JvmHeapOverride"
+                                                                },
+                                                                {
+                                                                    "Fn::FindInMap": [
+                                                                        "AWSInstanceType2Arch",
+                                                                        {
+                                                                            "Ref": "ClusterNodeInstanceType"
+                                                                        },
+                                                                        "Jvmheap"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
                                             {
                                                 "Fn::Sub": [
                                                     "ATL_CATALINA_OPTS=\"${CatalinaOpts}\"",
@@ -833,7 +982,7 @@
                             },
                             "030_mount_all": {
                                 "command": "mount -a",
-                                "ignoreErrors": "false"
+                                "ignoreErrors": "true"
                             },
                             "040_make_shared_home_dir": {
                                 "command": "mkdir -p /media/atl/jira/shared",
