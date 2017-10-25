@@ -71,7 +71,8 @@ EOT
 
 function configureJiraEnvironmentVariables (){
    atl_log "=== BEGIN: service configureJiraEnvironmentVariables ==="
-   su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY.+)(384|768)(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
+   if [ -z "${ATL_JIRA_USER}" ];then
+     su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY.+)(384|768)(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
 CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
