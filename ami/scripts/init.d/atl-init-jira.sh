@@ -129,7 +129,8 @@ function configureSharedHome {
     local JIRA_SHARED="${ATL_APP_DATA_MOUNT}/${ATL_JIRA_SERVICE_NAME}/shared"
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${JIRA_SHARED}"; then
         mkdir -p "${JIRA_SHARED}"
-        chown -R -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1 
+        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1 
+        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}/*" >> "${ATL_LOG}" 2>&1
         cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_HOME}/cluster.properties\"" > /dev/null
 jira.node.id = $(curl -f --silent http://169.254.169.254/latest/meta-data/instance-id)
 jira.shared.home = ${JIRA_SHARED}
