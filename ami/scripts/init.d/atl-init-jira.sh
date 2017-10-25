@@ -71,6 +71,7 @@ EOT
 
 function configureJiraEnvironmentVariables (){
    atl_log "=== BEGIN: service configureJiraEnvironmentVariables ==="
+   su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY.+)(384|768)(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
 CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
@@ -130,7 +131,7 @@ function configureSharedHome {
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${JIRA_SHARED}"; then
         mkdir -p "${JIRA_SHARED}"
         chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1 
-        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}/*" >> "${ATL_LOG}" 2>&1
+        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" ${JIRA_SHARED}/* >> "${ATL_LOG}" 2>&1
         cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_HOME}/cluster.properties\"" > /dev/null
 jira.node.id = $(curl -f --silent http://169.254.169.254/latest/meta-data/instance-id)
 jira.shared.home = ${JIRA_SHARED}
