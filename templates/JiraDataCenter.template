@@ -443,11 +443,11 @@
             },
             "c3.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "c3.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "c4.large": {
                 "Arch": "HVM64",
@@ -463,27 +463,27 @@
             },
             "c4.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "c4.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "d2.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "d2.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "d2.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 98302
+                "Jvmheap": 12288
             },
             "d2.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 196608
+                "Jvmheap": 12288
             },
             "i3.large": {
                 "Arch": "HVM64",
@@ -491,19 +491,19 @@
             },
             "i3.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "i3.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "i3.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 98302
+                "Jvmheap": 12288
             },
             "i3.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 196608
+                "Jvmheap": 12288
             },
             "m3.medium": {
                 "Arch": "HVM64",
@@ -519,19 +519,19 @@
             },
             "m4.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "m4.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "m4.10xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 122880
+                "Jvmheap": 12288
             },
             "m4.16xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 196608
+                "Jvmheap": 12288
             },
             "r3.large": {
                 "Arch": "HVM64",
@@ -539,19 +539,19 @@
             },
             "r3.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "r3.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "r3.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 98304
+                "Jvmheap": 12288
             },
             "r3.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 190464
+                "Jvmheap": 12288
             },
             "r4.large": {
                 "Arch": "HVM64",
@@ -559,19 +559,19 @@
             },
             "r4.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "r4.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 49152
+                "Jvmheap": 12288
             },
             "r4.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 98302
+                "Jvmheap": 12288
             },
             "r4.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 190464
+                "Jvmheap": 12288
             },
             "t2.medium": {
                 "Arch": "HVM64",
@@ -587,15 +587,15 @@
             },
             "t2.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 24576
+                "Jvmheap": 12288
             },
             "x1.16xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 749568
+                "Jvmheap": 12288
             },
             "x1.32xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 1499136
+                "Jvmheap": 12288
             }
         },
         "AWSRegionArch2AMI": {
@@ -982,7 +982,7 @@
                             },
                             "030_mount_all": {
                                 "command": "mount -a",
-                                "ignoreErrors": "false"
+                                "ignoreErrors": "true"
                             },
                             "040_make_shared_home_dir": {
                                 "command": "mkdir -p /media/atl/jira/shared",
