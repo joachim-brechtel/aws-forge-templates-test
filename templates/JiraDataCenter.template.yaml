@@ -40,9 +40,35 @@ Metadata:
       - Label:
           default: Advanced (Optional)
         Parameters:
-          - CatalinaOpts
-          - JvmHeapOverride
           - StartCollectd
+      - Label:
+          default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
+        Parameters:
+            - CatalinaOpts
+            - JvmHeapOverride
+            - DBMaxIdle="20"
+            - DBMaxWaitMillis="10000"
+            - DBMinEvictableIdleTimeMillis="180000"
+            - DBMinIdle="10"
+            - DBPoolMaxSize="20"
+            - DBPoolMinSize="20"
+            - DBRemoveAbandonedOnMaintenance="true"
+            - DBRemoveAbandonedTimeout="60"
+            - DBTestOnBorrow="false"
+            - DBTestWhileIdle="true"
+            - DBTimeBetweenEvictionRunsMillis="60000"
+            - TomcatAcceptCount="10"
+            - TomcatConnectionTimeout="20000"
+            - TomcatContextPath
+            - TomcatEnableLookups="false"
+            - TomcatMaxThreads="200"
+            - TomcatMinSpareThreads="10"
+            - TomcatProtocol="org.apache.coyote.http11.Http11NioProtocol"
+            - TomcatProxyPort="443"
+            - TomcatRedirectPort="8443"
+            - TomcatScheme="https"
+            - TomcatSecure="true"
+            - TomcatURIEncoding="UTF-8"
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -54,34 +80,80 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: JIRA cluster node instance type
+      CustomDnsName:
+        default: Existing DNS name (optional)
       DBInstanceClass:
         default: Database instance class
+      DBIops:
+        default: RDS Provisioned IOPS
       DBMasterUserPassword:
         default: Master password *
+      DBMaxIdle:
+        default: The maximum number of database connections that are allowed to remain idle in the pool
+      DBMaxWait:
+        default: The length of time (in milliseconds) that JIRA is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
+      DBMinEvictableIdleTimeMillis:
+        default: The minimum amount of time an object may sit idle in the database connection pool before it is eligible for eviction by the idle object eviction
+      DBMinIdle:
+        default: The minimum number of idle database connections that are kept open at any time
       DBPassword:
         default: JIRA database password *
+      DBPoolMaxSize:
+        default: The maximum number of database connections that can be opened at any time
+      DBPoolMinSize:
+        default: The minimum number of idle database connections that are kept open at any time
+      DBRemoveAbandoned:
+        default: Flag to remove abandoned database connections if they exceed the Removed Abandoned Timeout
+      DBRemoveAbandonedTimeout:
+        default: The length of time (in seconds) that a database connection can be idle before it is considered abandone
       DBStorage:
         default: Database storage
       DBStorageType:
         default: Database storage type
-      DBIops:
-        default: RDS Provisioned IOPS
+      DBTestOnBorrow:
+        default: Tests if the database connection is valid when it is borrowed from the database connection pool by JIRA
+      DBTestWhileIdle:
+        default: Periodically tests if the database connection is valid when it is idle
+      DBTimeBetweenEvictionRunsMillis:
+        default: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
+      ExternalSubnets:
+        default: External subnets *
+      HostedZone:
+        default: R53 Hosted Zone (optional)
+      InternalSubnets:
+        default: Internal subnets *
       JiraProduct:
         default: JIRA Product *
       JvmHeapOverride:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
-      CustomDnsName:
-        default: Existing DNS name (optional)
-        HostedZone:
-          default: R53 Hosted Zone (optional)
       SSLCertificateName:
         default: SSL Certificate Name
-      ExternalSubnets:
-        default: External subnets *
-      InternalSubnets:
-        default: Internal subnets *
+      TomcatAcceptCount:
+        default: The maximum queue length for incoming connection requests when all possible request processing threads are in use
+      TomcatConnectionTimeout:
+        default: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
+      TomcatContextPath:
+        default: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+      TomcatEnableLookups:
+        default: Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client
+      TomcatMaxThreads:
+        default: The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled
+      TomcatMinSpareThreads:
+        default: The minimum number of threads always kept running
+      TomcatProtocol:
+        default: Sets the protocol to handle incoming traffic
+      TomcatProxyPort:
+        default: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
+      TomcatRedirectPort:
+        default: for a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+      TomcatScheme:
+        default: the name of the protocol you wish to have returned, ie "https" for an SSL Connector
+      TomcatSecure:
+        default: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
+      TomcatURIEncoding:
+        default: This specifies the character encoding used to decode the URI bytes, after %xx decoding the URL
       VPC:
         default: VPC *
 Parameters:
@@ -218,6 +290,39 @@ Parameters:
     MinValue: '1000'
     MaxValue: '30000'
     ConstraintDescription: Must be in the range 1000 - 30000.
+  DBMaxIdle:
+    Default: "20"
+    Type: String
+  DBMaxWaitMillis:
+    Default: "10000"
+    Type: String
+  DBMinEvictableIdleTimeMillis:
+    Default: "180000"
+    Type: String
+  DBMinIdle:
+    Default: "10"
+    Type: String
+  DBPoolMaxSize:
+    Default: "20"
+    Type: String
+  DBPoolMinSize:
+    Default: "20"
+    Type: String
+  DBRemoveAbandonedOnMaintenance:
+    Default: "true"
+    Type: String
+  DBRemoveAbandonedTimeout:
+    Default: "60"
+    Type: String
+  DBTestOnBorrow:
+    Default: "false"
+    Type: String
+  DBTestWhileIdle:
+    Default: "true"
+    Type: String
+  DBTimeBetweenEvictionRunsMillis:
+    Default: "60000"
+    Type: String
   JiraProduct:
     Description: >-
       The JIRA Product to install. Installs latest available version of the
@@ -264,6 +369,42 @@ Parameters:
       - 'true'
       - 'false'
     ConstraintDescription: Must be 'true' or 'false'.
+  TomcatAcceptCount:
+    Default: "10"
+    Type: String
+  TomcatConnectionTimeout:
+    Default: "20000"
+    Type: String
+  TomcatContextPath:
+    Default: ""
+    Type: String
+  TomcatEnableLookups:
+    Default: "false"
+    Type: String
+  TomcatMaxThreads:
+    Default: "200"
+    Type: String
+  TomcatMinSpareThreads:
+    Default: "10"
+    Type: String
+  TomcatProtocol:
+    Default: "org.apache.coyote.http11.Http11NioProtocol"
+    Type: String
+  TomcatProxyPort:
+    Default: "443"
+    Type: String
+  TomcatRedirectPort:
+    Default: "8443"
+    Type: String
+  TomcatScheme:
+    Default: "https"
+    Type: String
+  TomcatSecure:
+    Default: "true"
+    Type: String
+  TomcatURIEncoding:
+    Default: "UTF-8"
+    Type: String
   ExternalSubnets:
     Description: >-
       Subnets (two or more) where your user-facing load balancer will be
@@ -561,6 +702,17 @@ Resources:
                     - DB
                     - Endpoint.Port
                   - |+
+                  - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
+                  - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
+                  - !Sub ["ATL_DB_MINEVICTABLEIDLETIMEMILLIS=${DBMinEvictableIdleTimeMillis}", DBMinEvictableIdleTimeMillis: !Ref DBMinEvictableIdleTimeMillis]
+                  - !Sub ["ATL_DB_MINIDLE=${MinIdle}", DBMinIdle: !Ref DBMinIdle]
+                  - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
+                  - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
+                  - !Sub ["ATL_DB_REMOVEABANDONEDONMAINTENANCE=${DBRemoveAbandonedOnMaintenance}", DBRemoveAbandonedOnMaintenance: !Ref DBRemoveAbandonedOnMaintenance]
+                  - !Sub ["ATL_DB_REMOVEABANDONEDTIMEOUT=${DBRemoveAbandonedTimeout}", DBRemoveAbandonedTimeout: !Ref DBRemoveAbandonedTimeout]
+                  - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
+                  - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
+                  - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
 
                   - |
                     ATL_JDBC_DRIVER=org.postgresql.Driver
@@ -631,6 +783,18 @@ Resources:
                     - |
                       ATL_SSL_PROXY=true
                     - !Ref 'AWS::NoValue'
+                  - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
+                  - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
+                  - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
+                  - !Sub ["ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}", TomcatEnableLookups: !Ref TomcatEnableLookups]
+                  - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
+                  - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
+                  - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
+                  - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                  - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
+                  - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
+                  - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
+                  - !Sub ["ATL_TOMCAT_URIENCODING=${TomcatURIEncoding}", TomcatURIEncoding: !Ref TomcatURIEncoding]
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - ''
