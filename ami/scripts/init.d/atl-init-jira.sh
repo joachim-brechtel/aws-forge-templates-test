@@ -257,7 +257,7 @@ function downloadInstaller {
 
     local JIRA_VERSION=$(cat $(atl_tempDir)/version)
     # if a jira version was passed on the cloudformation template, use that instead
-    if [[ -n $requestedVersion ]]; then
+    if [[ -n $requestedVersion ]] && [ $requestedVersion != "latest" ]; then
       echo $requestedVersion > $(atl_tempDir)/version
       local JIRA_VERSION=$requestedVersion
     fi
