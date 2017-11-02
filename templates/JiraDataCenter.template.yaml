@@ -47,6 +47,7 @@ Metadata:
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
         Parameters:
+            - TomcatContextPath
             - CatalinaOpts
             - JvmHeapOverride
             - DBMaxIdle
@@ -62,7 +63,6 @@ Metadata:
             - DBTimeBetweenEvictionRunsMillis
             - TomcatAcceptCount
             - TomcatConnectionTimeout
-            - TomcatContextPath
             - TomcatEnableLookups
             - TomcatMaxThreads
             - TomcatMinSpareThreads
@@ -93,33 +93,33 @@ Metadata:
       DBMasterUserPassword:
         default: Master password *
       DBMaxIdle:
-        default: The maximum number of database connections that are allowed to remain idle in the pool
-      DBMaxWait:
-        default: The length of time (in milliseconds) that JIRA is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
+        default: DB Maximum Idle
+      DBMaxWaitMillis:
+        default: DB Maximum Wait
       DBMinEvictableIdleTimeMillis:
-        default: The minimum amount of time an object may sit idle in the database connection pool before it is eligible for eviction by the idle object eviction
+        default: DB Minimum Evictable Idle Time
       DBMinIdle:
-        default: The minimum number of idle database connections that are kept open at any time
+        default: DB Minimum Idle Connections
       DBPassword:
         default: JIRA database password *
       DBPoolMaxSize:
-        default: The maximum number of database connections that can be opened at any time
+        default: DB Pool Maximum Size
       DBPoolMinSize:
-        default: The minimum number of idle database connections that are kept open at any time
+        default: DB Pool Minimum Size
       DBRemoveAbandoned:
-        default: Flag to remove abandoned database connections if they exceed the Removed Abandoned Timeout
+        default: DB Remove Abandoned?
       DBRemoveAbandonedTimeout:
-        default: The length of time (in seconds) that a database connection can be idle before it is considered abandoned
+        default: DB Remove Abandoned Timeout
       DBStorage:
         default: Database storage
       DBStorageType:
         default: Database storage type
       DBTestOnBorrow:
-        default: Tests if the database connection is valid when it is borrowed from the database connection pool by JIRA
+        default: DB Test On Borrow?
       DBTestWhileIdle:
-        default: Periodically tests if the database connection is valid when it is idle
+        default: DB Test While Idle?
       DBTimeBetweenEvictionRunsMillis:
-        default: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
+        default: DB Time Between Eviction Runs
       ExternalSubnets:
         default: External subnets *
       HostedZone:
@@ -139,27 +139,27 @@ Metadata:
       SSLCertificateName:
         default: SSL Certificate Name
       TomcatAcceptCount:
-        default: The maximum queue length for incoming connection requests when all possible request processing threads are in use
+        default: Tomcat Accept Count
       TomcatConnectionTimeout:
-        default: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
+        default: Tomcat Connection Timeout
       TomcatContextPath:
-        default: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+        default: Tomcat Context Path
       TomcatEnableLookups:
-        default: Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client
+        default: Tomcat Enable DNS Lookups
       TomcatMaxThreads:
-        default: The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled
+        default: Tomcat Maximum Threads
       TomcatMinSpareThreads:
-        default: The minimum number of threads always kept running
+        default: Tomcat Minimum Spare Threads
       TomcatProtocol:
-        default: Sets the protocol to handle incoming traffic
+        default: Tomcat Protocol
       TomcatProxyPort:
-        default: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
+        default: Tomcat Proxy Port
       TomcatRedirectPort:
-        default: for a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+        default: Tomcat Redirect Port
       TomcatScheme:
-        default: the name of the protocol you wish to have returned, ie "https" for an SSL Connector
+        default: Tomcat protocol Scheme
       TomcatSecure:
-        default: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
+        default: Tomcat Secure?
       VPC:
         default: VPC *
 Parameters:
@@ -235,6 +235,7 @@ Parameters:
     Description: Instance type for the cluster nodes.
   CatalinaOpts:
     Default: ''
+    Description: Pass in any additional jvm options to tune Catalina
     Type: String
   DBInstanceClass:
     Default: db.m4.xlarge
@@ -302,36 +303,47 @@ Parameters:
     ConstraintDescription: Must be in the range 1000 - 30000.
   DBMaxIdle:
     Default: "20"
+    Description: The maximum number of database connections that are allowed to remain idle in the pool
     Type: String
   DBMaxWaitMillis:
     Default: "10000"
+    Description: The length of time (in milliseconds) that JIRA is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
     Type: String
   DBMinEvictableIdleTimeMillis:
     Default: "180000"
+    Description: The minimum amount of time an object may sit idle in the database connection pool before it is eligible for eviction by the idle object eviction
     Type: String
   DBMinIdle:
     Default: "10"
+    Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBPoolMaxSize:
     Default: "20"
+    Description: The maximum number of database connections that can be opened at any time
     Type: String
   DBPoolMinSize:
     Default: "20"
+    Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBRemoveAbandoned:
     Default: "true"
+    Description: Flag to remove abandoned database connections if they exceed the Removed Abandoned Timeout
     Type: String
   DBRemoveAbandonedTimeout:
     Default: "60"
+    Description: The length of time (in seconds) that a database connection can be idle before it is considered abandoned
     Type: String
   DBTestOnBorrow:
     Default: "false"
+    Description: Tests if the database connection is valid when it is borrowed from the database connection pool by JIRA
     Type: String
   DBTestWhileIdle:
     Default: "true"
+    Description: Periodically tests if the database connection is valid when it is idle
     Type: String
   DBTimeBetweenEvictionRunsMillis:
     Default: "60000"
+    Description: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
     Type: String
   JiraDownloadUrl:
     Default: ""
@@ -354,6 +366,7 @@ Parameters:
     Type: String
   JvmHeapOverride:
     Default: ""
+    Description: Override the default amount of Memory to allocate to the JVM for your instance type
     Type: String
   KeyName:
     Description: The EC2 Key Pair to allow SSH access to the instances
@@ -383,36 +396,47 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
   TomcatAcceptCount:
     Default: "10"
+    Description: The maximum queue length for incoming connection requests when all possible request processing threads are in use
     Type: String
   TomcatConnectionTimeout:
     Default: "20000"
+    Description: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
     Type: String
   TomcatContextPath:
     Default: ""
+    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
     Type: String
   TomcatEnableLookups:
     Default: "false"
+    Description: Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client
     Type: String
   TomcatMaxThreads:
     Default: "200"
+    Description: The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled
     Type: String
   TomcatMinSpareThreads:
     Default: "10"
+    Description: The minimum number of threads always kept running
     Type: String
   TomcatProtocol:
     Default: "org.apache.coyote.http11.Http11NioProtocol"
+    Description: Sets the protocol to handle incoming traffic
     Type: String
   TomcatProxyPort:
     Default: "443"
+    Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
     Type: String
   TomcatRedirectPort:
     Default: "8443"
+    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
     Type: String
   TomcatScheme:
     Default: "https"
+    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
     Type: String
   TomcatSecure:
     Default: "true"
+    Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
     Type: String
   ExternalSubnets:
     Description: >-
