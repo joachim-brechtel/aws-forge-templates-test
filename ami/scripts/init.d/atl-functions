@@ -197,9 +197,22 @@ function atl_configureTomcatConnector {
     local WEB_XML="${6}/web.xml"
     local FORCE="${7:-"false"}"
 
-    local secure=false
-    local scheme=http
-    local proxyPort=80
+    if [[ -n "${ATL_TOMCAT_SECURE}" ]]; then local secure=${ATL_TOMCAT_SECURE}; else local secure=false; fi
+    if [[ -n "${ATL_TOMCAT_SCHEME}" ]]; then local scheme=${ATL_TOMCAT_SCHEME}; else local scheme=http; fi
+    if [[ -n "${ATL_TOMCAT_PROXYPORT}" ]]; then local proxyPort=${ATL_TOMCAT_PROXYPORT}; else local proxyPort=80; fi
+    if [[ -n "${ATL_TOMCAT_ACCEPTCOUNT}" ]]; then local acceptCount=${ATL_TOMCAT_ACCEPTCOUNT}; else local acceptCount=100 ; fi
+    if [[ -n "${ATL_TOMCAT_CONNECTIONTIMEOUT}" ]]; then local connectionTimeout=${ATL_TOMCAT_CONNECTIONTIMEOUT}
+    else local connectionTimeout=60000 ; fi
+    if [[ -n "${ATL_TOMCAT_ENABLELOOKUPS}" ]]; then local enableLookups=${ATL_TOMCAT_ENABLELOOKUPS}
+    else local enableLookups=false ; fi
+    if [[ -n "${ATL_TOMCAT_MAXTHREADS}" ]]; then local maxThreads=${ATL_TOMCAT_MAXTHREADS}; else local maxThreads=200 ; fi
+    if [[ -n "${ATL_TOMCAT_MINSPARETHREADS}" ]]; then local minSpareThreads=${ATL_TOMCAT_MINSPARETHREADS}
+    else local minSpareThreads=200 ; fi
+    if [[ -n "${ATL_TOMCAT_PROTOCOL}" ]]; then local protocol=${ATL_TOMCAT_PROTOCOL}; else local protocol='HTTP/1.1' ; fi
+    if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}
+    else local redirectPort=8443 ; fi
+    if [[ -n "${ATL_TOMCAT_CONTEXTPATH}" ]]; then local contextPath=${ATL_TOMCAT_CONTEXTPATH}; else local contextPath='' ; fi
+
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_SELF_CERT_ENABLED})" || "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_PROXY})" ]]; then
         secure=true
         scheme=https
@@ -230,8 +243,20 @@ function atl_configureTomcatConnector {
             <xsl:attribute name="scheme">${scheme}</xsl:attribute>
             <xsl:attribute name="proxyName">${HOST_NAME}</xsl:attribute>
             <xsl:attribute name="proxyPort">${proxyPort}</xsl:attribute>
+            <xsl:attribute name="acceptCount">${acceptCount}</xsl:attribute>
+            <xsl:attribute name="connectionTimeout">${connectionTimeout}</xsl:attribute>
+            <xsl:attribute name="enableLookups">${enableLookups}</xsl:attribute>
+            <xsl:attribute name="maxThreads">${maxThreads}</xsl:attribute>
+            <xsl:attribute name="minSpareThreads">${minSpareThreads}</xsl:attribute>
+            <xsl:attribute name="protocol">${protocol}</xsl:attribute>
+            <xsl:attribute name="redirectPort">${redirectPort}</xsl:attribute>
         </xsl:copy>
     </xsl:template>
+
+    <xsl:template match="/Server/Service/Engine/Host/Context/@path">
+        <xsl:attribute name="path">${contextPath}</xsl:attribute>
+    </xsl:template>
+
 </xsl:stylesheet>
 EOT
     local SERVER_TMP="${SERVER_XML_PATH}/server.xml.tmp"

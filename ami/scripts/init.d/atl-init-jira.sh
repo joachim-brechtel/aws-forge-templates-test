@@ -132,6 +132,7 @@ function configureSharedHome {
     local JIRA_SHARED="${ATL_APP_DATA_MOUNT}/${ATL_JIRA_SERVICE_NAME}/shared"
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${JIRA_SHARED}"; then
         mkdir -p "${JIRA_SHARED}"
+        touch "${JIRA_SHARED}/init"
         chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1 
         chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" ${JIRA_SHARED}/* >> "${ATL_LOG}" 2>&1
         cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_HOME}/cluster.properties\"" > /dev/null
@@ -172,17 +173,18 @@ function configureDbProperties {
     <driver-class>$1</driver-class>
     <username>$3</username>
     <password>$4</password>
-    <pool-min-size>20</pool-min-size>
-    <pool-max-size>20</pool-max-size>
-    <pool-max-wait>30000</pool-max-wait>
+    <pool-min-size>${ATL_DB_POOLMINSIZE}</pool-min-size>
+    <pool-max-size>${ATL_DB_POOLMAXSIZE}</pool-max-size>
+    <pool-max-wait>${ATL_DB_MAXWAITMILLIS}</pool-max-wait>
     <validation-query>select 1</validation-query>
-    <min-evictable-idle-time-millis>60000</min-evictable-idle-time-millis>
-    <time-between-eviction-runs-millis>300000</time-between-eviction-runs-millis>
-    <pool-max-idle>20</pool-max-idle>
-    <pool-remove-abandoned>true</pool-remove-abandoned>
-    <pool-remove-abandoned-timeout>300</pool-remove-abandoned-timeout>
-    <pool-test-on-borrow>false</pool-test-on-borrow>
-    <pool-test-while-idle>true</pool-test-while-idle>
+    <min-evictable-idle-time-millis>${ATL_DB_MINEVICTABLEIDLETIMEMILLIS}</min-evictable-idle-time-millis>
+    <time-between-eviction-runs-millis>${ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS}</time-between-eviction-runs-millis>
+    <pool-max-idle>${ATL_DB_MAXIDLE}</pool-max-idle>
+    <pool-min-idle>${ATL_DB_MINIDLE}</pool-min-idle>
+    <pool-remove-abandoned>${ATL_DB_REMOVEABANDONED}</pool-remove-abandoned>
+    <pool-remove-abandoned-timeout>${ATL_DB_REMOVEABANDONEDTIMEOUT}</pool-remove-abandoned-timeout>
+    <pool-test-on-borrow>${ATL_DB_TESTONBORROW}</pool-test-on-borrow>
+    <pool-test-while-idle>${ATL_DB_TESTWHILEIDLE}</pool-test-while-idle>
   </jdbc-datasource>
 </jira-database-config>
 EOT
@@ -254,8 +256,17 @@ function downloadInstaller {
     fi
 
     local JIRA_VERSION=$(cat $(atl_tempDir)/version)
+    # if a jira version was passed on the cloudformation template, use that instead
+    if [[ -n $requestedVersion ]]; then
+      echo $requestedVersion > $(atl_tempDir)/version
+      local JIRA_VERSION=$requestedVersion
+    fi
     local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
     local JIRA_INSTALLER_URL="${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}"
+    # if a jira download_url was passed on the cloudformation template, use that instead
+    if [[ -n $ATL_JIRA_INSTALLER_DOWNLOAD_URL ]]; then
+      local JIRA_INSTALLER_URL=$ATL_JIRA_INSTALLER_DOWNLOAD_URL
+    fi
 
     atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
     if ! curl -L -f --silent "${JIRA_INSTALLER_URL}" \
@@ -303,7 +314,40 @@ EOT
     atl_log "${ATL_LOG_HEADER} Installer configuration preparation completed"
 }
 
+function cleanupJIRA {
+    # cleanup pre-existing Jira
+    if rm -rf /opt/atlassian/jira ; then echo "no install to clean up"; fi
+    if userdel jira ; then echo "no user to clean up"; fi
+    if delgroup jira ; then echo "no group to clean up"; fi
+    if rm /media/atl/atlassian-jira-core-*.bin ; then echo "no installer to clean up"; fi
+    if rm /media/atl/jira-core.version /var/atlassian/application-data/jira/cluster.properties /var/atlassian/application-data/jira/dbconfig.xml ; then echo "no config to clean up"; fi
+}
+
 function installJIRA {
+    atl_log "Checking if the jira version requested is newer than one currently installed (ie if this is an upgrade)"
+    requestedVersion=${ATL_JIRA_VERSION}
+    # note for override versions we are ignoring the release type component (ie m00001) of the installer intentionally 
+    if [[ -n $ATL_JIRA_INSTALLER_DOWNLOAD_URL ]]; then
+      overrideVersion=$(sed -rn 's/ATL_JIRA_INSTALLER_DOWNLOAD_URL.+atlassian-jira-\w+-([0-9]\.[0-9]\.[0-9])-.*x64.bin/\1/p' /etc/atl)
+    fi
+    # overrideVersion always wins out over requestedVersion
+    if [[ -n $overrideVersion ]]; then requestedVersion=$overrideVersion; fi
+    if [ -e /media/atl/jira-core.version ]; then currentVersion="$(cat /media/atl/jira-core.version 2>/dev/null)"; fi
+    if [[ -n $currentVersion ]] && [[ -n $requestedVersion ]] ; then
+      # abend if requested version is older than current
+      if [[ $(echo -e "$currentVersion\n$requestedVersion"|sort -V|head -1) != $currentVersion ]]; then
+        local ERROR_MESSAGE="requested jira version ($requestedVersion) is older than the one already installed ($currentVersion) - aborting installation"
+        atl_log "${ERROR_MESSAGE}"
+        atl_fatal_error "${ERROR_MESSAGE}"
+      fi
+      # else ensure the node is cleaned up ready for fresh install of newer release
+      atl_log "Confirming this IS an upgrade ! - if requestedVersion is not 'latest' then clean up the environment"
+      if [[ $requestedVersion != "latest" ]]; then
+        export requestedVersion
+        cleanupJIRA
+      fi
+    fi
+    
     atl_log "Checking if ${ATL_JIRA_SHORT_DISPLAY_NAME} has already been installed"
     if [[ -d "${ATL_JIRA_INSTALL_DIR}" ]]; then
         local ERROR_MESSAGE="${ATL_JIRA_SHORT_DISPLAY_NAME} install directory ${ATL_JIRA_INSTALL_DIR} already exists - aborting installation"
