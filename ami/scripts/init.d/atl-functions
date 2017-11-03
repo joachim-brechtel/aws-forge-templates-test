@@ -209,8 +209,6 @@ function atl_configureTomcatConnector {
     if [[ -n "${ATL_TOMCAT_MINSPARETHREADS}" ]]; then local minSpareThreads=${ATL_TOMCAT_MINSPARETHREADS}
     else local minSpareThreads=200 ; fi
     if [[ -n "${ATL_TOMCAT_PROTOCOL}" ]]; then local protocol=${ATL_TOMCAT_PROTOCOL}; else local protocol='HTTP/1.1' ; fi
-    if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}
-    else local redirectPort=8443 ; fi
     if [[ -n "${ATL_TOMCAT_CONTEXTPATH}" ]]; then local contextPath=${ATL_TOMCAT_CONTEXTPATH}; else local contextPath='' ; fi
 
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_SELF_CERT_ENABLED})" || "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_PROXY})" ]]; then
@@ -249,7 +247,6 @@ function atl_configureTomcatConnector {
             <xsl:attribute name="maxThreads">${maxThreads}</xsl:attribute>
             <xsl:attribute name="minSpareThreads">${minSpareThreads}</xsl:attribute>
             <xsl:attribute name="protocol">${protocol}</xsl:attribute>
-            <xsl:attribute name="redirectPort">${redirectPort}</xsl:attribute>
         </xsl:copy>
     </xsl:template>
 

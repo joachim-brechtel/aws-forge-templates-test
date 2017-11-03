@@ -68,7 +68,6 @@ Metadata:
             - TomcatMinSpareThreads
             - TomcatProtocol
             - TomcatProxyPort
-            - TomcatRedirectPort
             - TomcatScheme
             - TomcatSecure
     ParameterLabels:
@@ -154,8 +153,6 @@ Metadata:
         default: Tomcat Protocol
       TomcatProxyPort:
         default: Tomcat Proxy Port
-      TomcatRedirectPort:
-        default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
       TomcatSecure:
@@ -425,10 +422,6 @@ Parameters:
   TomcatProxyPort:
     Default: "80"
     Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
-    Type: String
-  TomcatRedirectPort:
-    Default: "8443"
-    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
     Type: String
   TomcatScheme:
     Default: "http"
@@ -768,7 +761,6 @@ Resources:
                   - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
                   - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
                   - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
-                  - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
                   - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
                   - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
             /etc/cfn/cfn-hup.conf:
