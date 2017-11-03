@@ -316,11 +316,11 @@ EOT
 
 function cleanupJIRA {
     # cleanup pre-existing Jira
-    if rm -rf /opt/atlassian/jira ; then echo "no install to clean up"; fi
-    if userdel jira ; then echo "no user to clean up"; fi
-    if delgroup jira ; then echo "no group to clean up"; fi
-    if rm /media/atl/atlassian-jira-core-*.bin ; then echo "no installer to clean up"; fi
-    if rm /media/atl/jira-core.version /var/atlassian/application-data/jira/cluster.properties /var/atlassian/application-data/jira/dbconfig.xml ; then echo "no config to clean up"; fi
+    if rm -rf /opt/atlassian/jira ; then echo "install cleaned up"; fi
+    if userdel jira ; then echo "user cleaned up"; fi
+    if delgroup jira ; then echo "group cleaned up"; fi
+    if rm /media/atl/atlassian-jira-core-*.bin ; then echo "installer cleaned up"; fi
+    if rm /media/atl/jira-core.version /var/atlassian/application-data/jira/cluster.properties /var/atlassian/application-data/jira/dbconfig.xml ; then echo "config cleaned up"; fi
 }
 
 function installJIRA {
