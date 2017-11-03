@@ -423,7 +423,7 @@ Parameters:
     Description: Sets the protocol to handle incoming traffic
     Type: String
   TomcatProxyPort:
-    Default: "443"
+    Default: "80"
     Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
     Type: String
   TomcatRedirectPort:
@@ -431,11 +431,11 @@ Parameters:
     Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
     Type: String
   TomcatScheme:
-    Default: "https"
+    Default: "http"
     Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
     Type: String
   TomcatSecure:
-    Default: "true"
+    Default: "false"
     Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
     Type: String
   ExternalSubnets:
