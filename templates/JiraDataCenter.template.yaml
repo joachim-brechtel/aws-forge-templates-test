@@ -14,6 +14,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMin
           - ClusterNodeMax
+          - ClusterNodeSize
       - Label:
           default: Database
         Parameters:
@@ -83,6 +84,8 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: JIRA cluster node instance type
+      ClusterNodeSize:
+        default: JIRA cluster node instance volume size
       CustomDnsName:
         default: Existing DNS name (optional)
       DBInstanceClass:
@@ -230,6 +233,10 @@ Parameters:
     ConstraintDescription: >-
       Must be a valid EC2 instance type from the selection list
     Description: Instance type for the cluster nodes.
+  ClusterNodeSize:
+    Default: '50'
+    Description: Size of cluster node root volume in Gb (note - size based upon jira indexes x 4)
+    Type: Number
   CatalinaOpts:
     Default: ''
     Description: Pass in any additional jvm options to tune Catalina
@@ -462,17 +469,12 @@ Conditions:
     !Not [!Equals [!Ref JvmHeapOverride, ""]]
   UseContextPath:
     !Not [!Equals [!Ref TomcatContextPath, ""]]
-  UsePublicIp: !Equals
-    - !Ref AssociatePublicIpAddress
-    - 'true'
-  UseCustomDnsName: !Not
-    - !Equals
-      - !Ref CustomDnsName
-      - ''
-  UseHostedZone: !Not
-    - !Equals
-      - !Ref HostedZone
-      - ''
+  UsePublicIp:
+    !Equals [!Ref AssociatePublicIpAddress, "true"]
+  UseCustomDnsName:
+    !Not [!Equals [!Ref CustomDnsName, ""]]
+  UseHostedZone:
+    !Not [!Equals [!Ref HostedZone, ""]]
 Mappings:
   AWSInstanceType2Arch:
     c3.large:
@@ -602,29 +604,14 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288
   AWSRegionArch2AMI:
-    us-east-1:
-      HVM64: ami-bb5642ac
-      HVMG2: NOT_SUPPORTED
-    ap-south-1:
-      HVM64: ami-67c6b108
-      HVMG2: NOT_SUPPORTED
-    eu-west-2:
-      HVM64: ami-eeede78a
-      HVMG2: NOT_SUPPORTED
-    eu-west-1:
-      HVM64: ami-afcaeadc
+    ap-northeast-1:
+      HVM64: ami-da107bbd
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
       HVM64: ami-15a0767b
       HVMG2: NOT_SUPPORTED
-    ap-northeast-1:
-      HVM64: ami-da107bbd
-      HVMG2: NOT_SUPPORTED
-    sa-east-1:
-      HVM64: ami-5a71e936
-      HVMG2: NOT_SUPPORTED
-    ca-central-1:
-      HVM64: ami-ab2a98cf
+    ap-south-1:
+      HVM64: ami-67c6b108
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
       HVM64: ami-b7ae00d4
@@ -632,8 +619,23 @@ Mappings:
     ap-southeast-2:
       HVM64: ami-5bc2f938
       HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-ab2a98cf
+      HVMG2: NOT_SUPPORTED
     eu-central-1:
       HVM64: ami-982aeaf7
+      HVMG2: NOT_SUPPORTED
+    eu-west-1:
+      HVM64: ami-afcaeadc
+      HVMG2: NOT_SUPPORTED
+    eu-west-2:
+      HVM64: ami-eeede78a
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      HVM64: ami-5a71e936
+      HVMG2: NOT_SUPPORTED
+    us-east-1:
+      HVM64: ami-bb5642ac
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-1ccc9679
@@ -839,6 +841,9 @@ Resources:
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref ClusterNodeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -864,11 +869,12 @@ Resources:
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
-
   ElasticFileSystem:
     Type: 'AWS::EFS::FileSystem'
     Properties:
       FileSystemTags:
+        - Key: Name
+          Value: !Join ['', [!Ref "AWS::StackName", '.', 'efs', '.', !Ref 'HostedZone']]
         - Key: Application
           Value: !Ref 'AWS::StackId'
   EFSMountAz1:
@@ -978,6 +984,11 @@ Resources:
       SecurityGroups:
         - !Ref SecurityGroup
       Subnets: !Ref ExternalSubnets
+            Tags:
+              - Key: Name
+                Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref "AWS::StackName"]
+              - Key: Cluster
+                Value: !Ref "AWS::StackName"
   LoadBalancerCname:
     Condition: UseHostedZone
     Type: 'AWS::Route53::RecordSet'
