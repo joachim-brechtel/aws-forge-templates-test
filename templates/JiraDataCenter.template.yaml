@@ -14,6 +14,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMin
           - ClusterNodeMax
+          - ClusterNodeSize
       - Label:
           default: Database
         Parameters:
@@ -83,6 +84,8 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: JIRA cluster node instance type
+      ClusterNodeSize:
+        default: JIRA cluster node instance volume size
       CustomDnsName:
         default: Existing DNS name (optional)
       DBInstanceClass:
@@ -230,6 +233,10 @@ Parameters:
     ConstraintDescription: >-
       Must be a valid EC2 instance type from the selection list
     Description: Instance type for the cluster nodes.
+  ClusterNodeSize:
+    Default: '50'
+    Description: Size of cluster node root volume in Gb (note - size based upon jira indexes x 4)
+    Type: Number
   CatalinaOpts:
     Default: ''
     Description: Pass in any additional jvm options to tune Catalina
@@ -285,11 +292,11 @@ Parameters:
       - Provisioned IOPS
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
   DBMultiAZ:
-    Default: 'true'
+    Default: true
     Type: String
     AllowedValues:
-      - 'true'
-      - 'false'
+      - true
+      - false
     ConstraintDescription: Must be 'true' or 'false'.
   DBIops:
     Default: '1000'
@@ -462,17 +469,12 @@ Conditions:
     !Not [!Equals [!Ref JvmHeapOverride, ""]]
   UseContextPath:
     !Not [!Equals [!Ref TomcatContextPath, ""]]
-  UsePublicIp: !Equals
-    - !Ref AssociatePublicIpAddress
-    - 'true'
-  UseCustomDnsName: !Not
-    - !Equals
-      - !Ref CustomDnsName
-      - ''
-  UseHostedZone: !Not
-    - !Equals
-      - !Ref HostedZone
-      - ''
+  UsePublicIp:
+    !Equals [!Ref AssociatePublicIpAddress, "true"]
+  UseCustomDnsName:
+    !Not [!Equals [!Ref CustomDnsName, ""]]
+  UseHostedZone:
+    !Not [!Equals [!Ref HostedZone, ""]]
 Mappings:
   AWSInstanceType2Arch:
     c3.large:
@@ -602,29 +604,14 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288
   AWSRegionArch2AMI:
-    us-east-1:
-      HVM64: ami-bb5642ac
-      HVMG2: NOT_SUPPORTED
-    ap-south-1:
-      HVM64: ami-67c6b108
-      HVMG2: NOT_SUPPORTED
-    eu-west-2:
-      HVM64: ami-eeede78a
-      HVMG2: NOT_SUPPORTED
-    eu-west-1:
-      HVM64: ami-afcaeadc
+    ap-northeast-1:
+      HVM64: ami-da107bbd
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
       HVM64: ami-15a0767b
       HVMG2: NOT_SUPPORTED
-    ap-northeast-1:
-      HVM64: ami-da107bbd
-      HVMG2: NOT_SUPPORTED
-    sa-east-1:
-      HVM64: ami-5a71e936
-      HVMG2: NOT_SUPPORTED
-    ca-central-1:
-      HVM64: ami-ab2a98cf
+    ap-south-1:
+      HVM64: ami-67c6b108
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
       HVM64: ami-b7ae00d4
@@ -632,8 +619,23 @@ Mappings:
     ap-southeast-2:
       HVM64: ami-5bc2f938
       HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-ab2a98cf
+      HVMG2: NOT_SUPPORTED
     eu-central-1:
       HVM64: ami-982aeaf7
+      HVMG2: NOT_SUPPORTED
+    eu-west-1:
+      HVM64: ami-afcaeadc
+      HVMG2: NOT_SUPPORTED
+    eu-west-2:
+      HVM64: ami-eeede78a
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      HVM64: ami-5a71e936
+      HVMG2: NOT_SUPPORTED
+    us-east-1:
+      HVM64: ami-bb5642ac
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-1ccc9679
@@ -695,74 +697,74 @@ Resources:
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_DB_NAME=jira"
                     - "ATL_DB_USER=jira"
-                  - !Sub
-                    - "ATL_JVM_HEAP=${AtlJvmHeap}"
-                    - AtlJvmHeap: !If
-                        - OverrideHeap
-                        - !Ref 'JvmHeapOverride'
-                        - !FindInMap
-                            - AWSInstanceType2Arch
-                            - !Ref ClusterNodeInstanceType
-                            - Jvmheap
-                  - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
-                  - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
-                  - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
-                  - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
-                  - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
-                  - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
-                  - !Sub ["ATL_DB_MINEVICTABLEIDLETIMEMILLIS=${DBMinEvictableIdleTimeMillis}", DBMinEvictableIdleTimeMillis: !Ref DBMinEvictableIdleTimeMillis]
-                  - !Sub ["ATL_DB_MINIDLE=${DBMinIdle}", DBMinIdle: !Ref DBMinIdle]
-                  - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
-                  - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
-                  - !Sub ["ATL_DB_REMOVEABANDONED=${DBRemoveAbandoned}", DBRemoveAbandoned: !Ref DBRemoveAbandoned]
-                  - !Sub ["ATL_DB_REMOVEABANDONEDTIMEOUT=${DBRemoveAbandonedTimeout}", DBRemoveAbandonedTimeout: !Ref DBRemoveAbandonedTimeout]
-                  - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
-                  - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
-                  - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
-                  - "ATL_JDBC_DRIVER=org.postgresql.Driver"
-                  - !Sub
-                    - "ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/jira"
-                    - DBEndpointAddress: !GetAtt DB.Endpoint.Address
-                      DBEndpointPort: !GetAtt DB.Endpoint.Port
-                  - "ATL_JDBC_USER=atljira"
-                  - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
-                  - "ATL_ENABLED_PRODUCTS=Jira"
-                  - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
-                  - !Sub ["ATL_JIRA_INSTALLER_DOWNLOAD_URL=${JiraDownloadUrl}", JiraDownloadUrl: !Ref JiraDownloadUrl]
-                  - "ATL_ENABLED_SHARED_HOMES="
-                  - !Sub
-                    - "ATL_JIRA_NAME=${JiraProductName}"
-                    - JiraProductName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "name"]
-                  - !Sub
-                    - "ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}"
-                    - JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]
-                  - !Sub
-                    - "ATL_JIRA_FULL_DISPLAY_NAME=${JiraFullDisplayName}"
-                    - JiraFullDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "fulldisplayname"]
-                  - "ATL_RELEASE_S3_BUCKET=atlassian-software"
-                  - "ATL_RELEASE_S3_PATH=releases"
-                  - "ATL_POSTGRES_ENABLED=false"
-                  - !Sub
-                    - "ATL_PROXY_NAME=${AtlProxyName}"
-                    - AtlProxyName: !If
-                        - UseCustomDnsName
-                        - !Ref 'CustomDnsName'
-                        - !If
-                          - UseHostedZone
-                          - !Ref 'LoadBalancerCname'
-                          - !GetAtt [LoadBalancer, DNSName]
-                  - "ATL_SSL_SELF_CERT_ENABLED=false"
-                  - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
-                  - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
-                  - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
-                  - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
-                  - !Sub ["ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}", TomcatEnableLookups: !Ref TomcatEnableLookups]
-                  - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
-                  - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
-                  - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
-                  - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
-                  - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
-                  - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
+                    - !Sub
+                      - "ATL_JVM_HEAP=${AtlJvmHeap}"
+                      - AtlJvmHeap: !If
+                          - OverrideHeap
+                          - !Ref 'JvmHeapOverride'
+                          - !FindInMap
+                              - AWSInstanceType2Arch
+                              - !Ref ClusterNodeInstanceType
+                              - Jvmheap
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
+                    - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
+                    - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
+                    - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
+                    - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
+                    - !Sub ["ATL_DB_MINEVICTABLEIDLETIMEMILLIS=${DBMinEvictableIdleTimeMillis}", DBMinEvictableIdleTimeMillis: !Ref DBMinEvictableIdleTimeMillis]
+                    - !Sub ["ATL_DB_MINIDLE=${DBMinIdle}", DBMinIdle: !Ref DBMinIdle]
+                    - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
+                    - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
+                    - !Sub ["ATL_DB_REMOVEABANDONED=${DBRemoveAbandoned}", DBRemoveAbandoned: !Ref DBRemoveAbandoned]
+                    - !Sub ["ATL_DB_REMOVEABANDONEDTIMEOUT=${DBRemoveAbandonedTimeout}", DBRemoveAbandonedTimeout: !Ref DBRemoveAbandonedTimeout]
+                    - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
+                    - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
+                    - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
+                    - "ATL_JDBC_DRIVER=org.postgresql.Driver"
+                    - !Sub
+                      - "ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/jira"
+                      - DBEndpointAddress: !GetAtt DB.Endpoint.Address
+                        DBEndpointPort: !GetAtt DB.Endpoint.Port
+                    - "ATL_JDBC_USER=atljira"
+                    - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
+                    - "ATL_ENABLED_PRODUCTS=Jira"
+                    - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
+                    - !Sub ["ATL_JIRA_INSTALLER_DOWNLOAD_URL=${JiraDownloadUrl}", JiraDownloadUrl: !Ref JiraDownloadUrl]
+                    - "ATL_ENABLED_SHARED_HOMES="
+                    - !Sub
+                      - "ATL_JIRA_NAME=${JiraProductName}"
+                      - JiraProductName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "name"]
+                    - !Sub
+                      - "ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}"
+                      - JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]
+                    - !Sub
+                      - "ATL_JIRA_FULL_DISPLAY_NAME=${JiraFullDisplayName}"
+                      - JiraFullDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "fulldisplayname"]
+                    - "ATL_RELEASE_S3_BUCKET=atlassian-software"
+                    - "ATL_RELEASE_S3_PATH=releases"
+                    - "ATL_POSTGRES_ENABLED=false"
+                    - !Sub
+                      - "ATL_PROXY_NAME=${AtlProxyName}"
+                      - AtlProxyName: !If
+                          - UseCustomDnsName
+                          - !Ref 'CustomDnsName'
+                          - !If
+                            - UseHostedZone
+                            - !Ref 'LoadBalancerCname'
+                            - !GetAtt [LoadBalancer, DNSName]
+                    - "ATL_SSL_SELF_CERT_ENABLED=false"
+                    - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
+                    - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
+                    - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
+                    - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
+                    - !Sub ["ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}", TomcatEnableLookups: !Ref TomcatEnableLookups]
+                    - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
+                    - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
+                    - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
+                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
+                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
             /etc/cfn/cfn-hup.conf:
               content:
                 !Join
@@ -792,44 +794,41 @@ Resources:
               command: mkdir -p /media/atl
               ignoreErrors: 'false'
             020_add_nfs_mount:
-              command: !Join
-                - ''
-                - - 'echo '
-                  - !If
-                    - UseHostedZone
-                    - !Ref EFSCname
-                    - !Sub
-                      - >-
-                        $(curl -s
-                        http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
-                      - ElasticFileSystem: !Ref ElasticFileSystem
-                        Region: !Ref 'AWS::Region'
-                  - >-
-                    :/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0
-                    >>/etc/fstab
+              command:
+                !Join
+                  - ""
+                  -
+                    - "echo "
+                    - !If
+                      - UseHostedZone
+                      - !Ref EFSCname
+                      - !Sub
+                          - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
+                          - ElasticFileSystem: !Ref ElasticFileSystem
+                            Region: !Ref "AWS::Region"
+                    - ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
               command: mount -a
-              ignoreErrors: 'true'
+              ignoreErrors: true
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/jira/shared
-              ignoreErrors: 'false'
+              ignoreErrors: false
+            050_ensure_ssm:
+              command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           services:
             sysvinit:
               cfn-hup:
-                enabled: 'true'
-                ensureRunning: 'true'
+                enabled: true
+                ensureRunning: true
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
-              collectd: !If
-                - DoCollectd
-                - enabled: 'true'
-                  ensureRunning: 'true'
-                - !Ref 'AWS::NoValue'
+              collectd:
+                !If [DoCollectd, {enabled: true, ensureRunning: true}, !Ref "AWS::NoValue"]
               rpcbind:
-                enabled: 'true'
-                ensureRunning: 'true'
+                enabled: true
+                ensureRunning: true
                 packages:
                   yum:
                     - nfs-utils
@@ -839,20 +838,23 @@ Resources:
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref ClusterNodeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref ClusterNodeInstanceType
-          - Arch
+      ImageId:
+        !FindInMap
+          - AWSRegionArch2AMI
+          - !Ref "AWS::Region"
+          - !FindInMap
+              - AWSInstanceType2Arch
+              - !Ref ClusterNodeInstanceType
+              - Arch
       InstanceType: !Ref ClusterNodeInstanceType
-      SecurityGroups:
-        - !Ref SecurityGroup
+      SecurityGroups: [!Ref SecurityGroup]
       UserData:
         'Fn::Base64':
           !Join
@@ -864,31 +866,26 @@ Resources:
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
-
   ElasticFileSystem:
     Type: 'AWS::EFS::FileSystem'
     Properties:
       FileSystemTags:
+        - Key: Name
+          Value: !Join ['', [!Ref "AWS::StackName", '.', 'efs', '.', !Ref 'HostedZone']]
         - Key: Application
           Value: !Ref 'AWS::StackId'
   EFSMountAz1:
     Type: 'AWS::EFS::MountTarget'
     Properties:
       FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups:
-        - !Ref SecurityGroup
-      SubnetId: !Select
-        - '0'
-        - !Ref InternalSubnets
+      SecurityGroups: [!Ref SecurityGroup]
+      SubnetId: !Select [0, !Ref InternalSubnets]
   EFSMountAz2:
     Type: 'AWS::EFS::MountTarget'
     Properties:
       FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups:
-        - !Ref SecurityGroup
-      SubnetId: !Select
-        - '1'
-        - !Ref InternalSubnets
+      SecurityGroups: [!Ref SecurityGroup]
+      SubnetId: !Select [1, !Ref InternalSubnets]
   EFSCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
@@ -913,8 +910,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref "AWS::NoValue"]
       MultiAZ: !Ref DBMultiAZ
-      VPCSecurityGroups:
-        - !Ref SecurityGroup
+      VPCSecurityGroups: [!Ref SecurityGroup]
       Tags:
         - Key: Name
           Value: !Sub ["${StackName} JIRA PostgreSQL Database", StackName: !Ref "AWS::StackName"]
@@ -961,13 +957,12 @@ Resources:
             InstanceProtocol: HTTP
             PolicyNames:
               - JSessionIdStickiness
-            SSLCertificateId: !Join
-              - ''
-              - - 'arn:aws:iam::'
-                - !Ref 'AWS::AccountId'
-                - ':server-certificate/'
-                - !Ref SSLCertificateName
-          - !Ref 'AWS::NoValue'
+            SSLCertificateId:
+              - !Sub
+                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
+                - AccountId: !Ref "AWS::AccountId"
+                  SSLCertificateName: !Ref SSLCertificateName
+          - Ref: 'AWS::NoValue'
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:8080', !Ref 'TomcatContextPath', '/status']], 'HTTP:8080/status']
         Timeout: '29'
@@ -975,9 +970,13 @@ Resources:
         UnhealthyThreshold: '2'
         HealthyThreshold: '2'
       Scheme: !If [UsePublicIp, "internet-facing", "internal"]
-      SecurityGroups:
-        - !Ref SecurityGroup
+      SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref "AWS::StackName"]
+        - Key: Cluster
+          Value: !Ref "AWS::StackName"
   LoadBalancerCname:
     Condition: UseHostedZone
     Type: 'AWS::Route53::RecordSet'
