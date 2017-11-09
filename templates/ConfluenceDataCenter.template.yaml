@@ -1019,6 +1019,8 @@ Resources:
     Type: "AWS::EFS::FileSystem"
     Properties:
       FileSystemTags:
+        - Key: Name
+          Value: !Join [' ', [!Ref "AWS::StackName", 'cluster shared-files']]
         - Key: Application
           Value: !Ref "AWS::StackId"
   EFSMountAz1:
