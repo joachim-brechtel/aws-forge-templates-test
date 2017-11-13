@@ -155,6 +155,13 @@ function configureJIRAHome {
 
     atl_log "Setting ownership of ${ATL_JIRA_HOME} to '${ATL_JIRA_USER}' user"
     chown -R -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_HOME}" >> "${ATL_LOG}" 2>&1 
+    # if jira-config.properties exists at /media/atl/jira/shared/ then copy it to /var/atlassian/application-data/jira
+    if [ -e /media/atl/jira/shared/jira-config.properties ]; then
+        if cp /media/atl/jira/shared/jira-config.properties /var/atlassian/application-data/jira/jira-config.properties; then
+            atl_log "copied /media/atl/jira/shared/jira-config.properties to /var/atlassian/application-data/jira/jira-config.properties"
+        fi
+        chown -h jira:jira /var/atlassian/application-data/jira/jira-config.properties
+    fi
     atl_log "Done configuring ${ATL_JIRA_HOME}"
 }
 
