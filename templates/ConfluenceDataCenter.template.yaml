@@ -17,6 +17,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMax
           - ClusterNodeMin
+          - ClusterNodeSize
           - SynchronyClusterNodeMin
           - SynchronyClusterNodeMax
           - SynchronyNodeInstanceType
@@ -82,6 +83,8 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Confluence cluster node instance type
+      ClusterNodeSize:
+        default: Confluence cluster node instance volume size
       ConfluenceDownloadUrl:
         default: Confluence download URL
       ConfluenceVersion:
@@ -185,6 +188,10 @@ Parameters:
     Type: Number
   ClusterNodeMin:
     Default: 1
+    Type: Number
+  ClusterNodeSize:
+    Default: 50
+    Description: Size of cluster node root volume in Gb (note - size based upon Confluence indexes x 4)
     Type: Number
   ClusterNodeInstanceType:
     Default: c3.xlarge
@@ -1019,6 +1026,9 @@ Resources:
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref ClusterNodeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
