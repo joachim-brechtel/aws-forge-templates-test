@@ -197,6 +197,8 @@ function atl_configureTomcatConnector {
     local WEB_XML="${6}/web.xml"
     local FORCE="${7:-"false"}"
 
+    if [[ -n "${ATL_TOMCAT_DEFAULTCONNECTORPORT}" ]]; then local defaultConnectorPort=${ATL_TOMCAT_DEFAULTCONNECTORPORT}; else local defaultConnectorPort=DEFAULT_CONNECTOR_PORT; fi
+    if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}; else local redirectPort=REDIRECT_CONNECTOR_PORT; fi
     if [[ -n "${ATL_TOMCAT_SECURE}" ]]; then local secure=${ATL_TOMCAT_SECURE}; else local secure=false; fi
     if [[ -n "${ATL_TOMCAT_SCHEME}" ]]; then local scheme=${ATL_TOMCAT_SCHEME}; else local scheme=http; fi
     if [[ -n "${ATL_TOMCAT_PROXYPORT}" ]]; then local proxyPort=${ATL_TOMCAT_PROXYPORT}; else local proxyPort=80; fi
@@ -217,7 +219,7 @@ function atl_configureTomcatConnector {
         proxyPort=443
     fi
 
-    local CONNECTOR_MATCHER="@port='${DEFAULT_CONNECTOR_PORT}'"
+    local CONNECTOR_MATCHER="@port='${defaultConnectorPort}'"
     if [ "x${FORCE}" = "xtrue" ]; then
         atl_log "Force updating server.xml"
     else        
@@ -237,6 +239,8 @@ function atl_configureTomcatConnector {
     <xsl:template match="/Server/Service/Connector[${CONNECTOR_MATCHER}]">
         <xsl:copy>
             <xsl:apply-templates select="@*|node()"/>
+            <xsl:attribute name="port">${defaultConnectorPort}</xsl:attribute>
+            <xsl:attribute name="redirectPort">${redirectPort}</xsl:attribute>
             <xsl:attribute name="secure">${secure}</xsl:attribute>
             <xsl:attribute name="scheme">${scheme}</xsl:attribute>
             <xsl:attribute name="proxyName">${HOST_NAME}</xsl:attribute>
@@ -297,14 +301,14 @@ function atl_addRedirectConnectorServerXml {
     </xsl:template>
 
    
-    <xsl:template match="/Server/Service[not(Connector[@port='${REDIRECT_CONNECTOR_PORT}'])]">
+    <xsl:template match="/Server/Service[not(Connector[@port='${redirectPort}'])]">
          <xsl:copy>
             <xsl:apply-templates select="@*|node()"/>
             
-            <Connector port="${REDIRECT_CONNECTOR_PORT}" protocol="HTTP/1.1"
+            <Connector port="${redirectPort}" protocol="${protocol}"
                    maxHttpHeaderSize="65536"
                    URIEncoding="UTF-8"
-                   connectionTimeout="20000"
+                   connectionTimeout="${connectionTimeout}"
                    useBodyEncodingForURI="true"
                    compression="on"
                    compressableMimeType="text/html,text/xml,text/plain,text/css,application/json,application/javascript,application/x-javascript" />
