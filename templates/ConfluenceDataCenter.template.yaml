@@ -205,6 +205,12 @@ Parameters:
       - c4.2xlarge
       - c4.4xlarge
       - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.18xlarge
       - i2.xlarge
       - i2.2xlarge
       - i2.4xlarge
@@ -408,6 +414,12 @@ Parameters:
       - c4.2xlarge
       - c4.4xlarge
       - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.18xlarge
       - i2.xlarge
       - i2.2xlarge
       - i2.4xlarge
@@ -492,6 +504,24 @@ Mappings:
       Arch: HVM64
     c4.8xlarge:
       Arch: HVM64
+    c5.large:
+      Arch: HVM64
+      Jvmheap: 3072
+    c5.xlarge:
+      Arch: HVM64
+      Jvmheap: 6144
+    c5.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288
+    c5.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288
+    c5.9xlarge:
+      Arch: HVM64
+      Jvmheap: 12288
+    c5.18xlarge:
+      Arch: HVM64
+      Jvmheap: 12288
     d2.xlarge:
       Arch: HVM64
     d2.2xlarge:
@@ -740,6 +770,7 @@ Resources:
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
+                    - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - "\n"
