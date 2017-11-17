@@ -64,6 +64,10 @@ Metadata:
           - ConfluenceDownloadUrl
           - DBSnapshotId
           - StartCollectd
+      - Label:
+          default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
+        Parameters:
+            - JvmHeapOverride
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -119,6 +123,8 @@ Metadata:
         default: Route 53 Hosted Zone (optional)
       InternalSubnets:
         default: Internal subnets *
+      JvmHeapOverride:
+        default: JVM Heap Size Override        
       KeyName:
         default: Key Name *
       NumBastionHosts:
@@ -365,6 +371,10 @@ Parameters:
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
+  JvmHeapOverride:
+    Default: ''
+    Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Type: String
   KeyName:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
@@ -472,6 +482,8 @@ Conditions:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
     !Not [!Equals [!Ref SSLCertificateName, '']]
+  OverrideHeap:
+    !Not [!Equals [!Ref JvmHeapOverride, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
   UseHostedZone:
@@ -486,24 +498,34 @@ Mappings:
   AWSInstanceType2Arch:
     c3.large:
       Arch: HVM64
+      Jvmheap: 3072
     c3.xlarge:
       Arch: HVM64
+      Jvmheap: 6144
     c3.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     c3.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     c3.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     c4.large:
       Arch: HVM64
+      Jvmheap: 3072
     c4.xlarge:
       Arch: HVM64
+      Jvmheap: 6144
     c4.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     c4.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     c4.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     c5.large:
       Arch: HVM64
       Jvmheap: 3072
@@ -524,80 +546,118 @@ Mappings:
       Jvmheap: 12288
     d2.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     d2.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     d2.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     d2.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i2.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i2.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i2.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i2.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i3.large:
       Arch: HVM64
+      Jvmheap: 12288
     i3.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i3.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i3.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i3.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     i3.16xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     m3.medium:
       Arch: HVM64
+      Jvmheap: 3072
     m4.large:
       Arch: HVM64
+      Jvmheap: 6144
     m4.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     m4.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     m4.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     m4.10xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     m4.16xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r3.large:
       Arch: HVM64
+      Jvmheap: 12288
     r3.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r3.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r3.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r3.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r4.large:
       Arch: HVM64
+      Jvmheap: 12288
     r4.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r4.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r4.4xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r4.8xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     r4.16xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     t2.medium:
       Arch: HVM64
+      Jvmheap: 3072
     t2.large:
       Arch: HVM64
+      Jvmheap: 6144
     t2.xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     t2.2xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     x1.16xlarge:
       Arch: HVM64
+      Jvmheap: 12288
     x1.32xlarge:
       Arch: HVM64
+      Jvmheap: 12288
   AWSRegionArch2AMI:
     ap-northeast-1:
       HVM64: ami-e16e9587
@@ -952,6 +1012,15 @@ Resources:
                 !Join
                   - "\n"
                   -
+                    - !Sub
+                      - "ATL_JVM_HEAP=${AtlJvmHeap}"
+                      - AtlJvmHeap: !If
+                          - OverrideHeap
+                          - !Ref 'JvmHeapOverride'
+                          - !FindInMap
+                              - AWSInstanceType2Arch
+                              - !Ref ClusterNodeInstanceType
+                              - Jvmheap                  
                     - !Sub
                       - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony"
                       - Protocol: !If [DoSSL, "https", "http"]

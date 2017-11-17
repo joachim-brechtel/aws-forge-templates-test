@@ -36,6 +36,10 @@ function start {
 
 function configureConfluenceEnvironmentVariables (){
    atl_log "=== BEGIN: service configureConfluenceEnvironmentVariables ==="
+   if [ -n "${ATL_JVM_HEAP}" ]; then
+       su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xmx(\w+) (.*)$/\1Xmx${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
+       su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xms(\w+) (.*)$/\1Xms${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
+   fi
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
 CATALINA_OPTS="\${CATALINA_OPTS} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
