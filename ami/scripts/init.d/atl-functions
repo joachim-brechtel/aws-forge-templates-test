@@ -250,7 +250,7 @@ function atl_configureTomcatConnector {
         </xsl:copy>
     </xsl:template>
 
-    <xsl:template match="/Server/Service/Engine/Host/Context/@path">
+    <xsl:template match="/Server/Service/Engine/Host/Context[(@path='')]/@path">
         <xsl:attribute name="path">${contextPath}</xsl:attribute>
     </xsl:template>
 
