@@ -67,7 +67,27 @@ Metadata:
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
+            - TomcatContextPath
+            - CatalinaOpts
             - JvmHeapOverride
+            - DBPoolMaxSize
+            - DBPoolMinSize
+            - DBTimeout
+            - DBIdleTestPeriod
+            - DBMaxStatements
+            - DBValidate
+            - DBPreferredTestQuery
+            - DBAcquireIncrement
+            - TomcatAcceptCount
+            - TomcatConnectionTimeout
+            - TomcatEnableLookups
+            - TomcatMaxThreads
+            - TomcatMinSpareThreads
+            - TomcatProtocol
+            - TomcatProxyPort
+            - TomcatRedirectPort
+            - TomcatScheme
+            - TomcatSecure
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -105,6 +125,22 @@ Metadata:
         default: Enable RDS Multi-AZ deployment
       DBPassword:
         default: Confluence database password *
+      DBPoolMaxSize:
+        default: DB Pool Maximum Size
+      DBPoolMinSize:
+        default: DB Pool Minimum Size
+      DBTimeout:
+        default: DB Timeout
+      DBIdleTestPeriod:
+        default: DB Idle Test Period
+      DBMaxStatements:
+        default: DB Max Statements
+      DBValidate:
+        default: DB Validate
+      DBPreferredTestQuery:
+        default: DB Preferred Test Query
+      DBAcquireIncrement:
+        default: DB Acquire Increment
       DBSnapshotId:
         default: Database snapshot ID to restore
       DBStorage:
@@ -124,7 +160,7 @@ Metadata:
       InternalSubnets:
         default: Internal subnets *
       JvmHeapOverride:
-        default: JVM Heap Size Override        
+        default: JVM Heap Size Override
       KeyName:
         default: Key Name *
       NumBastionHosts:
@@ -139,6 +175,28 @@ Metadata:
         default: Minimum number of Synchrony cluster nodes
       SynchronyNodeInstanceType:
         default: Synchrony cluster node instance type
+      TomcatAcceptCount:
+        default: Tomcat Accept Count
+      TomcatConnectionTimeout:
+        default: Tomcat Connection Timeout
+      TomcatContextPath:
+        default: Tomcat Context Path
+      TomcatEnableLookups:
+        default: Tomcat Enable DNS Lookups
+      TomcatMaxThreads:
+        default: Tomcat Maximum Threads
+      TomcatMinSpareThreads:
+        default: Tomcat Minimum Spare Threads
+      TomcatProtocol:
+        default: Tomcat Protocol
+      TomcatProxyPort:
+        default: Tomcat Proxy Port
+      TomcatRedirectPort:
+        default: Tomcat Redirect Port
+      TomcatScheme:
+        default: Tomcat protocol Scheme
+      TomcatSecure:
+        default: Tomcat Secure?
       VPC:
         default: VPC *
 Parameters:
@@ -319,6 +377,38 @@ Parameters:
     MaxLength: 128
     NoEcho: true
     Type: String
+  DBPoolMaxSize:
+    Default: 60
+    Description: The maximum number of database connections that can be opened at any time
+    Type: String
+  DBPoolMinSize:
+    Default: 10
+    Description: The minimum number of idle database connections that are kept open at any time
+    Type: String
+  DBTimeout:
+    Default: 0
+    Description: Number of seconds that Connections in excess of minPoolSize should be permitted to remain idle in the pool before being culled
+    Type: String
+  DBIdleTestPeriod:
+    Default: 0
+    Description: If this is a number greater than 0, c3p0 will test all idle, pooled but unchecked-out connections, every this number of seconds
+    Type: String
+  DBMaxStatements:
+    Default: 0
+    Description: The size of c3p0's global PreparedStatement cache. It controls the total number of Statements cached, for all Connections. If set, it should be a fairly large number, as each pooled Connection requires its own, distinct flock of cached statements.
+    Type: String
+  DBValidate:
+    Default: false
+    Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
+    Type: String
+  DBPreferredTestQuery:
+    Default: ''
+    Description: The query that will be executed for all connection tests
+    Type: String
+  DBAcquireIncrement:
+    Default: 3
+    Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
+    Type: String
   DBSnapshotId:
     Default: ''
     Description: RDS snapshot ID of an existing backup to restore. If you use this parameter you will also need to manually restore your shared home directory.  Leave blank for a new instance.
@@ -467,6 +557,50 @@ Parameters:
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Synchrony cluster node instance type.
     Type: String
+  TomcatAcceptCount:
+    Default: 10
+    Description: The maximum queue length for incoming connection requests when all possible request processing threads are in use
+    Type: String
+  TomcatConnectionTimeout:
+    Default: 20000
+    Description: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
+    Type: String
+  TomcatContextPath:
+    Default: ''
+    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+    Type: String
+  TomcatEnableLookups:
+    Default: false
+    Description: Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client
+    Type: String
+  TomcatMaxThreads:
+    Default: 48
+    Description: The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled
+    Type: String
+  TomcatMinSpareThreads:
+    Default: 10
+    Description: The minimum number of threads always kept running
+    Type: String
+  TomcatProtocol:
+    Default: 'HTTP/1.1'
+    Description: Sets the protocol to handle incoming traffic
+    Type: String
+  TomcatProxyPort:
+    Default: 443
+    Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
+    Type: String
+  TomcatRedirectPort:
+    Default: 8443
+    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+    Type: String
+  TomcatScheme:
+    Default: http
+    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
+    Type: String
+  TomcatSecure:
+    Default: false
+    Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
+    Type: String
   VPC:
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
@@ -484,6 +618,8 @@ Conditions:
     !Not [!Equals [!Ref SSLCertificateName, '']]
   OverrideHeap:
     !Not [!Equals [!Ref JvmHeapOverride, '']]
+  UseContextPath:
+    !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
   UseHostedZone:
@@ -789,6 +925,15 @@ Resources:
                   - "\n"
                   -
                     - !Sub
+                      - "ATL_JVM_HEAP=${AtlJvmHeap}"
+                      - AtlJvmHeap: !If
+                          - OverrideHeap
+                          - !Ref 'JvmHeapOverride'
+                          - !FindInMap
+                              - AWSInstanceType2Arch
+                              - !Ref ClusterNodeInstanceType
+                              - Jvmheap
+                    - !Sub
                         - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1"
                         - Protocol: !If [DoSSL, "https", "http"]
                           LoadBalancerName: !GetAtt LoadBalancer.DNSName
@@ -801,6 +946,14 @@ Resources:
                     - "ATL_DB_NAME=confluence"
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
+                    - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
+                    - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
+                    - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
+                    - !Sub ["ATL_DB_IDLETESTPERIOD=${DBIdleTestPeriod}", DBIdleTestPeriod: !Ref DBIdleTestPeriod]
+                    - !Sub ["ATL_DB_MAXSTATEMENTS=${DBMaxStatements}", DBMaxStatements: !Ref DBMaxStatements]
+                    - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
+                    - !Sub ["ATL_DB_PREFERREDTESTQUERY=${DBPreferredTestQuery}", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
+                    - !Sub ["ATL_DB_ACQUIREINCREMENT=${DBAcquireIncrement}", DBAcquireIncrement: !Ref DBAcquireIncrement]
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
                     - !Sub
                       - "ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence"
@@ -831,6 +984,17 @@ Resources:
                     - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
                     - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
+                    - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
+                    - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
+                    - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
+                    - !Sub ["ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}", TomcatEnableLookups: !Ref TomcatEnableLookups]
+                    - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
+                    - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
+                    - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
+                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                    - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
+                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
+                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - "\n"
@@ -875,7 +1039,7 @@ Resources:
               ignoreErrors: false
             030_mount_all:
               command: mount -a
-              ignoreErrors: false
+              ignoreErrors: true
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
@@ -895,6 +1059,9 @@ Resources:
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref ClusterNodeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1020,7 +1187,7 @@ Resources:
                           - !FindInMap
                               - AWSInstanceType2Arch
                               - !Ref ClusterNodeInstanceType
-                              - Jvmheap                  
+                              - Jvmheap
                     - !Sub
                       - "ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony"
                       - Protocol: !If [DoSSL, "https", "http"]
@@ -1126,9 +1293,6 @@ Resources:
     Properties:
       AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: !Ref ClusterNodeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1256,6 +1420,17 @@ Resources:
     Properties:
      DBSubnetGroupDescription: DBSubnetGroup
      SubnetIds: !Ref InternalSubnets
+  DBCname:
+    Condition: UseHostedZone
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZone
+      Comment: Route53 cname for the RDS
+      Name: !Join ['', [!Ref 'AWS::StackName', '.', 'db', '.', !Ref 'HostedZone']]
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt DB.Endpoint.Address
 # Loadbalancer
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -1321,7 +1496,7 @@ Resources:
       HealthyThresholdCount: 4
       Matcher:
         HttpCode: 200
-      HealthCheckPath: /status
+      HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
       HealthCheckPort: 8080
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
@@ -1365,6 +1540,9 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
       GroupDescription: Security group allowing SSH and HTTP/HTTPS access
       VpcId: !Ref VPC
       SecurityGroupIngress:

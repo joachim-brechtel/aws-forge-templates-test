@@ -118,6 +118,14 @@ function configureDbProperties {
     <property name="hibernate.connection.url">${ATL_JDBC_URL}</property>
     <property name="hibernate.connection.password">${ATL_JDBC_PASSWORD}</property>
     <property name="hibernate.connection.username">${ATL_JDBC_USER}</property>
+    <property name="hibernate.c3p0.max_size">${ATL_DB_POOLMAXSIZE}</property>
+    <property name="hibernate.c3p0.min_size">${ATL_DB_POOLMINSIZE}</property>
+    <property name="hibernate.c3p0.timeout">${ATL_DB_TIMEOUT}</property>
+    <property name="hibernate.c3p0.idle_test_period">${ATL_DB_IDLETESTPERIOD}</property>
+    <property name="hibernate.c3p0.max_statements">${ATL_DB_MAXSTATEMENTS}</property>
+    <property name="hibernate.c3p0.validate">${ATL_DB_VALIDATE}</property>
+    <property name="hibernate.c3p0.preferredTestQuery">${ATL_DB_PREFERREDTESTQUERY}</property>
+    <property name="hibernate.c3p0.acquire_increment">${ATL_DB_ACQUIREINCREMENT}</property>
     <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect</property>
     <property name="webwork.multipart.saveDir">\${localHome}/temp</property>
     <property name="attachments.dir">\${confluenceHome}/attachments</property>
