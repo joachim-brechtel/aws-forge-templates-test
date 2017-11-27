@@ -37,6 +37,9 @@ function start {
 function configureConfluenceEnvironmentVariables (){
    atl_log "=== BEGIN: service configureConfluenceEnvironmentVariables ==="
    if [ -n "${ATL_JVM_HEAP}" ]; then
+       if [[ ${ATL_JVM_HEAP} != ^.*[mMgG]$ ]]; then
+            ATL_JVM_HEAP="${ATL_JVM_HEAP}m"
+       fi
        su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xmx(\w+) (.*)$/\1Xmx${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
        su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xms(\w+) (.*)$/\1Xms${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
    fi
