@@ -72,7 +72,7 @@ EOT
 function configureJiraEnvironmentVariables (){
    atl_log "=== BEGIN: service configureJiraEnvironmentVariables ==="
    if [ -n "${ATL_JVM_HEAP}" ];then
-      if [[ ${ATL_JVM_HEAP} != ^.*[mMgG]$ ]]; then
+       if [[ ! "${ATL_JVM_HEAP}" =~ ^.*[mMgG]$ ]]; then
            ATL_JVM_HEAP="${ATL_JVM_HEAP}m"
       fi
       su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY.+)(384|768)(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
