@@ -1269,7 +1269,7 @@ Resources:
               ignoreErrors: false
             030_mount_all:
               command: mount -a
-              ignoreErrors: false
+              ignoreErrors: true
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
