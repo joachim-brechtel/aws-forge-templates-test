@@ -1425,7 +1425,7 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the RDS
-      Name: !Join ['', [!Ref 'AWS::StackName', '.', 'db', '.', !Ref 'HostedZone']]
+      Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
       Type: CNAME
       TTL: '900'
       ResourceRecords:
@@ -1449,9 +1449,9 @@ Resources:
               - DoSSL
               - !Sub
                 - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref 'AWS::AccountId'
+                - AccountId: !Ref AWS::AccountId
                   SSLCertificateName: !Ref SSLCertificateName
-              - !Ref 'AWS::NoValue'
+              - !Ref AWS::NoValue
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref MainTargetGroup
@@ -1469,7 +1469,7 @@ Resources:
         - SubDomainName: !If [UseSubDomainName, !Ref 'SubDomainName', !Ref 'AWS::StackName']
           HostedZone: !Ref 'HostedZone'
       Type: CNAME
-      TTL: '900'
+      TTL: 900
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
   SynchronyListenerRule:
