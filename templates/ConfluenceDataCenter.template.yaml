@@ -18,8 +18,8 @@ Metadata:
           - ClusterNodeMax
           - ClusterNodeMin
           - ClusterNodeSize
-          - SynchronyClusterNodeMin
           - SynchronyClusterNodeMax
+          - SynchronyClusterNodeMin
           - SynchronyNodeInstanceType
       - Label:
           default: Database
@@ -60,7 +60,6 @@ Metadata:
       - Label:
           default: Advanced (Optional)
         Parameters:
-          - CatalinaOpts
           - ConfluenceDownloadUrl
           - DBSnapshotId
           - StartCollectd
@@ -237,7 +236,7 @@ Parameters:
       - m4.2xlarge
       - m4.4xlarge
   CatalinaOpts:
-    Description: Java options passed to the JVM that runs Confluence.
+    Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
@@ -258,7 +257,7 @@ Parameters:
     Description: Size of cluster node root volume in Gb (note - size based upon Confluence indexes x 4)
     Type: Number
   ClusterNodeInstanceType:
-    Default: c3.xlarge
+    Default: c5.xlarge
     AllowedValues:
       - c3.xlarge
       - c3.2xlarge
@@ -503,7 +502,7 @@ Parameters:
     Default: 0
     Type: Number
   SynchronyNodeInstanceType:
-    Default: c3.xlarge
+    Default: c5.large
     AllowedValues:
       - c3.xlarge
       - c3.2xlarge
@@ -778,7 +777,7 @@ Mappings:
       Jvmheap: 12288m
     t2.medium:
       Arch: HVM64
-      Jvmheap: 3072m
+      Jvmheap: 2048m
     t2.large:
       Arch: HVM64
       Jvmheap: 6144m
@@ -826,7 +825,7 @@ Mappings:
       HVM64: ami-cbb7c4a7
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-858f1dff
+      HVM64: ami-9335a8e9
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-5bbf9c3e
@@ -835,7 +834,7 @@ Mappings:
       HVM64: ami-55f3c735
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-6d0ed015
+      HVM64: ami-82974efa
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
