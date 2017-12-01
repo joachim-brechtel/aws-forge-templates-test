@@ -499,7 +499,7 @@ Parameters:
     Default: 1
     Type: Number
   SynchronyClusterNodeMin:
-    Default: 0
+    Default: 1
     Type: Number
   SynchronyNodeInstanceType:
     Default: c5.large
