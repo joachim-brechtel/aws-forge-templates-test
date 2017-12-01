@@ -9,7 +9,8 @@
                         "default": "JIRA setup"
                     },
                     "Parameters": [
-                        "JiraProduct"
+                        "JiraProduct",
+                        "JiraVersion"
                     ]
                 },
                 {
@@ -19,7 +20,8 @@
                     "Parameters": [
                         "ClusterNodeInstanceType",
                         "ClusterNodeMin",
-                        "ClusterNodeMax"
+                        "ClusterNodeMax",
+                        "ClusterNodeSize"
                     ]
                 },
                 {
@@ -45,6 +47,7 @@
                         "ExternalSubnets",
                         "InternalSubnets",
                         "AssociatePublicIpAddress",
+                        "CidrBlock",
                         "KeyName",
                         "SSLCertificateName"
                     ]
@@ -63,9 +66,38 @@
                         "default": "Advanced (Optional)"
                     },
                     "Parameters": [
+                        "StartCollectd",
+                        "JiraDownloadUrl"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html"
+                    },
+                    "Parameters": [
+                        "TomcatContextPath",
                         "CatalinaOpts",
                         "JvmHeapOverride",
-                        "StartCollectd"
+                        "DBMaxIdle",
+                        "DBMaxWaitMillis",
+                        "DBMinEvictableIdleTimeMillis",
+                        "DBMinIdle",
+                        "DBPoolMaxSize",
+                        "DBPoolMinSize",
+                        "DBRemoveAbandoned",
+                        "DBRemoveAbandonedTimeout",
+                        "DBTestOnBorrow",
+                        "DBTestWhileIdle",
+                        "DBTimeBetweenEvictionRunsMillis",
+                        "TomcatAcceptCount",
+                        "TomcatConnectionTimeout",
+                        "TomcatEnableLookups",
+                        "TomcatMaxThreads",
+                        "TomcatMinSpareThreads",
+                        "TomcatProtocol",
+                        "TomcatProxyPort",
+                        "TomcatScheme",
+                        "TomcatSecure"
                     ]
                 }
             ],
@@ -76,6 +108,9 @@
                 "CatalinaOpts": {
                     "default": "Catalina options"
                 },
+                "CidrBlock": {
+                    "default": "Permitted IP range"
+                },
                 "ClusterNodeMax": {
                     "default": "Maximum number of cluster nodes"
                 },
@@ -85,14 +120,47 @@
                 "ClusterNodeInstanceType": {
                     "default": "JIRA cluster node instance type"
                 },
+                "ClusterNodeSize": {
+                    "default": "JIRA cluster node instance volume size"
+                },
+                "CustomDnsName": {
+                    "default": "Existing DNS name (optional)"
+                },
                 "DBInstanceClass": {
                     "default": "Database instance class"
+                },
+                "DBIops": {
+                    "default": "RDS Provisioned IOPS"
                 },
                 "DBMasterUserPassword": {
                     "default": "Master password *"
                 },
+                "DBMaxIdle": {
+                    "default": "DB Maximum Idle"
+                },
+                "DBMaxWaitMillis": {
+                    "default": "DB Maximum Wait"
+                },
+                "DBMinEvictableIdleTimeMillis": {
+                    "default": "DB Minimum Evictable Idle Time"
+                },
+                "DBMinIdle": {
+                    "default": "DB Minimum Idle Connections"
+                },
                 "DBPassword": {
                     "default": "JIRA database password *"
+                },
+                "DBPoolMaxSize": {
+                    "default": "DB Pool Maximum Size"
+                },
+                "DBPoolMinSize": {
+                    "default": "DB Pool Minimum Size"
+                },
+                "DBRemoveAbandoned": {
+                    "default": "DB Remove Abandoned?"
+                },
+                "DBRemoveAbandonedTimeout": {
+                    "default": "DB Remove Abandoned Timeout"
                 },
                 "DBStorage": {
                     "default": "Database storage"
@@ -100,11 +168,32 @@
                 "DBStorageType": {
                     "default": "Database storage type"
                 },
-                "DBIops": {
-                    "default": "RDS Provisioned IOPS"
+                "DBTestOnBorrow": {
+                    "default": "DB Test On Borrow?"
+                },
+                "DBTestWhileIdle": {
+                    "default": "DB Test While Idle?"
+                },
+                "DBTimeBetweenEvictionRunsMillis": {
+                    "default": "DB Time Between Eviction Runs"
+                },
+                "ExternalSubnets": {
+                    "default": "External subnets *"
+                },
+                "HostedZone": {
+                    "default": "R53 Hosted Zone (optional)"
+                },
+                "InternalSubnets": {
+                    "default": "Internal subnets *"
                 },
                 "JiraProduct": {
                     "default": "JIRA Product *"
+                },
+                "JiraVersion": {
+                    "default": "Version *"
+                },
+                "JiraDownloadUrl": {
+                    "default": "Jira Download URL"
                 },
                 "JvmHeapOverride": {
                     "default": "JVM Heap Size Override"
@@ -112,20 +201,38 @@
                 "KeyName": {
                     "default": "Key Name *"
                 },
-                "CustomDnsName": {
-                    "default": "Existing DNS name (optional)",
-                    "HostedZone": {
-                        "default": "R53 Hosted Zone (optional)"
-                    }
-                },
                 "SSLCertificateName": {
                     "default": "SSL Certificate Name"
                 },
-                "ExternalSubnets": {
-                    "default": "External subnets *"
+                "TomcatAcceptCount": {
+                    "default": "Tomcat Accept Count"
                 },
-                "InternalSubnets": {
-                    "default": "Internal subnets *"
+                "TomcatConnectionTimeout": {
+                    "default": "Tomcat Connection Timeout"
+                },
+                "TomcatContextPath": {
+                    "default": "Tomcat Context Path"
+                },
+                "TomcatEnableLookups": {
+                    "default": "Tomcat Enable DNS Lookups"
+                },
+                "TomcatMaxThreads": {
+                    "default": "Tomcat Maximum Threads"
+                },
+                "TomcatMinSpareThreads": {
+                    "default": "Tomcat Minimum Spare Threads"
+                },
+                "TomcatProtocol": {
+                    "default": "Tomcat Protocol"
+                },
+                "TomcatProxyPort": {
+                    "default": "Tomcat Proxy Port"
+                },
+                "TomcatScheme": {
+                    "default": "Tomcat protocol Scheme"
+                },
+                "TomcatSecure": {
+                    "default": "Tomcat Secure?"
                 },
                 "VPC": {
                     "default": "VPC *"
@@ -143,6 +250,15 @@
                 "false"
             ],
             "ConstraintDescription": "Must be 'true' or 'false'."
+        },
+        "CidrBlock": {
+            "Default": "0.0.0.0/0",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "Must be a valid IP CIDR range of the form x.x.x.x/x.",
+            "Description": "The CIDR IP range that is permitted to access the Confluence URL. Use 0.0.0.0/0 if you want public access from the internet.",
+            "Type": "String",
+            "MinLength": 9,
+            "MaxLength": 18
         },
         "ClusterNodeMax": {
             "Default": "1",
@@ -198,11 +314,17 @@
                 "x1.16xlarge",
                 "x1.32xlarge"
             ],
-            "ConstraintDescription": "Must be an EC2 instance type in the C3, I2, R3, or X1 family, 'xlarge' or larger",
+            "ConstraintDescription": "Must be a valid EC2 instance type from the selection list",
             "Description": "Instance type for the cluster nodes."
+        },
+        "ClusterNodeSize": {
+            "Default": "50",
+            "Description": "Size of cluster node root volume in Gb (note - size based upon jira indexes x 4)",
+            "Type": "Number"
         },
         "CatalinaOpts": {
             "Default": "",
+            "Description": "Pass in any additional jvm options to tune Catalina",
             "Type": "String"
         },
         "DBInstanceClass": {
@@ -263,11 +385,11 @@
             "ConstraintDescription": "Must be 'General Purpose (SSD)' or 'Provisioned IOPS'."
         },
         "DBMultiAZ": {
-            "Default": "true",
+            "Default": true,
             "Type": "String",
             "AllowedValues": [
-                "true",
-                "false"
+                true,
+                false
             ],
             "ConstraintDescription": "Must be 'true' or 'false'."
         },
@@ -279,6 +401,67 @@
             "MaxValue": "30000",
             "ConstraintDescription": "Must be in the range 1000 - 30000."
         },
+        "DBMaxIdle": {
+            "Default": "20",
+            "Description": "The maximum number of database connections that are allowed to remain idle in the pool",
+            "Type": "String"
+        },
+        "DBMaxWaitMillis": {
+            "Default": "10000",
+            "Description": "The length of time (in milliseconds) that JIRA is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error",
+            "Type": "String"
+        },
+        "DBMinEvictableIdleTimeMillis": {
+            "Default": "180000",
+            "Description": "The minimum amount of time an object may sit idle in the database connection pool before it is eligible for eviction by the idle object eviction",
+            "Type": "String"
+        },
+        "DBMinIdle": {
+            "Default": "10",
+            "Description": "The minimum number of idle database connections that are kept open at any time",
+            "Type": "String"
+        },
+        "DBPoolMaxSize": {
+            "Default": "20",
+            "Description": "The maximum number of database connections that can be opened at any time",
+            "Type": "String"
+        },
+        "DBPoolMinSize": {
+            "Default": "20",
+            "Description": "The minimum number of idle database connections that are kept open at any time",
+            "Type": "String"
+        },
+        "DBRemoveAbandoned": {
+            "Default": "true",
+            "Description": "Flag to remove abandoned database connections if they exceed the Removed Abandoned Timeout",
+            "Type": "String"
+        },
+        "DBRemoveAbandonedTimeout": {
+            "Default": "60",
+            "Description": "The length of time (in seconds) that a database connection can be idle before it is considered abandoned",
+            "Type": "String"
+        },
+        "DBTestOnBorrow": {
+            "Default": "false",
+            "Description": "Tests if the database connection is valid when it is borrowed from the database connection pool by JIRA",
+            "Type": "String"
+        },
+        "DBTestWhileIdle": {
+            "Default": "true",
+            "Description": "Periodically tests if the database connection is valid when it is idle",
+            "Type": "String"
+        },
+        "DBTimeBetweenEvictionRunsMillis": {
+            "Default": "60000",
+            "Description": "The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run",
+            "Type": "String"
+        },
+        "JiraDownloadUrl": {
+            "Default": "",
+            "Description": "This parameter is used to download a custom Jira version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier. internal dev versions can be found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>.x64.bin",
+            "Type": "String",
+            "ConstraintDescription": "Must be a valid Jira download url from version 7 or higher"
+        },
         "JiraProduct": {
             "Description": "The JIRA Product to install. Installs latest available version of the selected product",
             "Type": "String",
@@ -289,8 +472,16 @@
                 "Core"
             ]
         },
+        "JiraVersion": {
+            "Default": "latest",
+            "AllowedPattern": "(\\d+\\.\\d+\\.\\d+(-?.*))|(latest)",
+            "ConstraintDescription": "Must be a valid Jira version number, for example 7.2.3. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes",
+            "Description": "The version of Jira to install (found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>-x64.bin)",
+            "Type": "String"
+        },
         "JvmHeapOverride": {
             "Default": "",
+            "Description": "Override the default amount of Memory to allocate to the JVM for your instance type",
             "Type": "String"
         },
         "KeyName": {
@@ -299,7 +490,7 @@
             "ConstraintDescription": "Must be the name of an existing EC2 Key Pair."
         },
         "CustomDnsName": {
-            "Description": "Use custom existing DNS name for your JIRA Data Center instance. Please note: you must own the domain and configure it to point at the load balancer.",
+            "Description": "Use custom existing DNS name for your JIRA Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.",
             "Type": "String"
         },
         "HostedZone": {
@@ -324,6 +515,56 @@
                 "false"
             ],
             "ConstraintDescription": "Must be 'true' or 'false'."
+        },
+        "TomcatAcceptCount": {
+            "Default": "10",
+            "Description": "The maximum queue length for incoming connection requests when all possible request processing threads are in use",
+            "Type": "String"
+        },
+        "TomcatConnectionTimeout": {
+            "Default": "20000",
+            "Description": "The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented",
+            "Type": "String"
+        },
+        "TomcatContextPath": {
+            "Default": "",
+            "Description": "The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing",
+            "Type": "String"
+        },
+        "TomcatEnableLookups": {
+            "Default": "false",
+            "Description": "Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client",
+            "Type": "String"
+        },
+        "TomcatMaxThreads": {
+            "Default": "200",
+            "Description": "The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled",
+            "Type": "String"
+        },
+        "TomcatMinSpareThreads": {
+            "Default": "10",
+            "Description": "The minimum number of threads always kept running",
+            "Type": "String"
+        },
+        "TomcatProtocol": {
+            "Default": "org.apache.coyote.http11.Http11NioProtocol",
+            "Description": "Sets the protocol to handle incoming traffic",
+            "Type": "String"
+        },
+        "TomcatProxyPort": {
+            "Default": "80",
+            "Description": "If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()",
+            "Type": "String"
+        },
+        "TomcatScheme": {
+            "Default": "http",
+            "Description": "The name of the protocol you wish to have returned, ie \"https\" for an SSL Connector",
+            "Type": "String"
+        },
+        "TomcatSecure": {
+            "Default": "false",
+            "Description": "Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.",
+            "Type": "String"
         },
         "ExternalSubnets": {
             "Description": "Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.",
@@ -355,7 +596,7 @@
                 {
                     "Ref": "StartCollectd"
                 },
-                "true"
+                true
             ]
         },
         "DoSetDBMasterUserPassword": {
@@ -388,6 +629,18 @@
                     "Fn::Equals": [
                         {
                             "Ref": "JvmHeapOverride"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        },
+        "UseContextPath": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "TomcatContextPath"
                         },
                         ""
                     ]
@@ -431,204 +684,184 @@
         "AWSInstanceType2Arch": {
             "c3.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 3072
+                "Jvmheap": "3072m"
             },
             "c3.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 6144
+                "Jvmheap": "6144m"
             },
             "c3.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "c3.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "c3.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "c4.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 3072
+                "Jvmheap": "3072m"
             },
             "c4.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 6144
+                "Jvmheap": "6144m"
             },
             "c4.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "c4.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "c4.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "d2.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "d2.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "d2.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "d2.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "i3.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "i3.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "i3.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "i3.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "i3.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "m3.medium": {
                 "Arch": "HVM64",
-                "Jvmheap": 3072
+                "Jvmheap": "3072m"
             },
             "m4.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 6144
+                "Jvmheap": "6144m"
             },
             "m4.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "m4.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "m4.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "m4.10xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "m4.16xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r3.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r3.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r3.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r3.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r3.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r4.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r4.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r4.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r4.4xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "r4.8xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "t2.medium": {
                 "Arch": "HVM64",
-                "Jvmheap": 3072
+                "Jvmheap": "2048m"
             },
             "t2.large": {
                 "Arch": "HVM64",
-                "Jvmheap": 6144
+                "Jvmheap": "6144m"
             },
             "t2.xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "t2.2xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "x1.16xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             },
             "x1.32xlarge": {
                 "Arch": "HVM64",
-                "Jvmheap": 12288
+                "Jvmheap": "12288m"
             }
         },
         "AWSRegionArch2AMI": {
-            "us-east-1": {
-                "HVM64": "ami-bb5642ac",
-                "HVMG2": "NOT_SUPPORTED"
-            },
-            "ap-south-1": {
-                "HVM64": "ami-67c6b108",
-                "HVMG2": "NOT_SUPPORTED"
-            },
-            "eu-west-2": {
-                "HVM64": "ami-eeede78a",
-                "HVMG2": "NOT_SUPPORTED"
-            },
-            "eu-west-1": {
-                "HVM64": "ami-afcaeadc",
+            "ap-northeast-1": {
+                "HVM64": "ami-da107bbd",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "ap-northeast-2": {
                 "HVM64": "ami-15a0767b",
                 "HVMG2": "NOT_SUPPORTED"
             },
-            "ap-northeast-1": {
-                "HVM64": "ami-da107bbd",
-                "HVMG2": "NOT_SUPPORTED"
-            },
-            "sa-east-1": {
-                "HVM64": "ami-5a71e936",
-                "HVMG2": "NOT_SUPPORTED"
-            },
-            "ca-central-1": {
-                "HVM64": "ami-ab2a98cf",
+            "ap-south-1": {
+                "HVM64": "ami-67c6b108",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "ap-southeast-1": {
@@ -639,8 +872,28 @@
                 "HVM64": "ami-5bc2f938",
                 "HVMG2": "NOT_SUPPORTED"
             },
+            "ca-central-1": {
+                "HVM64": "ami-ab2a98cf",
+                "HVMG2": "NOT_SUPPORTED"
+            },
             "eu-central-1": {
                 "HVM64": "ami-982aeaf7",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-west-1": {
+                "HVM64": "ami-afcaeadc",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-west-2": {
+                "HVM64": "ami-eeede78a",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "sa-east-1": {
+                "HVM64": "ami-5a71e936",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "us-east-1": {
+                "HVM64": "ami-9335a8e9",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "us-east-2": {
@@ -652,7 +905,7 @@
                 "HVMG2": "NOT_SUPPORTED"
             },
             "us-west-2": {
-                "HVM64": "ami-560fbb36",
+                "HVM64": "ami-82974efa",
                 "HVMG2": "NOT_SUPPORTED"
             }
         },
@@ -701,7 +954,16 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "JIRA Node",
+                        "Value": {
+                            "Fn::Sub": [
+                                "${StackName} JIRA Node",
+                                {
+                                    "StackName": {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                }
+                            ]
+                        },
                         "PropagateAtLaunch": true
                     },
                     {
@@ -729,12 +991,12 @@
                             "/etc/atl": {
                                 "content": {
                                     "Fn::Join": [
-                                        "",
+                                        "\n",
                                         [
-                                            "ATL_NGINX_ENABLED=false\n",
-                                            "ATL_APP_DATA_MOUNT_ENABLED=false\n",
-                                            "ATL_DB_NAME=jira\n",
-                                            "ATL_DB_USER=jira\n",
+                                            "ATL_NGINX_ENABLED=false",
+                                            "ATL_APP_DATA_MOUNT_ENABLED=false",
+                                            "ATL_DB_NAME=jira",
+                                            "ATL_DB_USER=jira",
                                             {
                                                 "Fn::Sub": [
                                                     "ATL_JVM_HEAP=${AtlJvmHeap}",
@@ -769,87 +1031,260 @@
                                                     }
                                                 ]
                                             },
-                                            "ATL_DB_PASSWORD=",
                                             {
-                                                "Ref": "DBMasterUserPassword"
-                                            },
-                                            "\n",
-                                            "ATL_DB_HOST=",
-                                            {
-                                                "Fn::GetAtt": [
-                                                    "DB",
-                                                    "Endpoint.Address"
-                                                ]
-                                            },
-                                            "\n",
-                                            "ATL_DB_PORT=",
-                                            {
-                                                "Fn::GetAtt": [
-                                                    "DB",
-                                                    "Endpoint.Port"
-                                                ]
-                                            },
-                                            "\n",
-                                            "ATL_JDBC_DRIVER=org.postgresql.Driver\n",
-                                            "ATL_JDBC_URL=jdbc:postgresql://",
-                                            {
-                                                "Fn::GetAtt": [
-                                                    "DB",
-                                                    "Endpoint.Address"
-                                                ]
-                                            },
-                                            ":",
-                                            {
-                                                "Fn::GetAtt": [
-                                                    "DB",
-                                                    "Endpoint.Port"
-                                                ]
-                                            },
-                                            "/jira\n",
-                                            "ATL_JDBC_USER=atljira\n",
-                                            "ATL_JDBC_PASSWORD=",
-                                            {
-                                                "Ref": "DBPassword"
-                                            },
-                                            "\n",
-                                            "ATL_ENABLED_PRODUCTS=Jira\n",
-                                            "ATL_ENABLED_SHARED_HOMES=\n",
-                                            "ATL_JIRA_NAME=",
-                                            {
-                                                "Fn::FindInMap": [
-                                                    "JIRAProduct2NameAndVersion",
+                                                "Fn::Sub": [
+                                                    "ATL_DB_PASSWORD=${DBMasterUserPassword}",
                                                     {
-                                                        "Ref": "JiraProduct"
-                                                    },
-                                                    "name"
+                                                        "DBMasterUserPassword": {
+                                                            "Ref": "DBMasterUserPassword"
+                                                        }
+                                                    }
                                                 ]
                                             },
-                                            "\n",
-                                            "ATL_JIRA_SHORT_DISPLAY_NAME=",
                                             {
-                                                "Fn::FindInMap": [
-                                                    "JIRAProduct2NameAndVersion",
+                                                "Fn::Sub": [
+                                                    "ATL_DB_HOST=${DBEndpointAddress}",
                                                     {
-                                                        "Ref": "JiraProduct"
-                                                    },
-                                                    "shortdisplayname"
+                                                        "DBEndpointAddress": {
+                                                            "Fn::GetAtt": [
+                                                                "DB",
+                                                                "Endpoint",
+                                                                "Address"
+                                                            ]
+                                                        }
+                                                    }
                                                 ]
                                             },
-                                            "\n",
-                                            "ATL_JIRA_FULL_DISPLAY_NAME=",
                                             {
-                                                "Fn::FindInMap": [
-                                                    "JIRAProduct2NameAndVersion",
+                                                "Fn::Sub": [
+                                                    "ATL_DB_PORT=${DBEndpointPort}",
                                                     {
-                                                        "Ref": "JiraProduct"
-                                                    },
-                                                    "fulldisplayname"
+                                                        "DBEndpointPort": {
+                                                            "Fn::GetAtt": [
+                                                                "DB",
+                                                                "Endpoint",
+                                                                "Port"
+                                                            ]
+                                                        }
+                                                    }
                                                 ]
                                             },
-                                            "\n",
-                                            "ATL_RELEASE_S3_BUCKET=atlassian-software\n",
-                                            "ATL_RELEASE_S3_PATH=releases\n",
-                                            "ATL_POSTGRES_ENABLED=false\n",
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_MAXIDLE=${DBMaxIdle}",
+                                                    {
+                                                        "DBMaxIdle": {
+                                                            "Ref": "DBMaxIdle"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}",
+                                                    {
+                                                        "DBMaxWaitMillis": {
+                                                            "Ref": "DBMaxWaitMillis"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_MINEVICTABLEIDLETIMEMILLIS=${DBMinEvictableIdleTimeMillis}",
+                                                    {
+                                                        "DBMinEvictableIdleTimeMillis": {
+                                                            "Ref": "DBMinEvictableIdleTimeMillis"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_MINIDLE=${DBMinIdle}",
+                                                    {
+                                                        "DBMinIdle": {
+                                                            "Ref": "DBMinIdle"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}",
+                                                    {
+                                                        "DBPoolMaxSize": {
+                                                            "Ref": "DBPoolMaxSize"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_POOLMINSIZE=${DBPoolMinSize}",
+                                                    {
+                                                        "DBPoolMinSize": {
+                                                            "Ref": "DBPoolMinSize"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_REMOVEABANDONED=${DBRemoveAbandoned}",
+                                                    {
+                                                        "DBRemoveAbandoned": {
+                                                            "Ref": "DBRemoveAbandoned"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_REMOVEABANDONEDTIMEOUT=${DBRemoveAbandonedTimeout}",
+                                                    {
+                                                        "DBRemoveAbandonedTimeout": {
+                                                            "Ref": "DBRemoveAbandonedTimeout"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_TESTONBORROW=${DBTestOnBorrow}",
+                                                    {
+                                                        "DBTestOnBorrow": {
+                                                            "Ref": "DBTestOnBorrow"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}",
+                                                    {
+                                                        "DBTestWhileIdle": {
+                                                            "Ref": "DBTestWhileIdle"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}",
+                                                    {
+                                                        "DBTimeBetweenEvictionRunsMillis": {
+                                                            "Ref": "DBTimeBetweenEvictionRunsMillis"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "ATL_JDBC_DRIVER=org.postgresql.Driver",
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/jira",
+                                                    {
+                                                        "DBEndpointAddress": {
+                                                            "Fn::GetAtt": [
+                                                                "DB",
+                                                                "Endpoint",
+                                                                "Address"
+                                                            ]
+                                                        },
+                                                        "DBEndpointPort": {
+                                                            "Fn::GetAtt": [
+                                                                "DB",
+                                                                "Endpoint",
+                                                                "Port"
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "ATL_JDBC_USER=atljira",
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JDBC_PASSWORD=${DBPassword}",
+                                                    {
+                                                        "DBPassword": {
+                                                            "Ref": "DBPassword"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "ATL_ENABLED_PRODUCTS=Jira",
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JIRA_VERSION=${JiraVersion}",
+                                                    {
+                                                        "JiraVersion": {
+                                                            "Ref": "JiraVersion"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JIRA_INSTALLER_DOWNLOAD_URL=${JiraDownloadUrl}",
+                                                    {
+                                                        "JiraDownloadUrl": {
+                                                            "Ref": "JiraDownloadUrl"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "ATL_ENABLED_SHARED_HOMES=",
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JIRA_NAME=${JiraProductName}",
+                                                    {
+                                                        "JiraProductName": {
+                                                            "Fn::FindInMap": [
+                                                                "JIRAProduct2NameAndVersion",
+                                                                {
+                                                                    "Ref": "JiraProduct"
+                                                                },
+                                                                "name"
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}",
+                                                    {
+                                                        "JiraShortDisplayName": {
+                                                            "Fn::FindInMap": [
+                                                                "JIRAProduct2NameAndVersion",
+                                                                {
+                                                                    "Ref": "JiraProduct"
+                                                                },
+                                                                "shortdisplayname"
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_JIRA_FULL_DISPLAY_NAME=${JiraFullDisplayName}",
+                                                    {
+                                                        "JiraFullDisplayName": {
+                                                            "Fn::FindInMap": [
+                                                                "JIRAProduct2NameAndVersion",
+                                                                {
+                                                                    "Ref": "JiraProduct"
+                                                                },
+                                                                "fulldisplayname"
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "ATL_RELEASE_S3_BUCKET=atlassian-software",
+                                            "ATL_RELEASE_S3_PATH=releases",
+                                            "ATL_POSTGRES_ENABLED=false",
                                             {
                                                 "Fn::Sub": [
                                                     "ATL_PROXY_NAME=${AtlProxyName}",
@@ -879,14 +1314,123 @@
                                                     }
                                                 ]
                                             },
-                                            "\n",
-                                            "ATL_SSL_SELF_CERT_ENABLED=false\n",
+                                            "ATL_SSL_SELF_CERT_ENABLED=false",
                                             {
                                                 "Fn::If": [
                                                     "DoSSL",
-                                                    "ATL_SSL_PROXY=true\n",
+                                                    "ATL_SSL_PROXY=true",
                                                     {
                                                         "Ref": "AWS::NoValue"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_AWS_STACK_NAME=${StackName}",
+                                                    {
+                                                        "StackName": {
+                                                            "Ref": "AWS::StackName"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}",
+                                                    {
+                                                        "TomcatAcceptCount": {
+                                                            "Ref": "TomcatAcceptCount"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}",
+                                                    {
+                                                        "TomcatConnectionTimeout": {
+                                                            "Ref": "TomcatConnectionTimeout"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}",
+                                                    {
+                                                        "TomcatContextPath": {
+                                                            "Ref": "TomcatContextPath"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}",
+                                                    {
+                                                        "TomcatEnableLookups": {
+                                                            "Ref": "TomcatEnableLookups"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}",
+                                                    {
+                                                        "TomcatMaxThreads": {
+                                                            "Ref": "TomcatMaxThreads"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}",
+                                                    {
+                                                        "TomcatMinSpareThreads": {
+                                                            "Ref": "TomcatMinSpareThreads"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_PROTOCOL=${TomcatProtocol}",
+                                                    {
+                                                        "TomcatProtocol": {
+                                                            "Ref": "TomcatProtocol"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}",
+                                                    {
+                                                        "TomcatProxyPort": {
+                                                            "Ref": "TomcatProxyPort"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_SCHEME=${TomcatScheme}",
+                                                    {
+                                                        "TomcatScheme": {
+                                                            "Ref": "TomcatScheme"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "Fn::Sub": [
+                                                    "ATL_TOMCAT_SECURE=${TomcatSecure}",
+                                                    {
+                                                        "TomcatSecure": {
+                                                            "Ref": "TomcatSecure"
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -897,19 +1441,29 @@
                             "/etc/cfn/cfn-hup.conf": {
                                 "content": {
                                     "Fn::Join": [
-                                        "",
+                                        "\n",
                                         [
-                                            "[main]\n",
-                                            "stack=",
+                                            "[main]",
                                             {
-                                                "Ref": "AWS::StackId"
+                                                "Fn::Sub": [
+                                                    "stack=${StackId}",
+                                                    {
+                                                        "StackId": {
+                                                            "Ref": "AWS::StackId"
+                                                        }
+                                                    }
+                                                ]
                                             },
-                                            "\n",
-                                            "region=",
                                             {
-                                                "Ref": "AWS::Region"
-                                            },
-                                            "\n"
+                                                "Fn::Sub": [
+                                                    "region=${Region}",
+                                                    {
+                                                        "Region": {
+                                                            "Ref": "AWS::Region"
+                                                        }
+                                                    }
+                                                ]
+                                            }
                                         ]
                                     ]
                                 },
@@ -920,23 +1474,25 @@
                             "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
                                 "content": {
                                     "Fn::Join": [
-                                        "",
+                                        "\n",
                                         [
-                                            "[cfn-auto-reloader-hook]\n",
-                                            "triggers=post.update\n",
-                                            "path=Resources.ClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
-                                            "action=/opt/aws/bin/cfn-init -v ",
-                                            "         --stack ",
+                                            "[cfn-auto-reloader-hook]",
+                                            "triggers=post.update",
+                                            "path=Resources.ClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init",
                                             {
-                                                "Ref": "AWS::StackName"
+                                                "Fn::Sub": [
+                                                    "action=/opt/aws/bin/cfn-init -v --stack ${StackName} --resource ClusterNodeLaunchConfig --region ${Region}",
+                                                    {
+                                                        "StackName": {
+                                                            "Ref": "AWS::StackName"
+                                                        },
+                                                        "Region": {
+                                                            "Ref": "AWS::Region"
+                                                        }
+                                                    }
+                                                ]
                                             },
-                                            "         --resource ClusterNodeLaunchConfig ",
-                                            "         --region ",
-                                            {
-                                                "Ref": "AWS::Region"
-                                            },
-                                            "\n",
-                                            "runas=root\n"
+                                            "runas=root"
                                         ]
                                     ]
                                 }
@@ -982,18 +1538,21 @@
                             },
                             "030_mount_all": {
                                 "command": "mount -a",
-                                "ignoreErrors": "true"
+                                "ignoreErrors": true
                             },
                             "040_make_shared_home_dir": {
                                 "command": "mkdir -p /media/atl/jira/shared",
-                                "ignoreErrors": "false"
+                                "ignoreErrors": false
+                            },
+                            "050_ensure_ssm": {
+                                "command": "yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"
                             }
                         },
                         "services": {
                             "sysvinit": {
                                 "cfn-hup": {
-                                    "enabled": "true",
-                                    "ensureRunning": "true",
+                                    "enabled": true,
+                                    "ensureRunning": true,
                                     "files": [
                                         "/etc/cfn/cfn-hup.conf",
                                         "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
@@ -1003,8 +1562,8 @@
                                     "Fn::If": [
                                         "DoCollectd",
                                         {
-                                            "enabled": "true",
-                                            "ensureRunning": "true"
+                                            "enabled": true,
+                                            "ensureRunning": true
                                         },
                                         {
                                             "Ref": "AWS::NoValue"
@@ -1012,8 +1571,8 @@
                                     ]
                                 },
                                 "rpcbind": {
-                                    "enabled": "true",
-                                    "ensureRunning": "true",
+                                    "enabled": true,
+                                    "ensureRunning": true,
                                     "packages": {
                                         "yum": [
                                             "nfs-utils"
@@ -1035,6 +1594,14 @@
                     "Ref": "AssociatePublicIpAddress"
                 },
                 "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/xvda",
+                        "Ebs": {
+                            "VolumeSize": {
+                                "Ref": "ClusterNodeSize"
+                            }
+                        }
+                    },
                     {
                         "DeviceName": "/dev/xvdf",
                         "Ebs": {},
@@ -1076,28 +1643,46 @@
                             [
                                 "#!/bin/bash -xe\n",
                                 "yum update -y aws-cfn-bootstrap\n",
-                                "/opt/aws/bin/cfn-init -v ",
-                                "         --stack ",
                                 {
-                                    "Ref": "AWS::StackName"
+                                    "Fn::Sub": [
+                                        "/opt/aws/bin/cfn-init -v --stack ${StackName}",
+                                        {
+                                            "StackName": {
+                                                "Ref": "AWS::StackName"
+                                            }
+                                        }
+                                    ]
                                 },
-                                "         --resource ClusterNodeLaunchConfig ",
-                                "         --region ",
                                 {
-                                    "Ref": "AWS::Region"
+                                    "Fn::Sub": [
+                                        " --resource ClusterNodeLaunchConfig --region ${Region}\n",
+                                        {
+                                            "Region": {
+                                                "Ref": "AWS::Region"
+                                            }
+                                        }
+                                    ]
                                 },
-                                "\n",
-                                "/opt/aws/bin/cfn-signal -e $? ",
-                                "         --stack ",
                                 {
-                                    "Ref": "AWS::StackName"
+                                    "Fn::Sub": [
+                                        "/opt/aws/bin/cfn-signal -e $? --stack ${StackName}",
+                                        {
+                                            "StackName": {
+                                                "Ref": "AWS::StackName"
+                                            }
+                                        }
+                                    ]
                                 },
-                                "         --resource ClusterNodeGroup ",
-                                "         --region ",
                                 {
-                                    "Ref": "AWS::Region"
-                                },
-                                "\n"
+                                    "Fn::Sub": [
+                                        " --resource ClusterNodeLaunchConfig --region ${Region}",
+                                        {
+                                            "Region": {
+                                                "Ref": "AWS::Region"
+                                            }
+                                        }
+                                    ]
+                                }
                             ]
                         ]
                     }
@@ -1108,6 +1693,25 @@
             "Type": "AWS::EFS::FileSystem",
             "Properties": {
                 "FileSystemTags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::StackName"
+                                    },
+                                    ".",
+                                    "efs",
+                                    ".",
+                                    {
+                                        "Ref": "HostedZone"
+                                    }
+                                ]
+                            ]
+                        }
+                    },
                     {
                         "Key": "Application",
                         "Value": {
@@ -1130,7 +1734,7 @@
                 ],
                 "SubnetId": {
                     "Fn::Select": [
-                        "0",
+                        0,
                         {
                             "Ref": "InternalSubnets"
                         }
@@ -1151,7 +1755,7 @@
                 ],
                 "SubnetId": {
                     "Fn::Select": [
-                        "1",
+                        1,
                         {
                             "Ref": "InternalSubnets"
                         }
@@ -1215,11 +1819,13 @@
                 "DBInstanceClass": {
                     "Ref": "DBInstanceClass"
                 },
+                "DBInstanceIdentifier": {
+                    "Ref": "AWS::StackName"
+                },
                 "DBSubnetGroupName": {
                     "Ref": "DBSubnetGroup"
                 },
                 "Engine": "postgres",
-                "EngineVersion": "9.3.12",
                 "MasterUsername": "postgres",
                 "MasterUserPassword": {
                     "Fn::If": [
@@ -1261,7 +1867,16 @@
                 "Tags": [
                     {
                         "Key": "Name",
-                        "Value": "JIRA PostgreSQL Database"
+                        "Value": {
+                            "Fn::Sub": [
+                                "${StackName} JIRA PostgreSQL Database",
+                                {
+                                    "StackName": {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                }
+                            ]
+                        }
                     }
                 ]
             }
@@ -1305,7 +1920,8 @@
                     {
                         "Fn::GetAtt": [
                             "DB",
-                            "Endpoint.Address"
+                            "Endpoint",
+                            "Address"
                         ]
                     }
                 ]
@@ -1355,21 +1971,21 @@
                                 "PolicyNames": [
                                     "JSessionIdStickiness"
                                 ],
-                                "SSLCertificateId": {
-                                    "Fn::Join": [
-                                        "",
-                                        [
-                                            "arn:aws:iam::",
+                                "SSLCertificateId": [
+                                    {
+                                        "Fn::Sub": [
+                                            "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}",
                                             {
-                                                "Ref": "AWS::AccountId"
-                                            },
-                                            ":server-certificate/",
-                                            {
-                                                "Ref": "SSLCertificateName"
+                                                "AccountId": {
+                                                    "Ref": "AWS::AccountId"
+                                                },
+                                                "SSLCertificateName": {
+                                                    "Ref": "SSLCertificateName"
+                                                }
                                             }
                                         ]
-                                    ]
-                                }
+                                    }
+                                ]
                             },
                             {
                                 "Ref": "AWS::NoValue"
@@ -1378,7 +1994,24 @@
                     }
                 ],
                 "HealthCheck": {
-                    "Target": "HTTP:8080/status",
+                    "Target": {
+                        "Fn::If": [
+                            "UseContextPath",
+                            {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "HTTP:8080",
+                                        {
+                                            "Ref": "TomcatContextPath"
+                                        },
+                                        "/status"
+                                    ]
+                                ]
+                            },
+                            "HTTP:8080/status"
+                        ]
+                    },
                     "Timeout": "29",
                     "Interval": "30",
                     "UnhealthyThreshold": "2",
@@ -1398,7 +2031,28 @@
                 ],
                 "Subnets": {
                     "Ref": "ExternalSubnets"
-                }
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Sub": [
+                                "${StackName}-LoadBalancer",
+                                {
+                                    "StackName": {
+                                        "Ref": "AWS::StackName"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "Cluster",
+                        "Value": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                ]
             }
         },
         "LoadBalancerCname": {
@@ -1447,19 +2101,25 @@
                         "IpProtocol": "tcp",
                         "FromPort": "22",
                         "ToPort": "22",
-                        "CidrIp": "0.0.0.0/0"
+                        "CidrIp": {
+                            "Ref": "CidrBlock"
+                        }
                     },
                     {
                         "IpProtocol": "tcp",
                         "FromPort": "80",
                         "ToPort": "80",
-                        "CidrIp": "0.0.0.0/0"
+                        "CidrIp": {
+                            "Ref": "CidrBlock"
+                        }
                     },
                     {
                         "IpProtocol": "tcp",
                         "FromPort": "443",
                         "ToPort": "443",
-                        "CidrIp": "0.0.0.0/0"
+                        "CidrIp": {
+                            "Ref": "CidrBlock"
+                        }
                     }
                 ]
             }
@@ -1572,6 +2232,25 @@
                                 "Ref": "AWS::StackName"
                             },
                             "-EFSCname"
+                        ]
+                    ]
+                }
+            }
+        },
+        "SGname": {
+            "Description": "The name of the SecurityGroup",
+            "Value": {
+                "Ref": "SecurityGroup"
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "AWS::StackName"
+                            },
+                            "-SGname"
                         ]
                     ]
                 }
