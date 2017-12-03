@@ -635,7 +635,7 @@ Mappings:
       HVM64: ami-5a71e936
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-9335a8e9
+      HVM64: ami-8e53caf4
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-1ccc9679
@@ -644,7 +644,7 @@ Mappings:
       HVM64: ami-f0267790
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-82974efa
+      HVM64: ami-86cb13fe
       HVMG2: NOT_SUPPORTED
   JIRAProduct2NameAndVersion:
     Software:
@@ -755,6 +755,7 @@ Resources:
                             - !GetAtt [LoadBalancer, DNSName]
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
                     - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
+                    - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
