@@ -317,7 +317,8 @@ function configureSharedHome {
     local CONFLUENCE_SHARED="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home"
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${CONFLUENCE_SHARED}"; then
         mkdir -p "${CONFLUENCE_SHARED}"
-        chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1
         su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
         atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
