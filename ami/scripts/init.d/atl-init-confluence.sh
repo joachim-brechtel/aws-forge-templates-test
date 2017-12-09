@@ -43,9 +43,12 @@ function configureConfluenceEnvironmentVariables (){
        su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xmx(\w+) (.*)$/\1Xmx${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
        su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xms(\w+) (.*)$/\1Xms${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
    fi
+
+   atl_resolveHostNamesAndIps > /dev/null 2>&1
+
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
-CATALINA_OPTS="\${CATALINA_OPTS} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.node.name=${_ATL_PRIVATE_IPV4} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
 export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
@@ -81,7 +84,7 @@ function configureSharedHome {
         atl_log "Linking ${CONFLUENCE_SHARED} to ${ATL_CONFLUENCE_SHARED_HOME}"
         mkdir -p "${CONFLUENCE_SHARED}"
         chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
-        chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1
+        chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1 #TODO fix this it breaks on new installs with no shared home data
         su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
         atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
