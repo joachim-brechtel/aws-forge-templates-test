@@ -172,6 +172,7 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Dcluster.join.type=aws \
 -Dcluster.join.aws.tag.key=${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY} \
 -Dcluster.join.aws.tag.value=${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE} \
+-Dcluster.join.aws.region=${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION} \
 -Djwt.private.key=${SYNCHRONY_JWT_PRIVATE_KEY} \
 -Djwt.public.key=${SYNCHRONY_JWT_PUBLIC_KEY}"
 }

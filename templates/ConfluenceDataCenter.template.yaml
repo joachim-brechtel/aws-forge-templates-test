@@ -825,7 +825,7 @@ Mappings:
       HVM64: ami-cbb7c4a7
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-183d5b62
+      HVM64: ami-ff197785
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-5bbf9c3e
@@ -834,7 +834,7 @@ Mappings:
       HVM64: ami-55f3c735
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-56f62c2e
+      HVM64: ami-3dcf6845
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -1145,7 +1145,7 @@ Resources:
         - Key: Name
           Value: !Sub ["${StackName} Synchrony Node", StackName: !Ref 'AWS::StackName']
           PropagateAtLaunch: true
-        - Key: micros_service_id
+        - Key: synchrony_service
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
         - Key: environment
@@ -1222,7 +1222,7 @@ Resources:
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
-                    - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=micros_service_id"
+                    - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=synchrony_service"
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
             /etc/cfn/cfn-hup.conf:
               content:
