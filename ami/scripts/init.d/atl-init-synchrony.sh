@@ -258,11 +258,13 @@ function stopSynchrony() {
 function installConfluence {
     atl_log "Checking if ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} has already been installed"
 
-    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
-    echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
-    sudo ldconfig
-    service collectd restart
-    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
+    if [ "true" = "${ATL_USE_COLLECTD}" ] && [ -e /etc/init.d/collectd ]; then
+        atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
+        echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
+        sudo ldconfig
+        service collectd restart
+        atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
+    fi
 
     if [[ -d "${ATL_CONFLUENCE_INSTALL_DIR}" ]]; then
         local ERROR_MESSAGE="${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} install directory ${ATL_CONFLUENCE_INSTALL_DIR} already exists - aborting installation"
