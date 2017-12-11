@@ -1490,9 +1490,9 @@ Resources:
       Port: 8080
       Protocol: HTTP
       VpcId: !Ref VPC
-      HealthCheckIntervalSeconds: 30
+      HealthCheckIntervalSeconds: 20
       HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 4
+      HealthyThresholdCount: 2
       Matcher:
         HttpCode: 200
       HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
@@ -1516,9 +1516,9 @@ Resources:
       Port: 8091
       Protocol: HTTP
       VpcId: !Ref VPC
-      HealthCheckIntervalSeconds: 30
+      HealthCheckIntervalSeconds: 20
       HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 4
+      HealthyThresholdCount: 2
       Matcher:
         HttpCode: 200
       HealthCheckPath: /synchrony/heartbeat
