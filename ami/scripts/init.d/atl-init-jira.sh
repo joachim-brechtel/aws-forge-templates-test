@@ -137,7 +137,9 @@ function configureSharedHome {
         mkdir -p "${JIRA_SHARED}"
         touch "${JIRA_SHARED}/init"
         chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1 
-        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" ${JIRA_SHARED}/* >> "${ATL_LOG}" 2>&1
+        if ! chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" ${JIRA_SHARED}/* >> "${ATL_LOG}" 2>&1; then
+            atl_log "Chown on contents of shared home failed most likley because this is a new cluster and no contents yet exist, moving on"
+        fi
         cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_HOME}/cluster.properties\"" > /dev/null
 jira.node.id = $(curl -f --silent http://169.254.169.254/latest/meta-data/instance-id)
 jira.shared.home = ${JIRA_SHARED}
