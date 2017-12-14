@@ -211,14 +211,12 @@ function configureNginx {
 function installConfluence {
     atl_log "Checking if ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} has already been installed"
 
-    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
+    if [ "true" = "${ATL_USE_COLLECTD}" ] && [ -e /etc/init.d/collectd ]; thenatl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
     echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
     sudo ldconfig
     if [ -n $ATL_STARTCOLLECTD == "true" ]
-    then
-        service collectd restart
-    fi
-    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
+    thenservice collectd restartfi
+    atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"fi
 
     if [[ -d "${ATL_CONFLUENCE_INSTALL_DIR}" ]]; then
         local ERROR_MESSAGE="${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} install directory ${ATL_CONFLUENCE_INSTALL_DIR} already exists - aborting installation"
