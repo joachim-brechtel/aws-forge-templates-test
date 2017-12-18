@@ -29,6 +29,11 @@ ATL_JIRA_SHARED_HOME="${ATL_JIRA_HOME}/shared"
 ATL_JIRA_SERVICE_NAME="jira"
 
 ATL_JIRA_USER="jira" #you don't get to choose user name. Installer creates user 'jira' and that's it
+if [ "${ATL_JIRA_NAME}" == "jira-all" ]; then
+    ATL_JIRA_ALL="true"
+    ATL_JIRA_NAME="jira-software"
+    INSTALL_PRODUCT_LIST="jira-software servicedesk"
+fi
 
 ATL_JIRA_RELEASES_S3_URL="https://s3.amazonaws.com/${ATL_RELEASE_S3_BUCKET}/${ATL_RELEASE_S3_PATH}/${ATL_JIRA_NAME}"
 
@@ -43,6 +48,7 @@ function start {
     fi
 
     configureJIRAHome
+    installOBR
     exportCatalinaOpts
     configureJiraEnvironmentVariables
     if [[ -n "${ATL_DB_NAME}" ]]; then
@@ -136,7 +142,7 @@ function configureSharedHome {
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${JIRA_SHARED}"; then
         mkdir -p "${JIRA_SHARED}"
         touch "${JIRA_SHARED}/init"
-        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1 
+        chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${JIRA_SHARED}" >> "${ATL_LOG}" 2>&1
         if ! chown -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" ${JIRA_SHARED}/* >> "${ATL_LOG}" 2>&1; then
             atl_log "Chown on contents of shared home failed most likley because this is a new cluster and no contents yet exist, moving on"
         fi
@@ -159,7 +165,7 @@ function configureJIRAHome {
     initInstanceData "tmp"
 
     atl_log "Setting ownership of ${ATL_JIRA_HOME} to '${ATL_JIRA_USER}' user"
-    chown -R -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_HOME}" >> "${ATL_LOG}" 2>&1 
+    chown -R -H "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_HOME}" >> "${ATL_LOG}" 2>&1
     # if jira-config.properties exists at /media/atl/jira/shared/ then copy it to /var/atlassian/application-data/jira
     if [ -e /media/atl/jira/shared/jira-config.properties ]; then
         if cp /media/atl/jira/shared/jira-config.properties /var/atlassian/application-data/jira/jira-config.properties; then
@@ -209,7 +215,7 @@ function configureRemoteDb {
 
     if [[ -n "${ATL_DB_PASSWORD}" ]]; then
         atl_configureDbPassword "${ATL_DB_PASSWORD}" "*" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
-        
+
         if atl_roleExists ${ATL_JDBC_USER} "postgres" ${ATL_DB_HOST} ${ATL_DB_PORT}; then
             atl_log "${ATL_JDBC_USER} role already exists. Skipping role creation."
         else
@@ -246,7 +252,7 @@ function restoreInstaller {
         cp $ATL_APP_DATA_MOUNT/$JIRA_INSTALLER $(atl_tempDir)/installer
     else
         local msg="${ATL_LOG_HEADER} ${ATL_JIRA_SHORT_DISPLAY_NAME} installer $JIRA_INSTALLER has been requested, but unable to locate it in shared mount directory"
-        atl_log "${msg}" 
+        atl_log "${msg}"
         atl_fatal_error "${msg}"
     fi
 
@@ -338,7 +344,7 @@ function cleanupJIRA {
 function installJIRA {
     atl_log "Checking if the jira version requested is newer than one currently installed (ie if this is an upgrade)"
     requestedVersion=${ATL_JIRA_VERSION}
-    # note for override versions we are ignoring the release type component (ie m00001) of the installer intentionally 
+    # note for override versions we are ignoring the release type component (ie m00001) of the installer intentionally
     if [[ -n $ATL_JIRA_INSTALLER_DOWNLOAD_URL ]]; then
       overrideVersion=$(sed -rn 's/ATL_JIRA_INSTALLER_DOWNLOAD_URL.+atlassian-jira-\w+-([0-9]\.[0-9]\.[0-9])-.*x64.bin/\1/p' /etc/atl)
     fi
@@ -359,7 +365,7 @@ function installJIRA {
         cleanupJIRA
       fi
     fi
-    
+
     atl_log "Checking if ${ATL_JIRA_SHORT_DISPLAY_NAME} has already been installed"
     if [[ -d "${ATL_JIRA_INSTALL_DIR}" ]]; then
         local ERROR_MESSAGE="${ATL_JIRA_SHORT_DISPLAY_NAME} install directory ${ATL_JIRA_INSTALL_DIR} already exists - aborting installation"
@@ -379,9 +385,28 @@ function installJIRA {
     atl_log "Cleaning up"
     rm -rf "$(atl_tempDir)"/installer* >> "${ATL_LOG}" 2>&1
 
-    chown -R "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_INSTALL_DIR}" 
+    chown -R "${ATL_JIRA_USER}":"${ATL_JIRA_USER}" "${ATL_JIRA_INSTALL_DIR}"
 
     atl_log "${ATL_JIRA_SHORT_DISPLAY_NAME} installation completed"
+}
+
+function installOBR {
+    if [[ ATL_JIRA_ALL="true" ]]; then # retrieve and drop OBR for JSD into /media/atl/jira/shared/plugins
+        JIRA_VERSION=$(cat /media/atl/jira-software.version)
+        PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
+        atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
+        JSD_OBR_NAME=$(aws s3 ls s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/|grep jira-servicedesk-application|grep obr|awk '{print $4}')
+        OBR_S3_LOCATION="s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/${JSD_OBR_NAME}"
+        # if obr doesnt exist on efs, fetch it
+        if [ ! -f /media/atl/${JSD_OBR_NAME} ]; then
+            aws s3 cp ${OBR_S3_LOCATION} /media/atl/${JSD_OBR_NAME}
+        fi
+        if ! mkdir -p ${PLUGIN_DIR};then echo "plugins dir already exists"; fi
+        if ! chown -R jira:jira /media/atl/jira/shared/plugins; then echo "chown of plugins failed"; fi
+        # and unpack the JARS to /media/atl/jira/shared/plugins/installed-plugins
+        cd /media/atl/jira/shared/plugins/installed-plugins
+        unzip -j /media/atl/${JSD_OBR_NAME} *.jar
+    fi
 }
 
 function noJIRA {
