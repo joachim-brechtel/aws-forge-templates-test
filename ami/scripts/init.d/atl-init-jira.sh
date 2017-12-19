@@ -350,7 +350,8 @@ function installJIRA {
     fi
     # overrideVersion always wins out over requestedVersion
     if [[ -n $overrideVersion ]]; then requestedVersion=$overrideVersion; fi
-    if [ -e /media/atl/jira-core.version ]; then currentVersion="$(cat /media/atl/jira-core.version 2>/dev/null)"; fi
+    lastVersionFile=$(ls -tr1 /media/atl/jira*.version |tail -1)
+    if [[ -n $lastVersionFile ]]; then currentVersion="$(cat $lastVersionFile 2>/dev/null)"; fi
     if [[ -n $currentVersion ]] && [[ -n $requestedVersion ]] ; then
       # abend if requested version is older than current
       if [[ $(echo -e "$currentVersion\n$requestedVersion"|sort -V|head -1) != $currentVersion ]]; then
@@ -358,6 +359,8 @@ function installJIRA {
         atl_log "${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
       fi
+      # remove version file to allow new version download/deploy
+      rm $lastVersionFile
       # else ensure the node is cleaned up ready for fresh install of newer release
       atl_log "Confirming this IS an upgrade ! - if requestedVersion is not 'latest' then clean up the environment"
       if [[ $requestedVersion != "latest" ]]; then
