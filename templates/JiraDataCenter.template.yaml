@@ -686,7 +686,7 @@ Mappings:
       HVM64: ami-5a71e936
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-ec761d96
+      HVM64: ami-7589f60f
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-1ccc9679
@@ -695,7 +695,7 @@ Mappings:
       HVM64: ami-f0267790
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-00cf6978
+      HVM64: ami-16dd7f6e
       HVMG2: NOT_SUPPORTED
   JIRAProduct2NameAndVersion:
     Software:
