@@ -405,7 +405,7 @@ function installOBR {
         if ! chown -R jira:jira /media/atl/jira/shared/plugins; then echo "chown of plugins failed"; fi
         # and unpack the JARS to /media/atl/jira/shared/plugins/installed-plugins
         cd /media/atl/jira/shared/plugins/installed-plugins
-        unzip -j /media/atl/${JSD_OBR_NAME} *.jar
+        unzip -nj /media/atl/${JSD_OBR_NAME} '*.jar'
     fi
 }
 
