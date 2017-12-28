@@ -55,6 +55,10 @@ function start {
         configureRemoteDb
     fi
 
+    atl_log "=== BEGIN: service atl-init-jira runLocalAnsible ==="
+    runLocalAnsible
+    atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
+
     goJIRA
 
     atl_log "=== END:   service atl-init-jira start ==="

@@ -29,6 +29,10 @@ function start {
         configureRemoteDb
     fi
 
+    atl_log "=== BEGIN: service atl-init-confluence runLocalAnsible ==="
+    runLocalAnsible
+    atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
+
     goCONF
 
     atl_log "=== END:   service atl-init-confluence start ==="
@@ -47,8 +51,22 @@ function configureConfluenceEnvironmentVariables (){
    atl_resolveHostNamesAndIps > /dev/null 2>&1
 
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintAdaptiveSizePolicy"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintCompilation"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintGCDetails"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:NumberOfGCLogFiles=10"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:GCLogFileSize=5m"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+UseGCLogFileRotation"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.upgrade.recovery.file.enabled=false"
+CATALINA_OPTS="\${CATALINA_OPTS} -Djava.net.preferIPv4Stack=true"
+CATALINA_OPTS="\${CATALINA_OPTS} -Djira.executor.threadpool.size=16"
+CATALINA_OPTS="\${CATALINA_OPTS} -Datlassian.event.thread_pool_configuration.queue_size=4096"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dshare.group.email.mapping=atlassian-all:atlassian-all@atlassian.com,atlassian-staff:atlassian-staff@atlassian.com"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.hazelcast.max.no.heartbeat.seconds=60"
+CATALINA_OPTS="\${CATALINA_OPTS} -Datlassian.plugins.enable.wait=300"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.node.name=${_ATL_PRIVATE_IPV4}"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
 
-CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.node.name=${_ATL_PRIVATE_IPV4} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
 export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
@@ -89,7 +107,7 @@ function configureSharedHome {
         fi
         su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
-        atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
+        atl_log "No mountpoint for shared home exists."
     fi
     atl_log "=== END:   service atl-init-confluence configureSharedHome ==="
 }
@@ -211,11 +229,13 @@ function configureNginx {
 function installConfluence {
     atl_log "Checking if ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} has already been installed"
 
-    if [ "true" = "${ATL_USE_COLLECTD}" ] && [ -e /etc/init.d/collectd ]; then
+    if [[ "${ATL_USE_COLLECTD}" = true && -e /etc/init.d/collectd ]]; then
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
         echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
         sudo ldconfig
-        if [ -n $ATL_STARTCOLLECTD == "true" ]; then service collectd restart
+        if [ -n $ATL_STARTCOLLECTD == "true" ]; then
+            service collectd restart
+        fi
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
     fi
 
