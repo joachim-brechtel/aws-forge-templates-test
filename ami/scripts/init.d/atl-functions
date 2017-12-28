@@ -381,6 +381,6 @@ function atl_resolveHostNamesAndIps {
 
 function runLocalAnsible {
     if ! /usr/local/bin/local-ansible-run; then
-        atl_log "Local ansible run did not complete. See /var/log/ansible.log for details."
+        atl_log "Local ansible script does not exist"
     fi
 }
