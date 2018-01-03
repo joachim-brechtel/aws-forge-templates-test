@@ -828,7 +828,7 @@ Mappings:
       HVM64: ami-1fb3f473
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-3c0d4246
+      HVM64: ami-a4f7a3de
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-edc9e088
@@ -837,7 +837,7 @@ Mappings:
       HVM64: ami-666e6b06
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-b0e54cc8
+      HVM64: ami-a08c27d8
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
