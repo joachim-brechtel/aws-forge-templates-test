@@ -23,6 +23,9 @@ function start {
     configureConfluenceHome
     exportCatalinaOpts
     configureConfluenceEnvironmentVariables
+    if [[ -n "${ATL_AUTOLOGIN_COOKIE_AGE}" ]]; then
+        atl_autologinCookieAge "${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/classes/seraph-config.xml" "${ATL_AUTOLOGIN_COOKIE_AGE}"
+    fi
     if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
         createConfluenceDbAndRole
     elif [[ -n "${ATL_DB_NAME}" ]]; then
