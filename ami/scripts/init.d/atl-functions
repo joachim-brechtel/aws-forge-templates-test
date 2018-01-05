@@ -361,6 +361,44 @@ EOT
     su "${USER}" -c "xsltproc -o \"${WEB_XML}\" \"$(atl_tempDir)/web.xslt\" \"${WEB_XML}\"" >> "${ATL_LOG}" 2>&1 || true
 }
 
+function atl_autologinCookieAge {
+    local USER="${1}"
+    local SERAPH_XML="${2}"
+    local COOKIE_AGE="${3}"
+
+    atl_log "Updating seraph.xml to limit cookie age."
+
+    cat <<EOT | su "${USER}" -c "tee \"$(atl_tempDir)/seraph.xslt\"" >> "${ATL_LOG}" 2>&1
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:output omit-xml-declaration="yes" indent="yes"/>
+    <xsl:template match="@*|node()">
+        <xsl:copy>
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:copy>
+    </xsl:template>
+    <xsl:template match="/security-config/parameters">
+     <xsl:choose>
+         <xsl:when test="not(init-param[contains(param-name, 'autologin.cookie.age')])">
+                <xsl:copy>
+                 <xsl:apply-templates select="@*|node()"/>
+                 <init-param>
+                    <param-name>autologin.cookie.age</param-name>
+                    <param-value>${COOKIE_AGE}</param-value>
+                 </init-param>
+                </xsl:copy>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:copy>
+             <xsl:apply-templates select="@*|node()"/>
+            </xsl:copy>
+        </xsl:otherwise>
+     </xsl:choose>
+    </xsl:template>
+</xsl:stylesheet>
+EOT
+    su "${USER}" -c "xsltproc -o \"${SERAPH_XML}\" \"$(atl_tempDir)/seraph.xslt\" \"${SERAPH_XML}\"" >> "${ATL_LOG}" 2>&1 || true
+}
+
 function atl_hostName {
     atl_resolveHostNamesAndIps > /dev/null 2>&1
 

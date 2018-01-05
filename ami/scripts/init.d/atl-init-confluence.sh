@@ -23,6 +23,9 @@ function start {
     configureConfluenceHome
     exportCatalinaOpts
     configureConfluenceEnvironmentVariables
+    if [[ -n "${ATL_AUTOLOGIN_COOKIE_AGE}" ]]; then
+        atl_autologinCookieAge "${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/classes/seraph-config.xml" "${ATL_AUTOLOGIN_COOKIE_AGE}"
+    fi
     if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
         createConfluenceDbAndRole
     elif [[ -n "${ATL_DB_NAME}" ]]; then
@@ -52,7 +55,6 @@ function configureConfluenceEnvironmentVariables (){
 
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintAdaptiveSizePolicy"
-CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintCompilation"
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintGCDetails"
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:NumberOfGCLogFiles=10"
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:GCLogFileSize=5m"
