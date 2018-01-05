@@ -35,6 +35,7 @@ Metadata:
           default: Networking
         Parameters:
           - AssociatePublicIpAddress
+          - AutologinCookieAge
           - CidrBlock
           - ExternalSubnets
           - InternalSubnets
@@ -90,6 +91,8 @@ Metadata:
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
+      AutologinCookieAge:
+        default: Remember Me cookie expiry
       BastionAMIOS:
         default: Bastion AMI Operating System
       BastionBanner:
@@ -204,6 +207,10 @@ Parameters:
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
+    Type: String
+  AutologinCookieAge:
+    Default: ''
+    Description: Sets the Remember Me (autologin) cookie exipry length in seconds. NB: If blank this defaults to 1 year.
     Type: String
   BastionAMIOS:
     AllowedValues:
@@ -928,6 +935,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
+                    - !Sub ["ATL_AUTOLOGIN_COOKIE_AGE=${AutologinCookieAge}", AutologinCookieAge: !Ref AutologinCookieAge]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
                     - !Sub ["ATL_CONFLUENCE_VERSION=${ConfluenceVersion}", ConfluenceVersion: !Ref ConfluenceVersion]
