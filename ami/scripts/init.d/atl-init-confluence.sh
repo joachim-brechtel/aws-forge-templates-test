@@ -55,7 +55,6 @@ function configureConfluenceEnvironmentVariables (){
 
    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintAdaptiveSizePolicy"
-CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintCompilation"
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintGCDetails"
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:NumberOfGCLogFiles=10"
 CATALINA_OPTS="\${CATALINA_OPTS} -XX:GCLogFileSize=5m"
