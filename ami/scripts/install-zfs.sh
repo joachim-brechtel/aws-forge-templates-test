@@ -11,7 +11,7 @@ if [[ "${APP_DATA_FS_TYPE}" = "zfs" ]]; then
 
     wget http://download.zfsonlinux.org/epel/zfs-release.el6.noarch.rpm
     sudo rpm --import /tmp/RPM-GPG-KEY-zfsonlinux.key
-    if sudo rpm -K zfs-release.el6.noarch.rpm | grep "NOT OK"; then
+    if ! sudo rpm -K zfs-release.el6.noarch.rpm ; then
      echo "Could not verify signature of zfs-release package"
      exit 1
     fi
