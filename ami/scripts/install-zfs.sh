@@ -9,8 +9,13 @@ if [[ "${APP_DATA_FS_TYPE}" = "zfs" ]]; then
     # This can be removed when we unlock the version, which should be possible when ZFS on Linux 6.5.10 is released.
     sudo yum install -y "kernel-devel-$(uname -r)"
 
-    sudo yum localinstall -y http://download.zfsonlinux.org/epel/zfs-release.el6.noarch.rpm
-    sudo gpg --quiet --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-zfsonlinux
+    wget http://download.zfsonlinux.org/epel/zfs-release.el6.noarch.rpm
+    sudo rpm --import /tmp/RPM-GPG-KEY-zfsonlinux.key
+    if sudo rpm -K zfs-release.el6.noarch.rpm | grep "NOT OK"; then
+     echo "Could not verify signature of zfs-release package"
+     exit 1
+    fi
+    sudo yum -y localinstall zfs-release.el6.noarch.rpm
     sudo yum install -y zfs
     sudo /sbin/modprobe zfs
 
