@@ -15,7 +15,7 @@ if [[ "${APP_DATA_FS_TYPE}" = "zfs" ]]; then
      echo "Could not verify signature of zfs-release package"
      exit 1
     fi
-    sudo yum -y localinstall zfs-release.el6.noarch.rpm
+    sudo yum -y localinstall --setopt=localpkg_gpgcheck=1 zfs-release.el6.noarch.rpm
     sudo yum install -y zfs
     sudo /sbin/modprobe zfs
 

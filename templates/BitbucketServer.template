@@ -464,63 +464,63 @@
     },
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-b3217fc9",
+        "HVM64": "ami-af82dbd5",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-54f5a13b",
+        "HVM64": "ami-c9194ea6",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-3": {
-        "HVM64": "ami-ed02b590",
+        "HVM64": "ami-9b01b6e6",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-2": {
-        "HVM64": "ami-c5879fa1",
+        "HVM64": "ami-e7b7af83",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-5e118127",
+        "HVM64": "ami-d0b122a9",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-91bd1dff",
+        "HVM64": "ami-7595351b",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-c3aa33a5",
+        "HVM64": "ami-b6f56dd0",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-f735779b",
+        "HVM64": "ami-f44e0c98",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ca-central-1": {
-        "HVM64": "ami-ffff7a9b",
+        "HVM64": "ami-55840131",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-d9deaea5",
+        "HVM64": "ami-b9691ac5",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-be906ddc",
+        "HVM64": "ami-36e71a54",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-central-1": {
-        "HVM64": "ami-4d9c0e22",
+        "HVM64": "ami-5e41d331",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-east-2": {
-        "HVM64": "ami-25a68d40",
+        "HVM64": "ami-5388a336",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-fd81819d",
+        "HVM64": "ami-81a7a7e1",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-bb76c2c3",
+        "HVM64": "ami-d71eaaaf",
         "HVMG2": "NOT_SUPPORTED"
       }
     }
