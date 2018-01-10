@@ -147,6 +147,10 @@
       "DIY_BACKUP_USER=ec2-user"
     ]
   }, {
+    "type": "file",
+    "source": "keys/RPM-GPG-KEY-zfsonlinux.key",
+    "destination": "/tmp/RPM-GPG-KEY-zfsonlinux.key"  
+    }, {
     "type": "shell",
     "script": "scripts/install-zfs.sh",
     "environment_vars": [
