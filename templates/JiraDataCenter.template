@@ -47,7 +47,7 @@
             "AssociatePublicIpAddress",
             "KeyName",
             "CustomDnsName",
-            "SSLCertificateName"
+            "SSLCertificateArn"
           ]
         },
         {
@@ -103,8 +103,8 @@
         "CustomDnsName": {
           "default": "Existing DNS name (optional)"
         },
-        "SSLCertificateName": {
-          "default": "SSL Certificate Name"
+        "SSLCertificateArn": {
+          "default": "SSL Certificate Arn"
         },
         "ExternalSubnets": {
           "default": "External subnets *"
@@ -251,11 +251,11 @@
       "Description": "Use custom existing DNS name for your JIRA Data Center instance. Please note: you must own the domain and configure it to point at the load balancer.",
       "Type": "String"
     },
-    "SSLCertificateName": {
-      "Description": "The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
+    "SSLCertificateArn": {
+      "Description": "The ARN of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
       "Type": "String",
       "MinLength": "0",
-      "MaxLength": "32",
+      "MaxLength": "128",
       "Default": ""
     },
     "StartCollectd": {
@@ -330,7 +330,7 @@
         {
           "Fn::Equals": [
             {
-              "Ref": "SSLCertificateName"
+              "Ref": "SSLCertificateArn"
             },
             ""
           ]
@@ -1060,19 +1060,7 @@
                   "JSessionIdStickiness"
                 ],
                 "SSLCertificateId": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:aws:iam::",
-                      {
-                        "Ref": "AWS::AccountId"
-                      },
-                      ":server-certificate/",
-                      {
-                        "Ref": "SSLCertificateName"
-                      }
-                    ]
-                  ]
+                  "Ref": "SSLCertificateArn"
                 }
               },
               {
