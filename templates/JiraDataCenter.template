@@ -580,6 +580,7 @@
                               }
                           ]
                       },
+                      "\n",
                       "ATL_DB_PASSWORD=",
                       {
                         "Ref": "DBMasterUserPassword"
