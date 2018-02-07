@@ -316,7 +316,7 @@
     "UseCustomDnsName": {
       "Fn::Not": [
         {
-          "Fn::Equals" : [
+          "Fn::Equals": [
             {
               "Ref": "CustomDnsName"
             },
@@ -429,60 +429,64 @@
       }
     },
     "AWSRegionArch2AMI": {
-      "us-east-1": {
-        "HVM64": "ami-bb5642ac",
+      "eu-central-1": {
+        "HVM64": "ami-6d0f6b02",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-south-1": {
-        "HVM64": "ami-67c6b108",
+        "HVM64": "ami-ffa2f190",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "eu-west-3": {
+        "HVM64": "ami-9ba117e6",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-2": {
-        "HVM64": "ami-eeede78a",
+        "HVM64": "ami-92a84df5",
         "HVMG2": "NOT_SUPPORTED"
       },
       "eu-west-1": {
-        "HVM64": "ami-afcaeadc",
+        "HVM64": "ami-6d86ef14",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-15a0767b",
+        "HVM64": "ami-c8d173a6",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-da107bbd",
+        "HVM64": "ami-536a1d35",
         "HVMG2": "NOT_SUPPORTED"
       },
       "sa-east-1": {
-        "HVM64": "ami-5a71e936",
+        "HVM64": "ami-39004e55",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ca-central-1": {
-        "HVM64": "ami-ab2a98cf",
+        "HVM64": "ami-60921604",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-b7ae00d4",
+        "HVM64": "ami-e5155499",
         "HVMG2": "NOT_SUPPORTED"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-5bc2f938",
+        "HVM64": "ami-ebdb2089",
         "HVMG2": "NOT_SUPPORTED"
       },
-      "eu-central-1": {
-        "HVM64": "ami-982aeaf7",
+      "us-east-1": {
+        "HVM64": "ami-a3ddd3d9",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-east-2": {
-        "HVM64": "ami-1ccc9679",
+        "HVM64": "ami-299faa4c",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-1": {
-        "HVM64": "ami-f0267790",
+        "HVM64": "ami-7aaaa51a",
         "HVMG2": "NOT_SUPPORTED"
       },
       "us-west-2": {
-        "HVM64": "ami-560fbb36",
+        "HVM64": "ami-b454d0cc",
         "HVMG2": "NOT_SUPPORTED"
       }
     },
@@ -571,15 +575,16 @@
                       "ATL_DB_NAME=jira\n",
                       "ATL_DB_USER=jira\n",
                       {
-                          "Fn::Sub": [
-                              "ATL_CATALINA_OPTS=\"${CatalinaOpts}\"",
-                              {
-                                  "CatalinaOpts": {
-                                      "Ref": "CatalinaOpts"
-                                  }
-                              }
-                          ]
+                        "Fn::Sub": [
+                          "ATL_CATALINA_OPTS=\"${CatalinaOpts}\"",
+                          {
+                            "CatalinaOpts": {
+                              "Ref": "CatalinaOpts"
+                            }
+                          }
+                        ]
                       },
+                      "\n",
                       "ATL_DB_PASSWORD=",
                       {
                         "Ref": "DBMasterUserPassword"
