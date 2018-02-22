@@ -17,9 +17,9 @@ function start {
     installConfluence
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
         configureNginx
-    elif [[ -n "${ATL_PROXY_NAME}" ]]; then
-        updateHostName "${ATL_PROXY_NAME}"
     fi
+
+    updateHostName "${ATL_PROXY_NAME}"
     configureConfluenceHome
     exportCatalinaOpts
     configureConfluenceEnvironmentVariables

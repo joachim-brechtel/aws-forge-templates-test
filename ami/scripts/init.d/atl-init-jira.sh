@@ -42,11 +42,7 @@ function start {
     atl_log "Initialising ${ATL_JIRA_FULL_DISPLAY_NAME}"
 
     installJIRA
-
-    if [[ -n "${ATL_PROXY_NAME}" ]]; then
-        updateHostName "${ATL_PROXY_NAME}"
-    fi
-
+    updateHostName "${ATL_PROXY_NAME}"
     configureJIRAHome
     installOBR
     exportCatalinaOpts
