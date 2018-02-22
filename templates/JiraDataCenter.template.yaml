@@ -64,11 +64,13 @@ Metadata:
             - DBTimeBetweenEvictionRunsMillis
             - TomcatAcceptCount
             - TomcatConnectionTimeout
+            - TomcatDefaultConnectorPort
             - TomcatEnableLookups
             - TomcatMaxThreads
             - TomcatMinSpareThreads
             - TomcatProtocol
             - TomcatProxyPort
+            - TomcatRedirectPort
             - TomcatScheme
             - TomcatSecure
     ParameterLabels:
@@ -148,6 +150,8 @@ Metadata:
         default: Tomcat Connection Timeout
       TomcatContextPath:
         default: Tomcat Context Path
+      TomcatDefaultConnectorPort:
+        default: Tomcat Default Connector Port
       TomcatEnableLookups:
         default: Tomcat Enable DNS Lookups
       TomcatMaxThreads:
@@ -158,6 +162,8 @@ Metadata:
         default: Tomcat Protocol
       TomcatProxyPort:
         default: Tomcat Proxy Port
+      TomcatRedirectPort:
+        default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
       TomcatSecure:
@@ -430,6 +436,10 @@ Parameters:
   TomcatContextPath:
     Default: ''
     Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+    Type: String
+  TomcatDefaultConnectorPort:
+    Default: 8080
+    Description: The port on which to serve the application
     Type: String
   TomcatEnableLookups:
     Default: false
@@ -774,6 +784,7 @@ Resources:
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
+                    - !Sub ["ATL_TOMCAT_DEFAULTCONNECTORPORT=${TomcatDefaultConnectorPort}", TomcatDefaultConnectorPort: !Ref TomcatDefaultConnectorPort]
                     - !Sub ["ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}", TomcatEnableLookups: !Ref TomcatEnableLookups]
                     - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
                     - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
@@ -926,6 +937,7 @@ Resources:
       TTL: '900'
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
+# Database
   DB:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -959,6 +971,7 @@ Resources:
       TTL: 900
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
+# Loadbalancer
   LoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
@@ -1073,10 +1086,19 @@ Outputs:
     }
   LoadBalancerURL:
     Description: The Load Balancer URL
-    Value: !Sub
+    Value: !If
+      - UseCustomDnsName
+      - !Ref CustomDnsName
+      - !If
+        - UseHostedZone
+        - !Ref LoadBalancerCname
+        - !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [SSLScheme, 'https', 'http']
-        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            LoadBalancerDNSName: !If
+              - UseCustomDnsName
+              - !Ref CustomDnsName
+              - !GetAtt LoadBalancer.DNSName
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
