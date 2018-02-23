@@ -221,8 +221,8 @@ function atl_configureTomcatConnector {
         proxyPort=443
     fi
 
-    local CONNECTOR_MATCHER="@port='DEFAULT_CONNECTOR_PORT'"
-    if [ "x${FORCE}" = "xtrue" ]; then
+    local CONNECTOR_MATCHER="@port='${DEFAULT_CONNECTOR_PORT}'"
+    if [ "x${FORCE}" == "xtrue" ]; then
         atl_log "Force updating server.xml"
     else        
         CONNECTOR_MATCHER+=" and not(@proxyName)"

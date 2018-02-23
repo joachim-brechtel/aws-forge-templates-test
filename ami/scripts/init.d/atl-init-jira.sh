@@ -397,7 +397,7 @@ function installJIRA {
 }
 
 function installOBR {
-    if [[ ATL_JIRA_ALL="true" ]]; then # retrieve and drop OBR for JSD into /media/atl/jira/shared/plugins
+    if [[ ATL_JIRA_ALL == "true" ]]; then # retrieve and drop OBR for JSD into /media/atl/jira/shared/plugins
         JIRA_VERSION=$(cat /media/atl/${ATL_JIRA_NAME}.version)
         PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
         atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
