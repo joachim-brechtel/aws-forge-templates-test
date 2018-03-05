@@ -187,6 +187,8 @@ function atl_setNginxHostName {
 }
 
 function atl_configureTomcatConnector {
+    atl_log "Configuring Tomcat connectors"
+
     local HOST_NAME="${1}"
     local DEFAULT_CONNECTOR_PORT="${2}"
     local REDIRECT_CONNECTOR_PORT="${3}"
@@ -219,8 +221,8 @@ function atl_configureTomcatConnector {
         proxyPort=443
     fi
 
-    local CONNECTOR_MATCHER="@port='${defaultConnectorPort}'"
-    if [ "x${FORCE}" = "xtrue" ]; then
+    local CONNECTOR_MATCHER="@port='${DEFAULT_CONNECTOR_PORT}'"
+    if [ "x${FORCE}" == "xtrue" ]; then
         atl_log "Force updating server.xml"
     else        
         CONNECTOR_MATCHER+=" and not(@proxyName)"
@@ -285,6 +287,8 @@ EOT
     if $secure ; then        
         atl_transformWebXml "${USER}" "${WEB_XML}"
     fi
+
+    atl_log "Tomcat connector configuration complete"
 }
 
 function atl_addRedirectConnectorServerXml {

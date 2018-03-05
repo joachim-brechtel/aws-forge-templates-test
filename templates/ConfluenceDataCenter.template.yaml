@@ -80,6 +80,7 @@ Metadata:
             - DBAcquireIncrement
             - TomcatAcceptCount
             - TomcatConnectionTimeout
+            - TomcatDefaultConnectorPort
             - TomcatEnableLookups
             - TomcatMaxThreads
             - TomcatMinSpareThreads
@@ -183,6 +184,8 @@ Metadata:
         default: Tomcat Connection Timeout
       TomcatContextPath:
         default: Tomcat Context Path
+      TomcatDefaultConnectorPort:
+        default: Tomcat Default Connector Port
       TomcatEnableLookups:
         default: Tomcat Enable DNS Lookups
       TomcatMaxThreads:
@@ -309,7 +312,7 @@ Parameters:
     Description: Instance type for the cluster application nodes.
     Type: String
   ClusterNodeMax:
-    Default: 6
+    Default: 1
     Type: Number
   ClusterNodeMin:
     Default: 1
@@ -575,6 +578,10 @@ Parameters:
     Default: ''
     Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
     Type: String
+  TomcatDefaultConnectorPort:
+    Default: 8080
+    Description: The port on which to serve the application
+    Type: String
   TomcatEnableLookups:
     Default: false
     Description: Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client
@@ -673,7 +680,7 @@ Mappings:
       Jvmheap: 12288m
     c5.large:
       Arch: HVM64
-      Jvmheap: 3072m
+      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
       Jvmheap: 6144m
@@ -835,7 +842,7 @@ Mappings:
       HVM64: ami-1fb3f473
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-7983df03
+      HVM64: ami-5f11f222
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-edc9e088
@@ -844,7 +851,7 @@ Mappings:
       HVM64: ami-666e6b06
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-4919ac31
+      HVM64: ami-6270ff1a
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -962,6 +969,7 @@ Resources:
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
+                    - !Sub ["ATL_TOMCAT_DEFAULTCONNECTORPORT=${TomcatDefaultConnectorPort}", TomcatDefaultConnectorPort: !Ref TomcatDefaultConnectorPort]
                     - !Sub ["ATL_TOMCAT_ENABLELOOKUPS=${TomcatEnableLookups}", TomcatEnableLookups: !Ref TomcatEnableLookups]
                     - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
                     - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
