@@ -287,7 +287,6 @@ Parameters:
     MaxValue: 3000
     Type: Number
   DBMasterUserPassword:
-    Default: ''
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -319,7 +318,6 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: ''
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -1093,8 +1091,8 @@ Outputs:
         - UseHostedZone
         - !Ref LoadBalancerCname
         - !Sub
-      - "${HTTP}://${LoadBalancerDNSName}"
-      - HTTP: !If [SSLScheme, 'https', 'http']
+          - "${HTTP}://${LoadBalancerDNSName}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
             LoadBalancerDNSName: !If
               - UseCustomDnsName
               - !Ref CustomDnsName
