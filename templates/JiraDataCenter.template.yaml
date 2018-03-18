@@ -287,7 +287,6 @@ Parameters:
     MaxValue: 3000
     Type: Number
   DBMasterUserPassword:
-    Default: ''
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -319,7 +318,6 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: ''
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -846,7 +844,7 @@ Resources:
                           - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
                           - ElasticFileSystem: !Ref ElasticFileSystem
                             Region: !Ref "AWS::Region"
-                    - ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
+                    - ":/ /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
               command: mount -a
@@ -1093,8 +1091,8 @@ Outputs:
         - UseHostedZone
         - !Ref LoadBalancerCname
         - !Sub
-      - "${HTTP}://${LoadBalancerDNSName}"
-      - HTTP: !If [SSLScheme, 'https', 'http']
+          - "${HTTP}://${LoadBalancerDNSName}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
             LoadBalancerDNSName: !If
               - UseCustomDnsName
               - !Ref CustomDnsName
