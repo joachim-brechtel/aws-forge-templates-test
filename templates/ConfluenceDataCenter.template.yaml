@@ -1396,7 +1396,6 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       DBSnapshotIdentifier: !If [DoRestoreFromRDSSnapshot, !Ref DBSnapshotId, !Ref 'AWS::NoValue']
       Engine: postgres
-      EngineVersion: 9.5.2
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
