@@ -98,6 +98,17 @@ function atl_configureDbPassword {
     atl_log "Done configuring DB password for ${DB_HOST}"
 }
 
+function atl_configureDbUserPassword {
+    local DB_USER=$1
+    local DB_PASSWORD=$2
+    local DB_HOST=${3:-"localhost"}
+    local DB_PORT=${4:-"5432"}
+
+    atl_log "Configuring DB user password for ${DB_USER}"
+    (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -U postgres -t --command \"ALTER USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';\"")
+    atl_log "Done configuring DB user password for ${DB_USER}"
+}
+
 function atl_dbExists {
     local DB_NAME=${1:-"postgres"}
     local DB_HOST=${2:-"localhost"}
