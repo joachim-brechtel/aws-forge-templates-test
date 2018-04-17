@@ -191,7 +191,7 @@ function configureRemoteDb {
         if atl_roleExists ${ATL_JDBC_USER} ${ATL_DB_NAME} ${ATL_DB_HOST} ${ATL_DB_PORT}; then
             atl_log "${ATL_BITBUCKET_DB_USER} role already exists. Skipping role creation."
             atl_log "Setting password for ${ATL_JDBC_USER}."
-            atl_configureDbUserPassword "${ATL_JDBC_PASSWORD}" "${ATL_JDBC_USER}" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
+            atl_configureDbUserPassword "${ATL_JDBC_USER}" "${ATL_JDBC_PASSWORD}" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
         else
             atl_createRole "${ATL_BITBUCKET_SHORT_DISPLAY_NAME}" "${ATL_JDBC_USER}" "${ATL_JDBC_PASSWORD}" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
         fi
