@@ -1172,7 +1172,7 @@ Resources:
             !If
               - DoCollectd
               - yum:
-                  collectd: [5.7.1]
+                  collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
