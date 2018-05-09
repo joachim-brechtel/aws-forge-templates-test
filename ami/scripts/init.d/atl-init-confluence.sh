@@ -36,9 +36,31 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
 
+    local baseURL="${ATL_TOMCAT_SCHEME}""://""${ATL_PROXY_NAME}""${ATL_TOMCAT_CONTEXTPATH}"
+    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${DB_NAME}
+
     goCONF
 
     atl_log "=== END:   service atl-init-confluence start ==="
+}
+
+function updateBaseUrl {
+
+  atl_log "=== BEGIN: Updating Server URL ==="
+  local QUERY_RESULT=''
+  local BASE_URL=$1
+  local DB_HOST="$2"
+  local DB_PORT="$3"
+  local DB_NAME="$4"
+  set -f
+
+  (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update bandana set bandanavalue=regexp_replace(bandanavalue, '<baseUrl>.*</baseUrl>', '<baseUrl>${BASE_URL}</baseUrl>') where bandanacontext = '_GLOBAL' and bandanakey = 'atlassian.confluence.settings';\"") >> "${ATL_LOG}" 2>&1
+
+
+  # eval $RESULT="'${TEST_VALUE}'"
+
+  atl_log "=== END: Server baseUrl update ==="
+
 }
 
 function configureConfluenceEnvironmentVariables (){
@@ -118,12 +140,12 @@ function configureConfluenceHome {
     atl_log "Configuring ${ATL_CONFLUENCE_HOME}"
     mkdir -p "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
 
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then 
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
         configureSharedHome
     fi
-    
+
     atl_log "Setting ownership of ${ATL_CONFLUENCE_HOME} to '${ATL_CONFLUENCE_USER}' user"
-    chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1 
+    chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring ${ATL_CONFLUENCE_HOME}"
 }
 
@@ -211,7 +233,7 @@ function configureRemoteDb {
 
     if [[ -n "${ATL_DB_PASSWORD}" ]]; then
         atl_configureDbPassword "${ATL_DB_PASSWORD}" "*" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
-        
+
         if atl_roleExists ${ATL_JDBC_USER} "postgres" ${ATL_DB_HOST} ${ATL_DB_PORT}; then
             atl_log "${ATL_JDBC_USER} role already exists. Skipping role creation."
             atl_log "Setting password for ${ATL_JDBC_USER}."
@@ -326,4 +348,3 @@ case "$1" in
         RETVAL=1
 esac
 exit ${RETVAL}
-
