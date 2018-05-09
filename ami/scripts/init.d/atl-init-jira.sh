@@ -11,13 +11,13 @@ ATL_USER_CONFIG=/etc/atl
 
 ## cleanup each run while debugging
 # verify current at https://extranet.atlassian.com/display/WPT/HOWTO%3A+Do+IT+Ops+Cloudformation+Development
-if pkill -9 -f 'jira/conf/logging.properties'; then echo "killed jira"; fi
-if rm -rf /opt/atlassian/jira; then echo "removed application"; fi
-if userdel jira; then echo "removed user"; fi
-if groupdel jira; then echo "removed group"; fi
-if rm /var/atlassian/application-data/jira/dbconfig.xml; then echo "removed dbconfig"; fi
-if rm /var/atlassian/application-data/jira/cluster.properties; then echo "removed cluster.properties"; fi
-if mv /var/atlassian/application-data/jira/jira-config.properties /var/atlassian/application-data/jira/jira-config-$(date +%y%m%d%H%M).properties; then echo "renamed jira-config.properties"; fi
+# if pkill -9 -f 'jira/conf/logging.properties'; then echo "killed jira"; fi
+# if rm -rf /opt/atlassian/jira; then echo "removed application"; fi
+# if userdel jira; then echo "removed user"; fi
+# if groupdel jira; then echo "removed group"; fi
+# if rm /var/atlassian/application-data/jira/dbconfig.xml; then echo "removed dbconfig"; fi
+# if rm /var/atlassian/application-data/jira/cluster.properties; then echo "removed cluster.properties"; fi
+# if mv /var/atlassian/application-data/jira/jira-config.properties /var/atlassian/application-data/jira/jira-config-$(date +%y%m%d%H%M).properties; then echo "renamed jira-config.properties"; fi
 # if you want this to be like a clean install, also remove shared home, if you want it to be like a second node or upgrade, do not
 # if rm /media/atl/jira; then echo "removed shared_home"; fi
 ## end cleanup code
@@ -70,7 +70,7 @@ function start {
     atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
 
     local baseURL="${ATL_TOMCAT_SCHEME}""://""${ATL_PROXY_NAME}""${ATL_TOMCAT_CONTEXTPATH}"
-    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${DB_NAME}
+    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
 
     goJIRA
 
@@ -88,9 +88,6 @@ function updateBaseUrl {
   set -f
 
   (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update propertystring set propertyvalue = '${BASE_URL}' from propertyentry PE where PE.id=propertystring.id and PE.property_key = 'jira.baseurl';\"") >> "${ATL_LOG}" 2>&1
-
-
-  # eval $RESULT="'${TEST_VALUE}'"
 
   atl_log "=== END: Server baseUrl update ==="
 

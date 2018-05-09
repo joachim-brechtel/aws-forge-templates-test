@@ -5,6 +5,19 @@ set -e
 . /etc/init.d/atl-functions
 . /etc/init.d/atl-confluence-common
 
+## cleanup each run while debugging
+# verify current at https://extranet.atlassian.com/display/WPT/HOWTO%3A+Do+IT+Ops+Cloudformation+Development
+# if pkill -9 -f 'confluence/conf/logging.properties'; then echo "killed confluence"; fi
+# if rm -rf /opt/atlassian/confluence; then echo "removed application"; fi
+# if userdel confluence; then echo "removed user"; fi
+# if groupdel confluence; then echo "removed group"; fi
+# remove the symlink for shared_home to the EFS
+# rm -f /var/atlassian/application-data/confluence/shared-home
+# if you want this to be like a clean install, also remove shared home, if you want it to be like a second node or upgrade, do not
+# if rm -rf /media/atl/confluence; then echo "removed shared_home"; fi
+# if mv /var/atlassian/application-data/confluence/confluence.cfg.xml /var/atlassian/application-data/confluence/confluence.cfg-$(date +%y%m%d%H%M).xml; then echo "moved aside confluence.cfg.xml"; fi
+## end cleanup code
+
 trap 'atl_error ${LINENO}' ERR
 
 ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
@@ -37,7 +50,7 @@ function start {
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
 
     local baseURL="${ATL_TOMCAT_SCHEME}""://""${ATL_PROXY_NAME}""${ATL_TOMCAT_CONTEXTPATH}"
-    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${DB_NAME}
+    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
 
     goCONF
 
@@ -55,9 +68,6 @@ function updateBaseUrl {
   set -f
 
   (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update bandana set bandanavalue=regexp_replace(bandanavalue, '<baseUrl>.*</baseUrl>', '<baseUrl>${BASE_URL}</baseUrl>') where bandanacontext = '_GLOBAL' and bandanakey = 'atlassian.confluence.settings';\"") >> "${ATL_LOG}" 2>&1
-
-
-  # eval $RESULT="'${TEST_VALUE}'"
 
   atl_log "=== END: Server baseUrl update ==="
 
