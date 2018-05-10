@@ -163,6 +163,7 @@ EOT
     if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
         cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
     <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
+    <property name="confluence.cluster">true</property>
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
     <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
