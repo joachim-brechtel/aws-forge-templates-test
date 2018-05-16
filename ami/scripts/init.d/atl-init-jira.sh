@@ -55,7 +55,7 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
 
-    local baseURL="${ATL_TOMCAT_SCHEME}""://""${ATL_PROXY_NAME}""${ATL_TOMCAT_CONTEXTPATH}"
+    local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
     updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
 
     goJIRA
