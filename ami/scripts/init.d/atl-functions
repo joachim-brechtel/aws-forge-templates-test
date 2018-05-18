@@ -48,6 +48,17 @@ function atl_enabled_products {
     done
 }
 
+funcion chownFile {
+
+  local CH_USER=$1
+  local CH_GROUP=$2
+  local CH_OBJECT=$3
+
+  # following pattern of quotes used in chown commands in existing app scripts
+  sudo chown -R -H "${CH_USER}:${CH_GROUP}" "${CH_OBJECT}" >> "${ATL_LOG}" 2>&1
+
+}
+
 function atl_enabled_shared_homes {
     for shared_home in $(echo "${ATL_ENABLED_SHARED_HOMES}" | tr ',' '\n'); do
         echo ${shared_home} | tr '[A-Z]' '[a-z]'

@@ -652,6 +652,9 @@ Resources:
                     - ATL_SSL_SELF_CERT_ENABLED=false
                     - !If [SetupSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Join ["\n", !Ref AMIOpts]
+              mode: 000600
+              owner: root
+              group: root
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - "\n"

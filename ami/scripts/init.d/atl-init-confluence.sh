@@ -2,6 +2,8 @@
 
 set -e
 
+chownFile "bitbucket" "bitbucket" "/etc/atl"
+
 . /etc/init.d/atl-functions
 . /etc/init.d/atl-confluence-common
 
