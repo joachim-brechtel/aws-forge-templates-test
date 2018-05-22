@@ -48,7 +48,7 @@ function atl_enabled_products {
     done
 }
 
-funcion chownFile {
+function chownFile {
 
   local CH_USER=$1
   local CH_GROUP=$2

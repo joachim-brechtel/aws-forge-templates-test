@@ -749,6 +749,9 @@ Resources:
         '0':
           files:
             /etc/atl:
+              mode: "000600"
+              owner: root
+              group: root
               content:
                 'Fn::Join':
                   - "\n"
@@ -803,9 +806,6 @@ Resources:
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
-              mode: 000600
-              owner: root
-              group: root
             /etc/cfn/cfn-hup.conf:
               content:
                 !Join

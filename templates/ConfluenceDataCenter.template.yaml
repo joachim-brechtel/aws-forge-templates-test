@@ -945,6 +945,9 @@ Resources:
               - !Ref "AWS::NoValue"
           files:
             /etc/atl:
+              mode: "000600"
+              owner: root
+              group: root
               content:
                 !Join
                   - "\n"
@@ -1000,9 +1003,6 @@ Resources:
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
-              mode: 000600
-              owner: root
-              group: root
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - "\n"
@@ -1183,6 +1183,9 @@ Resources:
               - Ref "AWS::NoValue"
           files:
             /etc/atl:
+              mode: "000600"
+              owner: root
+              group: root
               content:
                 !Join
                   - "\n"

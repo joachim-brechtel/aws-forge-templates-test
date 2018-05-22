@@ -9,7 +9,6 @@ trap 'atl_error ${LINENO}' ERR
 ATL_FACTORY_CONFIG=/etc/sysconfig/atl
 ATL_USER_CONFIG=/etc/atl
 
-chownFile "bitbucket" "bitbucket" "/etc/atl"
 
 [[ -r "${ATL_FACTORY_CONFIG}" ]] && . "${ATL_FACTORY_CONFIG}"
 [[ -r "${ATL_USER_CONFIG}" ]] && . "${ATL_USER_CONFIG}"
@@ -56,6 +55,8 @@ function start {
     atl_log "=== BEGIN: service atl-init-jira runLocalAnsible ==="
     runLocalAnsible
     atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
+
+    chownFile "jira" "jira" "/etc/atl"
 
     goJIRA
 
