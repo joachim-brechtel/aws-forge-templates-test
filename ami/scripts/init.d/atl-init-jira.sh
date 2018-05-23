@@ -56,7 +56,7 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
 
-    chownFile "jira" "jira" "/etc/atl"
+    recursiveChown "root" "jira" "/etc/atl"
 
     goJIRA
 

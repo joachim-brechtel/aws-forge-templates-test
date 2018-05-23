@@ -37,7 +37,7 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
 
-    chownFile "confluence" "confluence" "/etc/atl"
+    recursiveChown "root" "confluence" "/etc/atl"
 
     goCONF
 

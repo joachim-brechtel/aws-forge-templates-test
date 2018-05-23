@@ -61,7 +61,7 @@ function start {
 
     installBitbucket
     
-    chownFile "bitbucket" "bitbucket" "/etc/atl"
+    # recursiveChown "bitbucket" "bitbucket" "/etc/atl"
 
     startBitbucket
 
