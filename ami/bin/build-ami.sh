@@ -30,6 +30,7 @@ function err_usage {
     exit 1
 }
 
+export AWS_LINUX_VERSION="2017.09.1"
 COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
@@ -98,19 +99,20 @@ if [[ -z "${AWS_SUBNET_ID}" ]]; then
     err_usage "AWS Subnet option not supplied (-s) nor defined as an env var (AWS_SUBNET_ID)"
 fi
 
-if [[ -z "${AWS_ACCESS_KEY}" ]]; then
-    err_usage "AWS_ACCESS_KEY env var not defined"
+if [[ -z "${AWS_ACCESS_KEY:-$AWS_ACCESS_KEY_ID}" ]]; then
+    err_usage "AWS_ACCESS_KEY and AWS_ACCESS_KEY_ID env var not defined"
 fi
 
-if [[ -z "${AWS_SECRET_KEY}" ]]; then
-    err_usage "AWS_SECRET_KEY env var not defined"
+if [[ -z "${AWS_SECRET_KEY:-$AWS_SECRET_ACCESS_KEY}" ]]; then
+    err_usage "AWS_SECRET_KEY and AWS_SECRET_ACCESS_KEY env var not defined"
 fi
 
-DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION")
+DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION" "$AWS_LINUX_VERSION")
 BASE_AMI="${BASE_AMI:-$DEFAULT_BASE_AMI}"
 if [[ -z "${BASE_AMI}" ]]; then
     err_usage "BASE_AMI env var not defined and no mapping found to fall back on"
 fi
+
 
 export AWS_DEFAULT_REGION=${AWS_REGION}
 export TZ=GMT
@@ -126,6 +128,7 @@ packer -machine-readable build \
   -var base_ami="${BASE_AMI}" \
   -var subnet_id="${AWS_SUBNET_ID}" \
   -var "aws_region"="${AWS_REGION}" \
+  -var "aws_linux_version"="${AWS_LINUX_VERSION}" \
   $(dirname $0)/../${ATL_PRODUCT_ID}.json | tee "${TMP_DIR}/packer.log"
 
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
