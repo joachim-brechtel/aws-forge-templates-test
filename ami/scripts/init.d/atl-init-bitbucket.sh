@@ -60,8 +60,6 @@ function start {
     fi
 
     installBitbucket
-    
-    # recursiveChown "bitbucket" "bitbucket" "/etc/atl"
 
     startBitbucket
 
