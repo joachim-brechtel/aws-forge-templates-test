@@ -30,7 +30,7 @@ function err_usage {
     exit 1
 }
 
-export AWS_LINUX_VERSION="2017.09.1"
+export AWS_LINUX_VERSION="2018.03.0"
 COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
