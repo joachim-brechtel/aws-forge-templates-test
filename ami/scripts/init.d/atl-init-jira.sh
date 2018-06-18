@@ -9,6 +9,7 @@ trap 'atl_error ${LINENO}' ERR
 ATL_FACTORY_CONFIG=/etc/sysconfig/atl
 ATL_USER_CONFIG=/etc/atl
 
+
 [[ -r "${ATL_FACTORY_CONFIG}" ]] && . "${ATL_FACTORY_CONFIG}"
 [[ -r "${ATL_USER_CONFIG}" ]] && . "${ATL_USER_CONFIG}"
 
@@ -55,8 +56,12 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
 
+<<<<<<< HEAD
     local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
     updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
+=======
+    recursiveChown "root" "jira" "/etc/atl"
+>>>>>>> 1d5696d4fadfee9e99419af1036b0ce0f4e6d7fe
 
     goJIRA
 
@@ -360,7 +365,7 @@ function cleanupJIRA {
     # cleanup pre-existing Jira
     if rm -rf /opt/atlassian/jira ; then echo "install cleaned up"; fi
     if userdel jira ; then echo "user cleaned up"; fi
-    if delgroup jira ; then echo "group cleaned up"; fi
+    if groupdel jira ; then echo "group cleaned up"; fi
     if rm /media/atl/atlassian-jira-core-*.bin ; then echo "installer cleaned up"; fi
     if rm /media/atl/jira-core.version /var/atlassian/application-data/jira/cluster.properties /var/atlassian/application-data/jira/dbconfig.xml ; then echo "config cleaned up"; fi
 }
@@ -418,7 +423,7 @@ function installJIRA {
 }
 
 function installOBR {
-    if [[ ATL_JIRA_ALL == "true" ]]; then # retrieve and drop OBR for JSD into /media/atl/jira/shared/plugins
+    if [[ "${ATL_JIRA_ALL}" == "true" ]]; then # retrieve and drop OBR for JSD into /media/atl/jira/shared/plugins
         JIRA_VERSION=$(cat /media/atl/${ATL_JIRA_NAME}.version)
         PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
         atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
