@@ -7,7 +7,9 @@ set -e
 
 trap 'atl_error ${LINENO}' ERR
 
-ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
+if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
+    ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
+fi
 
 # We are using ALB so Confluence will startup without Synchrony-Proxy and using Synchrony at port 8091 of LB
 function start {
