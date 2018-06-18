@@ -2,20 +2,6 @@
 
 set -e
 
-## cleanup each run while debugging
-if service sssd stop; then echo "stopped sssd";fi
-if pkill -9 -f 'confluence/conf/logging.properties'; then echo "killed confluence"; fi
-if rm -rf /opt/atlassian/confluence; then echo "removed application"; fi
-if userdel confluence; then echo "removed user"; fi
-if groupdel confluence; then echo "removed group"; fi
-# remove the symlink for shared_home to the EFS
-if rm -f /var/atlassian/application-data/confluence/shared-home; then echo "removed shared_home symlink"; fi
-# if you want this to be like a clean install, also remove shared home, if you want it to be like a second node or upgrade, do not
-# if rm -rf /media/atl/confluence; then echo "removed shared_home"; fi
- 
-if mv /var/atlassian/application-data/confluence/confluence.cfg.xml /var/atlassian/application-data/confluence/confluence.cfg-$(date +%y%m%d%H%M).xml; then echo "moved aside confluence.cfg.xml"; fi
-## end cleanup code
-
 . /etc/init.d/atl-functions
 . /etc/init.d/atl-confluence-common
 
