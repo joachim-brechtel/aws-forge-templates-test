@@ -129,7 +129,7 @@ function configureSharedHome {
         mkdir -p "${CONFLUENCE_SHARED}"
         chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
         if ! chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1; then
-            atl_log "Chown on contents of shared home failed most likley because this is a new cluster and no contents yet exist, moving on"
+            atl_log "Chown on contents of shared home failed most likley because this is a new instance or cluster and no contents yet exist, moving on"
         fi
         su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
