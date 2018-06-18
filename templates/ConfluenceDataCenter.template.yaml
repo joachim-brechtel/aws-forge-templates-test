@@ -945,6 +945,9 @@ Resources:
               - !Ref "AWS::NoValue"
           files:
             /etc/atl:
+              mode: "000640"
+              owner: root
+              group: root
               content:
                 !Join
                   - "\n"
@@ -1007,7 +1010,7 @@ Resources:
                   - "[main]"
                   - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
                   - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
@@ -1180,6 +1183,9 @@ Resources:
               - Ref "AWS::NoValue"
           files:
             /etc/atl:
+              mode: "000640"
+              owner: root
+              group: root
               content:
                 !Join
                   - "\n"
@@ -1224,7 +1230,7 @@ Resources:
                     - "[main]"
                     - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
                     - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:

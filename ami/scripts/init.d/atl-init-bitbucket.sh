@@ -9,6 +9,7 @@ trap 'atl_error ${LINENO}' ERR
 ATL_FACTORY_CONFIG=/etc/sysconfig/atl
 ATL_USER_CONFIG=/etc/atl
 
+
 [[ -r "${ATL_FACTORY_CONFIG}" ]] && . "${ATL_FACTORY_CONFIG}"
 [[ -r "${ATL_USER_CONFIG}" ]] && . "${ATL_USER_CONFIG}"
 
@@ -59,6 +60,7 @@ function start {
     fi
 
     installBitbucket
+
     startBitbucket
 
     atl_log "=== END:   service atl-init-bitbucket start ==="

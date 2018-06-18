@@ -2,6 +2,7 @@
 
 set -e
 
+
 . /etc/init.d/atl-functions
 . /etc/init.d/atl-confluence-common
 
@@ -35,6 +36,8 @@ function start {
     atl_log "=== BEGIN: service atl-init-confluence runLocalAnsible ==="
     runLocalAnsible
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
+
+    recursiveChown "root" "confluence" "/etc/atl"
 
     goCONF
 
