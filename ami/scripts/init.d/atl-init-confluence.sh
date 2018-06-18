@@ -37,12 +37,10 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
 
-<<<<<<< HEAD
+    recursiveChown "root" "confluence" "/etc/atl"
+
     local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
     updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
-=======
-    recursiveChown "root" "confluence" "/etc/atl"
->>>>>>> 1d5696d4fadfee9e99419af1036b0ce0f4e6d7fe
 
     goCONF
 
