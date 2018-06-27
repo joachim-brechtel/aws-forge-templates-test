@@ -67,7 +67,6 @@ function start {
 }
 
 function updateBaseUrl {
-
   atl_log "=== BEGIN: Updating Server URL ==="
   local QUERY_RESULT=''
   local BASE_URL=$1
@@ -79,7 +78,6 @@ function updateBaseUrl {
   (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update propertystring set propertyvalue = '${BASE_URL}' from propertyentry PE where PE.id=propertystring.id and PE.property_key = 'jira.baseurl';\"") >> "${ATL_LOG}" 2>&1
 
   atl_log "=== END: Server baseUrl update ==="
-
 }
 
 function exportCatalinaOpts() {

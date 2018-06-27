@@ -48,7 +48,6 @@ function start {
 }
 
 function updateBaseUrl {
-
   atl_log "=== BEGIN: Updating Server URL ==="
   local QUERY_RESULT=''
   local BASE_URL=$1
@@ -60,7 +59,6 @@ function updateBaseUrl {
   (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update bandana set bandanavalue=regexp_replace(bandanavalue, '<baseUrl>.*</baseUrl>', '<baseUrl>${BASE_URL}</baseUrl>') where bandanacontext = '_GLOBAL' and bandanakey = 'atlassian.confluence.settings';\"") >> "${ATL_LOG}" 2>&1
 
   atl_log "=== END: Server baseUrl update ==="
-
 }
 
 function configureConfluenceEnvironmentVariables (){
@@ -187,7 +185,6 @@ EOT
     <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster">true</property>
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
-    <property name="confluence.cluster">true</property>    
     <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
     <property name="confluence.cluster.aws.region">${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}</property>
     <property name="confluence.cluster.aws.host.header">${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER}</property>
@@ -350,3 +347,4 @@ case "$1" in
         RETVAL=1
 esac
 exit ${RETVAL}
+
