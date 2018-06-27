@@ -711,7 +711,7 @@ Mappings:
       HVM64: ami-6d354d01
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-7bb5e704
+      HVM64: ami-5c7d2223
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-6d8ca008
@@ -720,7 +720,7 @@ Mappings:
       HVM64: ami-f9734f99
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-4ef6bf36
+      HVM64: ami-cb1b50b3
       HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
