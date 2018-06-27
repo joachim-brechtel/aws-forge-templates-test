@@ -1195,4 +1195,4 @@ Outputs:
     }
   DBEndpointAddress:
     Description: The Database Connection String
-    Value: !GetAtt DBCname
+    Value: !Ref DBCname
