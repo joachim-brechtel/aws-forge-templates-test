@@ -2,7 +2,6 @@
 
 set -e
 
-
 . /etc/init.d/atl-functions
 . /etc/init.d/atl-confluence-common
 
