@@ -58,9 +58,26 @@ function start {
 
     recursiveChown "root" "jira" "/etc/atl"
 
+    local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
+    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
+
     goJIRA
 
     atl_log "=== END:   service atl-init-jira start ==="
+}
+
+function updateBaseUrl {
+  atl_log "=== BEGIN: Updating Server URL ==="
+  local QUERY_RESULT=''
+  local BASE_URL=$1
+  local DB_HOST=$2
+  local DB_PORT=$3
+  local DB_NAME=$4
+  set -f
+
+  (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update propertystring set propertyvalue = '${BASE_URL}' from propertyentry PE where PE.id=propertystring.id and PE.property_key = 'jira.baseurl';\"") >> "${ATL_LOG}" 2>&1
+
+  atl_log "=== END: Server baseUrl update ==="
 }
 
 function exportCatalinaOpts() {
