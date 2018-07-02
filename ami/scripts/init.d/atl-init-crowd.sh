@@ -164,13 +164,11 @@ function configureCrowdHome {
 }
 
 function configureCrowdContext {
-  atl_log "ATL_TOMCAT_CONTEXTPATH = ${ATL_TOMCAT_CONTEXTPATH}"
-  atl_log "atl_tempDir = $(atl_tempDir)"
   if [[ ! -n "${ATL_TOMCAT_CONTEXTPATH}" ]]; then
     atl_log "Configuring Crowd's Context path"
 
     # context path is empty, need to remove /crowd
-    cat <<EOT | su "${USER}" -c "tee \"$(atl_tempDir)/server-context.xslt\"" >> "${ATL_LOG}" 2>&1
+    cat <<EOT | su "${ATL_CROWD_USER}" -c "tee \"$(atl_tempDir)/server-context.xslt\"" >> "${ATL_LOG}" 2>&1
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output omit-xml-declaration="yes" indent="yes" method="html"/>
 
@@ -196,9 +194,9 @@ EOT
     set -C
     if  >"${SERVER_TMP}"; then
       set +C
-      chown "${USER}:${USER}" "${SERVER_TMP}" >> "${ATL_LOG}" 2>&1
+      chown "${ATL_CROWD_USER}:${ATL_CROWD_USER}" "${SERVER_TMP}" >> "${ATL_LOG}" 2>&1
       atl_log "running xsltproc -o ${SERVER_TMP} $(atl_tempDir)/server-context.xslt ${SERVER_XML}"
-      if su "${USER}" -c "xsltproc -o \"${SERVER_TMP}\" \"$(atl_tempDir)/server-context.xslt\" \"${SERVER_XML}\""; then
+      if su "${ATL_CROWD_USER}" -c "xsltproc -o \"${SERVER_TMP}\" \"$(atl_tempDir)/server-context.xslt\" \"${SERVER_XML}\""; then
         if mv -f "${SERVER_TMP}" "${SERVER_XML}" >> "${ATL_LOG}" 2>&1; then
           atl_log "Updated server.xml to remove context path"
         else
