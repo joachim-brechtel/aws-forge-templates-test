@@ -433,7 +433,8 @@ Parameters:
     Type: String
   TomcatContextPath:
     Default: ''
-    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+    AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
+    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String
   TomcatDefaultConnectorPort:
     Default: 8080
