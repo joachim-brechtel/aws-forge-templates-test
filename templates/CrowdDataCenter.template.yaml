@@ -1,3 +1,4 @@
+---
 AWSTemplateFormatVersion: 2010-09-09
 Description: Atlassian Crowd Data Center
 Metadata:
@@ -1195,4 +1196,4 @@ Outputs:
     }
   DBEndpointAddress:
     Description: The Database Connection String
-    Value: !Ref DBCname
+    Value: !GetAtt DB.Endpoint.Address
