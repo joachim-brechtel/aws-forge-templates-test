@@ -84,6 +84,9 @@ case $ATL_PRODUCT_ID in
     confluence)
         ATL_PRODUCT="Confluence"
         ;;
+    crowd)
+        ATL_PRODUCT="Crowd"
+        ;;
     *)
         echo "Unsupported product specified."
         exit 1
@@ -186,9 +189,8 @@ if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     done
 fi
 
-# this had to be done separate ffrom the copies as the copy needs to have completed before it can be made public
+# this had to be done separate from the copies as the copy needs to have completed before it can be made public
 if [[ -n "${PUBLIC_AMIS}" ]]; then
-    ## may need some sleep here to ensure all the copies finish
     echo "Making AMI Public in regions ${AWS_REGION}, ${AWS_OTHER_REGIONS}"
     aws ec2 modify-image-attribute --region "${AWS_REGION}" --image-id "${AWS_AMI}" --launch-permission "{\"Add\": [{\"Group\":\"all\"}]}"
     for regionami in "${regionToAmi[@]}"; do
