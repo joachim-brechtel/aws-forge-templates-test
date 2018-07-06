@@ -233,6 +233,16 @@ EOT
         su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${LOCAL_CONFIG}\"" >> "${ATL_LOG}" 2>&1
         atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
     fi
+
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]]; then
+        local WATCHER_SCRIPT="/opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh"
+        if [[ -x ${WATCHER_SCRIPT} ]]; then
+            atl_log "Starting filewatcher to copy Confluence Server config to shared-home on-edit"
+            WATCHED_FILE=${LOCAL_CONFIG} FILE_DEST=${SHARED_CONFIG} LOG_FILE=${ATL_LOG} ${WATCHER_SCRIPT} >> "${ATL_LOG}" 2>&1 &
+        else
+            atl_log "Script for monitoring Confluence Server configuration changes is not available; config will not persist"
+        fi
+    fi
 }
 
 function createConfluenceDbAndRole {
