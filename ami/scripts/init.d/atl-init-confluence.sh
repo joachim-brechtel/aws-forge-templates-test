@@ -195,7 +195,6 @@ EOT
     <property name="confluence.cluster.ttl">1</property>
 EOT
     fi
-    appendExternalConfigs
      cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
   </properties>
 </${PRODUCT_CONFIG_NAME}-configuration>
@@ -203,16 +202,6 @@ EOT
 
     su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
-}
-
-function appendExternalConfigs {
-    if [[ -n "${ATL_CONFLUENCE_PROPERTIES}" ]]; then
-        declare -a PROP_ARR
-        readarray -t PROP_ARR <<<"${ATL_CONFLUENCE_PROPERTIES}"
-        for prop in PROP_ARR; do
-            su "${ATL_CONFLUENCE_USER}" -c "echo \"${prop}\" >> "${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\" >> "${ATL_LOG}" 2>&1
-        done
-    fi
 }
 
 function createConfluenceDbAndRole {
