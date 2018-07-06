@@ -247,7 +247,7 @@ function installConfluence {
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
         echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
         sudo ldconfig
-        if [ -n $ATL_STARTCOLLECTD == "true" ]; then
+        if [[ $ATL_STARTCOLLECTD == "true" ]]; then
             service collectd restart
         fi
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
