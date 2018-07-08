@@ -261,7 +261,7 @@ Parameters:
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
-    Default: db.m4.xlarge
+    Default: db.t2.medium
     AllowedValues:
       - db.m4.large
       - db.m4.xlarge
@@ -397,7 +397,7 @@ Parameters:
       - ServiceDesk
       - Software
   JiraVersion:
-    Default: latest
+    Default: 'latest'
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))|(latest)'
     ConstraintDescription: Must be a valid Jira version number, for example 7.2.3. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes
     Description: The version of Jira to install (found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>-x64.bin)
@@ -652,46 +652,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-da107bbd
+      HVM64: ami-f260061f
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-15a0767b
+      HVM64: ami-59833737
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-67c6b108
+      HVM64: ami-4d3d0b22
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-b7ae00d4
+      HVM64: ami-8893ec62
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-5bc2f938
+      HVM64: ami-05c51f67
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-ab2a98cf
+      HVM64: ami-560c8e32
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-982aeaf7
+      HVM64: ami-3e99a3d5
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-afcaeadc
+      HVM64: ami-747b6d9e
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-eeede78a
+      HVM64: ami-1f32da78
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-a9cc7cd4
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-5a71e936
+      HVM64: ami-3a694e56
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-908626ef
+      HVM64: ami-be4a63c1
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-1ccc9679
+      HVM64: ami-b984bcdc
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-f0267790
+      HVM64: ami-840dede7
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-c8c6abb0
+      HVM64: ami-d98ed8a1
       HVMG2: NOT_SUPPORTED
   JIRAProduct2NameAndVersion:
     All:
@@ -1080,7 +1083,7 @@ Outputs:
     Value: !Sub
           - "${HTTP}://${LoadBalancerDNSName}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup

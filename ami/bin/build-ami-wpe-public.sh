@@ -84,6 +84,9 @@ case $ATL_PRODUCT_ID in
     confluence)
         ATL_PRODUCT="Confluence"
         ;;
+    crowd)
+        ATL_PRODUCT="Crowd"
+        ;;
     *)
         echo "Unsupported product specified."
         exit 1
@@ -129,6 +132,7 @@ echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 # -debug \
 # add this to ensure the ami does not clean up after build
 # -on-error=abort
+
 packer -machine-readable build \
   -var aws_access_key="${AWS_ACCESS_KEY}" \
   -var aws_secret_key="${AWS_SECRET_KEY}" \
@@ -140,6 +144,7 @@ packer -machine-readable build \
   -var "aws_region"="${AWS_REGION}" \
   $(dirname $0)/../${ATL_PRODUCT_ID}-wpe-public.json | tee "${TMP_DIR}/packer.log"
 
+#AWS_AMI='ami-7456780b'
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
 
 if [[ -z "${AWS_AMI}" ]]; then

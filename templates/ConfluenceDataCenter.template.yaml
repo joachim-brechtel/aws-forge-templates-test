@@ -43,16 +43,6 @@ Metadata:
           - SSLCertificateName
           - VPC
       - Label:
-          default: Linux Bastion Configuration
-        Parameters:
-          - BastionAMIOS
-          - BastionBanner
-          - BastionInstanceType
-          - EnableBanner
-          - EnableTCPForwarding
-          - EnableX11Forwarding
-          - NumBastionHosts
-      - Label:
           default: DNS (Optional)
         Parameters:
           - CustomDnsName
@@ -95,12 +85,6 @@ Metadata:
         default: Assign public IP
       AutologinCookieAge:
         default: Remember Me cookie expiry
-      BastionAMIOS:
-        default: Bastion AMI Operating System
-      BastionBanner:
-        default: Bastion Banner
-      BastionInstanceType:
-        default: Bastion Instance Type
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
@@ -151,12 +135,6 @@ Metadata:
         default: Database storage
       DBStorageType:
         default: Database storage type
-      EnableBanner:
-        default: Enable Banner
-      EnableTCPForwarding:
-        default: Enable TCP Forwarding
-      EnableX11Forwarding:
-        default: Enable X11 Forwarding
       ExternalSubnets:
         default: External subnets *
       HostedZone:
@@ -169,8 +147,6 @@ Metadata:
         default: 2g
       KeyName:
         default: Key Name *
-      NumBastionHosts:
-        default: Number of Bastion Hosts
       SSLCertificateName:
         default: SSL Certificate Name
       SubDomainName:
@@ -218,36 +194,6 @@ Parameters:
     Default: ''
     Description: Sets the Remember Me (autologin) cookie exipry length in seconds. If blank this defaults to 1 year.
     Type: String
-  BastionAMIOS:
-    AllowedValues:
-    - Amazon-Linux-HVM
-    - CentOS-7-HVM
-    - Ubuntu-Server-14.04-LTS-HVM
-    - Ubuntu-Server-16.04-LTS-HVM
-    Default: Amazon-Linux-HVM
-    Description: The Linux distribution for the AMI to be used for the bastion instances
-    Type: String
-  BastionBanner:
-    Default: https://s3.amazonaws.com/quickstart-reference/linux/bastion/latest/scripts/banner_message.txt
-    Description: Banner text to display upon login
-    Type: String
-  BastionInstanceType:
-    Description: Amazon EC2 instance type for the bastion instances
-    Type: String
-    Default: t2.micro
-    AllowedValues:
-      - t2.nano
-      - t2.micro
-      - t2.small
-      - t2.medium
-      - t2.large
-      - m3.large
-      - m3.xlarge
-      - m3.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
   CatalinaOpts:
     Default: ''
     Description: Pass in any additional jvm options to tune Catalina
@@ -261,7 +207,7 @@ Parameters:
     MinLength: 9
     MaxLength: 18
   ClusterNodeInstanceType:
-    Default: c5.xlarge
+    Default: t2.medium
     AllowedValues:
       - c4.large
       - c4.xlarge
@@ -340,7 +286,7 @@ Parameters:
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
-    Default: db.m4.xlarge
+    Default: db.t2.medium
     AllowedValues:
       - db.m4.large
       - db.m4.xlarge
@@ -367,7 +313,7 @@ Parameters:
     MaxValue: 3000
     Type: Number
   DBMasterUserPassword:
-    Default: ''
+    Default: 'ChangeME'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -383,7 +329,7 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: ''
+    Default: 'chaNGEmE'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -441,27 +387,6 @@ Parameters:
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
     Description: Database storage type
     Type: String
-  EnableBanner:
-    AllowedValues:
-      - true
-      - false
-    Default: false
-    Description: To include a banner to be displayed when connecting via SSH to the bastion, set this parameter to true
-    Type: String
-  EnableTCPForwarding:
-    Type: String
-    Description: Enable/Disable TCP Forwarding
-    Default: false
-    AllowedValues:
-      - true
-      - false
-  EnableX11Forwarding:
-    Type: String
-    Description: Enable/Disable X11 Forwarding
-    Default: false
-    AllowedValues:
-      - true
-      - false
   ExternalSubnets:
     Default: ''
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
@@ -473,7 +398,7 @@ Parameters:
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InternalSubnets:
-    Dfeault: ''
+    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
@@ -490,15 +415,6 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
-  NumBastionHosts:
-    AllowedValues:
-      - '1'
-      - '2'
-      - '3'
-      - '4'
-    Default: '1'
-    Description: Enter the number of bastion hosts to create
-    Type: String
   SubDomainName:
     Description: Leave this field blank to use your stack name as the sub-domain.
     Default: ''
@@ -524,7 +440,7 @@ Parameters:
     Default: 1
     Type: Number
   SynchronyNodeInstanceType:
-    Default: c5.large
+    Default: t2.medium
     AllowedValues:
       - c4.large
       - c4.xlarge
@@ -612,7 +528,7 @@ Parameters:
     Description: Sets the protocol to handle incoming traffic
     Type: String
   TomcatProxyPort:
-    Default: 443
+    Default: 80
     Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
     Type: String
   TomcatRedirectPort:
@@ -813,46 +729,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-75be3813
+      HVM64: ami-2f7315c2
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-8ab91fe4
+      HVM64: ami-5f833731
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-63eda40c
+      HVM64: ami-203a0c4f
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-ceee8ab2
+      HVM64: ami-4f96e9a5
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-78af581a
+      HVM64: ami-11c51f73
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-0201ba66
+      HVM64: ami-5c0e8c38
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-c7a32aa8
+      HVM64: ami-a399a348
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-69ec5410
+      HVM64: ami-9c918776
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-56fae432
+      HVM64: ami-da2fc7bd
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-da2fc7bd
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-1fb3f473
+      HVM64: ami-ad6e49c1
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-a78525d8
+      HVM64: ami-877c55f8
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-edc9e088
+      HVM64: ami-468db523
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-666e6b06
+      HVM64: ami-d00eeeb3
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-eac1ac92
+      HVM64: ami-76693f0e
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -1255,7 +1174,7 @@ Resources:
                           - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
                           - ElasticFileSystem: !Ref ElasticFileSystem
                             Region: !Ref "AWS::Region"
-                    - ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
+                    - ":/ /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
               command: mount -a
