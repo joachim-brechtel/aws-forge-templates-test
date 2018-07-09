@@ -39,7 +39,7 @@ function start {
     recursiveChown "root" "confluence" "/etc/atl"
 
     local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
-    updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}
+    if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
 
     goCONF
 
@@ -346,4 +346,3 @@ case "$1" in
         RETVAL=1
 esac
 exit ${RETVAL}
-

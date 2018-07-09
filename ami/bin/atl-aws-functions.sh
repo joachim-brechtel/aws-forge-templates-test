@@ -23,5 +23,5 @@ function atl_replaceAmiByRegion {
     local REGION=${1:?"A region must be specified"}
     local AMI_ID=${2:?"A AMI ID must be specified"}
     local TEMPLATE_FILE=${3:?"A TEMPLATE FILE must be specified"}
-    sed -i '' -e "/.*${REGION}/ {" -e "n; s/HVM64:.*/HVN64: ${AMI_ID}/" -e '}' ${TEMPLATE_FILE}
+    sed -i '' -e "/.*${REGION}/ {" -e "n; s/HVM64:.*/HVM64: ${AMI_ID}/" -e '}' ${TEMPLATE_FILE}
 }

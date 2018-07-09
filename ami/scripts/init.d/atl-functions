@@ -54,7 +54,7 @@ function recursiveChown {
   local CH_GROUP=$2
   local CH_OBJECT=$3
 
-  sudo chown -R -H "${CH_USER}:${CH_GROUP} ${CH_OBJECT}" >> "${ATL_LOG}" 2>&1
+  sudo chown -R -H "${CH_USER}:${CH_GROUP}" "${CH_OBJECT}" >> "${ATL_LOG}" 2>&1
 
 }
 
@@ -245,7 +245,7 @@ function atl_configureTomcatConnector {
     local CONNECTOR_MATCHER="@port='${DEFAULT_CONNECTOR_PORT}'"
     if [ "x${FORCE}" == "xtrue" ]; then
         atl_log "Force updating server.xml"
-    else        
+    else
         CONNECTOR_MATCHER+=" and not(@proxyName)"
     fi
 
@@ -305,7 +305,7 @@ EOT
         set +C
     fi
 
-    if $secure ; then        
+    if $secure ; then
         atl_transformWebXml "${USER}" "${WEB_XML}"
     fi
 
@@ -325,11 +325,11 @@ function atl_addRedirectConnectorServerXml {
         </xsl:copy>
     </xsl:template>
 
-   
+
     <xsl:template match="/Server/Service[not(Connector[@port='${redirectPort}'])]">
          <xsl:copy>
             <xsl:apply-templates select="@*|node()"/>
-            
+
             <Connector port="${redirectPort}" protocol="${protocol}"
                    maxHttpHeaderSize="65536"
                    URIEncoding="UTF-8"
@@ -348,7 +348,7 @@ function atl_transformWebXml {
     local USER="${1}"
     local WEB_XML="${2}"
 
-    atl_log "Updating web.xml to redirect HTTP to HTTPS."            
+    atl_log "Updating web.xml to redirect HTTP to HTTPS."
 
     cat <<EOT | su "${USER}" -c "tee \"$(atl_tempDir)/web.xslt\"" >> "${ATL_LOG}" 2>&1
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -360,7 +360,7 @@ function atl_transformWebXml {
         </xsl:copy>
     </xsl:template>
 
-   
+
      <xsl:template match="/*[name() = 'web-app' and not(./*[name() = 'security-constraint'])]">
          <xsl:copy>
             <xsl:apply-templates select="@*"/>

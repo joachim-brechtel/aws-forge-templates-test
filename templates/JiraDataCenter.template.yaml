@@ -1,3 +1,7 @@
+---
+# bring up diffs between this file and the BitbucketDataCenter.template.yaml, ConfluenceDataCenter.template.yaml, and JiraDataCenter.template.yaml
+# As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
+# Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
 Description: Atlassian JIRA Data Center
 Metadata:
@@ -190,12 +194,8 @@ Parameters:
     MinLength: 9
     MaxLength: 18
   ClusterNodeInstanceType:
-    Default: c3.xlarge
+    Default: t2.medium
     AllowedValues:
-      - c3.xlarge
-      - c3.2xlarge
-      - c3.4xlarge
-      - c3.8xlarge
       - c4.large
       - c4.xlarge
       - c4.2xlarge
@@ -207,6 +207,10 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
       - i2.xlarge
       - i2.2xlarge
       - i2.4xlarge
@@ -217,18 +221,18 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - m3.medium
       - m4.large
       - m4.xlarge
       - m4.2xlarge
       - m4.4xlarge
       - m4.10xlarge
       - m4.16xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.10xlarge
+      - m5.16xlarge
       - r4.large
       - r4.xlarge
       - r4.2xlarge
@@ -240,7 +244,6 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
-      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -251,29 +254,27 @@ Parameters:
     Default: 1
     Type: Number
   ClusterNodeSize:
-    Default: 50
+    Default: 200
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
   CustomDnsName:
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
-    Default: db.m4.xlarge
+    Default: db.t2.medium
     AllowedValues:
-      - db.m3.medium
-      - db.m3.large
-      - db.m3.xlarge
-      - db.m3.2xlarge
       - db.m4.large
       - db.m4.xlarge
       - db.m4.2xlarge
       - db.m4.4xlarge
       - db.m4.10xlarge
-      - db.r3.large
-      - db.r3.xlarge
-      - db.r3.2xlarge
-      - db.r3.4xlarge
-      - db.r3.8xlarge
+      - db.m4.16xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
       - db.t2.medium
       - db.t2.large
     ConstraintDescription: Must be a valid RDS instance class, from the selection list
@@ -386,16 +387,17 @@ Parameters:
     Type: String
     ConstraintDescription: Must be a valid Jira download url from version 7 or higher
   JiraProduct:
-    Default: Core
+    Default: All
     Description: The JIRA Product to install. Installs latest available version of the selected product
     Type: String
-    ConstraintDescription: 'Must be "Software", "ServiceDesk", or "Core"'
+    ConstraintDescription: 'Must be "Core", "Software", "ServiceDesk", or "All"'
     AllowedValues:
-      - Software
-      - ServiceDesk
+      - All
       - Core
+      - ServiceDesk
+      - Software
   JiraVersion:
-    Default: latest
+    Default: 'latest'
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))|(latest)'
     ConstraintDescription: Must be a valid Jira version number, for example 7.2.3. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes
     Description: The version of Jira to install (found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>-x64.bin)
@@ -433,7 +435,8 @@ Parameters:
     Type: String
   TomcatContextPath:
     Default: ''
-    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+    AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
+    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String
   TomcatDefaultConnectorPort:
     Default: 8080
@@ -500,21 +503,6 @@ Conditions:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
 Mappings:
   AWSInstanceType2Arch:
-    c3.large:
-      Arch: HVM64
-      Jvmheap: 2048m
-    c3.xlarge:
-      Arch: HVM64
-      Jvmheap: 6144m
-    c3.2xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    c3.4xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    c3.8xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
     c4.large:
       Arch: HVM64
       Jvmheap: 2048m
@@ -535,10 +523,10 @@ Mappings:
       Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
-      Jvmheap: 6144m
+      Jvmheap: 4608m
     c5.2xlarge:
       Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     c5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -590,9 +578,6 @@ Mappings:
     i3.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    m3.medium:
-      Arch: HVM64
-      Jvmheap: 2048m
     m4.large:
       Arch: HVM64
       Jvmheap: 6144m
@@ -611,19 +596,22 @@ Mappings:
     m4.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.large:
+    m5.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    m5.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.xlarge:
+    m5.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.2xlarge:
+    m5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.4xlarge:
+    m5.10xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.8xlarge:
+    m5.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r4.large:
@@ -664,60 +652,67 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-da107bbd
+      HVM64: ami-f260061f
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-15a0767b
+      HVM64: ami-59833737
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-67c6b108
+      HVM64: ami-4d3d0b22
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-b7ae00d4
+      HVM64: ami-8893ec62
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-5bc2f938
+      HVM64: ami-05c51f67
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-ab2a98cf
+      HVM64: ami-560c8e32
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-982aeaf7
+      HVM64: ami-3e99a3d5
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-afcaeadc
+      HVM64: ami-747b6d9e
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-eeede78a
+      HVM64: ami-1f32da78
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-a9cc7cd4
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-5a71e936
+      HVM64: ami-3a694e56
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-908626ef
+      HVM64: ami-be4a63c1
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-1ccc9679
+      HVM64: ami-b984bcdc
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-f0267790
+      HVM64: ami-840dede7
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-c8c6abb0
+      HVM64: ami-d98ed8a1
       HVMG2: NOT_SUPPORTED
   JIRAProduct2NameAndVersion:
-    Software:
-      name: jira-software
-      shortdisplayname: '"JIRA SW"'
-      fulldisplayname: '"Atlassian JIRA Software"'
-    ServiceDesk:
-      name: servicedesk
-      shortdisplayname: '"JIRA SD"'
-      fulldisplayname: '"Atlassian JIRA Service Desk"'
+    All:
+      name: jira-all
+      shortdisplayname: '"JIRA All"'
+      fulldisplayname: '"Atlassian JIRA All"'
     Core:
       name: jira-core
       shortdisplayname: '"JIRA Core"'
       fulldisplayname: '"Atlassian JIRA Core"'
+    ServiceDesk:
+      name: servicedesk
+      shortdisplayname: '"JIRA SD"'
+      fulldisplayname: '"Atlassian JIRA Service Desk"'
+    Software:
+      name: jira-software
+      shortdisplayname: '"JIRA SW"'
+      fulldisplayname: '"Atlassian JIRA Software"'
 Resources:
 # Jira node config
   ClusterNodeGroup:
@@ -781,7 +776,7 @@ Resources:
                     - !Sub ["ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}", JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]]
                     - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
@@ -877,7 +872,7 @@ Resources:
           default:
             - 0
     Properties:
-      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -989,7 +984,7 @@ Resources:
       Listeners:
         - LoadBalancerPort: 80
           Protocol: HTTP
-          InstancePort: !If [DoSSL, '8081', '8080']
+          InstancePort: !Ref TomcatDefaultConnectorPort
           InstanceProtocol: HTTP
           PolicyNames:
             - JSessionIdStickiness
@@ -997,7 +992,7 @@ Resources:
           - DoSSL
           - LoadBalancerPort: '443'
             Protocol: HTTPS
-            InstancePort: '8080'
+            InstancePort: !Ref TomcatDefaultConnectorPort
             InstanceProtocol: HTTP
             PolicyNames:
               - JSessionIdStickiness
@@ -1008,7 +1003,7 @@ Resources:
                   SSLCertificateName: !Ref SSLCertificateName
           - Ref: AWS::NoValue
       HealthCheck:
-        Target: !If [UseContextPath, !Join ['', ['HTTP:8080', !Ref TomcatContextPath, '/status']], 'HTTP:8080/status']
+        Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
         Timeout: 29
         Interval: 30
         UnhealthyThreshold: 2
@@ -1062,21 +1057,42 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
-  JIRAURL:
-    Description: The URL of JIRA Data Center instance
+  ServiceURL:
+    Description: The URL to access this Atlassian service
     Value: !If
       - UseCustomDnsName
-      - !Ref CustomDnsName
+      - !Sub
+        - "${HTTP}://${CustomDNSName}${ContextPath}"
+        - HTTP: !If [SSLScheme, 'https', 'http']
+          CustomDNSName: !Ref CustomDnsName
+          ContextPath: !Ref TomcatContextPath
       - !If
         - UseHostedZone
-        - !Ref LoadBalancerCname
         - !Sub
+          - "${HTTP}://${LBCName}${ContextPath}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
+            LBCName: !Ref LoadBalancerCname
+            ContextPath: !Ref TomcatContextPath
+        - !Sub
+          - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            ContextPath: !Ref TomcatContextPath
+  LoadBalancerURL:
+    Description: The Load Balancer URL
+    Value: !Sub
           - "${HTTP}://${LoadBalancerDNSName}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+  SGname:
+    Description: The name of the SecurityGroup
+    Value: !Ref SecurityGroup
+    Export: {
+      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
+    }
+  DBEndpointAddress:
+    Description: The Database Connection String
+    Value: !GetAtt DB.Endpoint.Address
   EFSCname:
     Description: The cname of the EFS
     Value: !If
@@ -1085,25 +1101,4 @@ Outputs:
       - !Ref ElasticFileSystem
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
-    }
-  LoadBalancerURL:
-    Description: The Load Balancer URL
-    Value: !If
-      - UseCustomDnsName
-      - !Ref CustomDnsName
-      - !If
-        - UseHostedZone
-        - !Ref LoadBalancerCname
-        - !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
-          - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
-  SGname:
-    Description: The name of the SecurityGroup
-    Value: !Ref SecurityGroup
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
     }
