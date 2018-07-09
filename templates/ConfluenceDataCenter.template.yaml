@@ -1199,7 +1199,7 @@ Resources:
                   yum:
                     - nfs-utils
     Properties:
-      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvdf
           Ebs: {}
