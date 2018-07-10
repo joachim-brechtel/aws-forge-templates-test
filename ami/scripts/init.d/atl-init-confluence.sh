@@ -204,7 +204,6 @@ function configureDbProperties {
     <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect</property>
     <property name="webwork.multipart.saveDir">\${localHome}/temp</property>
     <property name="attachments.dir">\${confluenceHome}/attachments</property>
-    <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
 EOT
 
         for PROP in "${!SERVER_PROPS[@]}"; do
