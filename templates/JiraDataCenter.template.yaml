@@ -376,7 +376,7 @@ Parameters:
       - Staging
       - DR
     ConstraintDescription: Must be either Production, Staging, or DR.
-    Description: Environment Application to be used in, either Production, Staging, or Disaster Recovery (DR)
+    Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
     Default: ''
