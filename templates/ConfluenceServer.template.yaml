@@ -1102,6 +1102,7 @@ Resources:
   ConfluenceServerTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
       Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
       VpcId: !Ref VPC
