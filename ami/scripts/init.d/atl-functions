@@ -49,7 +49,8 @@ function atl_enabled_products {
     done
 }
 
-function recursiveChown {
+function atl_recursiveChown {
+
   local CH_USER=$1
   local CH_GROUP=$2
   local CH_OBJECT=$3

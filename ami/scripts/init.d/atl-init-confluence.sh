@@ -39,7 +39,7 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
 
-    recursiveChown "root" "confluence" "/etc/atl"
+    atl_recursiveChown "root" "confluence" "/etc/atl"
 
     if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
         local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
