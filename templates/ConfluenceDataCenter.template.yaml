@@ -395,7 +395,7 @@ Parameters:
     AllowedValues:
       - Production
       - Staging
-      - DR
+      - Disaster Recovery (DR)
     ConstraintDescription: Must be either Production, Staging, or DR.
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
@@ -590,6 +590,10 @@ Conditions:
     !Not [!Equals [!Ref SubDomainName, '']]
   GovCloudCondition:
     !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
+  EnvironmentIsProd:
+    !Equals [!Ref Environment, 'Production']
+  EnvironmentIsStg:
+    !Equals [!Ref Environment, 'Staging']
 Mappings:
   AWSInstanceType2Arch:
     c4.large:
@@ -892,7 +896,7 @@ Resources:
                     - !Sub ["ATL_DB_PREFERREDTESTQUERY=\"${DBPreferredTestQuery}\"", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
                     - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
                     - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
-                    - !Sub ["ATL_ENVIRONMENT=${Environment}", Environment: !Ref Environment]
+                    - !Sub ["ATL_ENVIRONMENT=${Environment}", Environment: !If [EnvironmentIsProd, prod, !If [EnvironmentIsStg, stg, dr]]]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]

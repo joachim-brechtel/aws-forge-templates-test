@@ -371,7 +371,7 @@ Parameters:
     AllowedValues:
       - Production
       - Staging
-      - DR
+      - Disaster Recovery (DR)
     ConstraintDescription: Must be either Production, Staging, or DR.
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
@@ -500,6 +500,10 @@ Conditions:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
+  EnvironmentIsProd:
+    !Equals [!Ref Environment, 'Production']
+  EnvironmentIsStg:
+    !Equals [!Ref Environment, 'Staging']
 Mappings:
   AWSInstanceType2Arch:
     c4.large:
@@ -776,7 +780,7 @@ Resources:
                     - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
                     - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
                     - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
-                    - !Sub ["ATL_ENVIRONMENT=${Environment}", Environment: !Ref Environment]
+                    - !Sub ["ATL_ENVIRONMENT=${Environment}", Environment: !If [EnvironmentIsProd, prod, !If [EnvironmentIsStg, stg, dr]]]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
