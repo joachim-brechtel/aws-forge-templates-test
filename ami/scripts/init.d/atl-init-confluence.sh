@@ -38,7 +38,7 @@ function start {
 
     recursiveChown "root" "confluence" "/etc/atl"
 
-    if [ "${ATL_ENVIRONMENT}" != "Production" ]; then
+    if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
         local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
         if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
     fi

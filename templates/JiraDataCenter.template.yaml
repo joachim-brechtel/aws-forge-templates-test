@@ -132,7 +132,7 @@ Metadata:
       DBTimeBetweenEvictionRunsMillis:
         default: DB Time Between Eviction Runs
       Environment:
-        default: Production
+        default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
       HostedZone:

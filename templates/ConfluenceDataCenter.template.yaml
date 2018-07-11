@@ -137,7 +137,7 @@ Metadata:
       DBStorageType:
         default: Database storage type
       Environment:
-        default: Production
+        default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
       HostedZone:
