@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Atlassian functions used by init.d services
 
 _ATL_TEMP_DIR=$(mktemp -d)
@@ -49,13 +50,11 @@ function atl_enabled_products {
 }
 
 function recursiveChown {
-
   local CH_USER=$1
   local CH_GROUP=$2
   local CH_OBJECT=$3
 
-  sudo chown -R -H "${CH_USER}:${CH_GROUP}" "${CH_OBJECT}" >> "${ATL_LOG}" 2>&1
-
+  sudo chown -R -H ${CH_USER}:${CH_GROUP} ${CH_OBJECT} >> ${ATL_LOG} 2>&1
 }
 
 function atl_enabled_shared_homes {
