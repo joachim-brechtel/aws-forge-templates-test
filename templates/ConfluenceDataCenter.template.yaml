@@ -43,16 +43,6 @@ Metadata:
           - SSLCertificateName
           - VPC
       - Label:
-          default: Linux Bastion Configuration
-        Parameters:
-          - BastionAMIOS
-          - BastionBanner
-          - BastionInstanceType
-          - EnableBanner
-          - EnableTCPForwarding
-          - EnableX11Forwarding
-          - NumBastionHosts
-      - Label:
           default: DNS (Optional)
         Parameters:
           - CustomDnsName
@@ -95,12 +85,6 @@ Metadata:
         default: Assign public IP
       AutologinCookieAge:
         default: Remember Me cookie expiry
-      BastionAMIOS:
-        default: Bastion AMI Operating System
-      BastionBanner:
-        default: Bastion Banner
-      BastionInstanceType:
-        default: Bastion Instance Type
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
@@ -151,12 +135,6 @@ Metadata:
         default: Database storage
       DBStorageType:
         default: Database storage type
-      EnableBanner:
-        default: Enable Banner
-      EnableTCPForwarding:
-        default: Enable TCP Forwarding
-      EnableX11Forwarding:
-        default: Enable X11 Forwarding
       ExternalSubnets:
         default: External subnets *
       HostedZone:
@@ -169,8 +147,6 @@ Metadata:
         default: 2g
       KeyName:
         default: Key Name *
-      NumBastionHosts:
-        default: Number of Bastion Hosts
       SSLCertificateName:
         default: SSL Certificate Name
       SubDomainName:
@@ -218,37 +194,8 @@ Parameters:
     Default: ''
     Description: Sets the Remember Me (autologin) cookie exipry length in seconds. If blank this defaults to 1 year.
     Type: String
-  BastionAMIOS:
-    AllowedValues:
-    - Amazon-Linux-HVM
-    - CentOS-7-HVM
-    - Ubuntu-Server-14.04-LTS-HVM
-    - Ubuntu-Server-16.04-LTS-HVM
-    Default: Amazon-Linux-HVM
-    Description: The Linux distribution for the AMI to be used for the bastion instances
-    Type: String
-  BastionBanner:
-    Default: https://s3.amazonaws.com/quickstart-reference/linux/bastion/latest/scripts/banner_message.txt
-    Description: Banner text to display upon login
-    Type: String
-  BastionInstanceType:
-    Description: Amazon EC2 instance type for the bastion instances
-    Type: String
-    Default: t2.micro
-    AllowedValues:
-      - t2.nano
-      - t2.micro
-      - t2.small
-      - t2.medium
-      - t2.large
-      - m3.large
-      - m3.xlarge
-      - m3.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
   CatalinaOpts:
+    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -260,12 +207,8 @@ Parameters:
     MinLength: 9
     MaxLength: 18
   ClusterNodeInstanceType:
-    Default: c5.xlarge
+    Default: t2.medium
     AllowedValues:
-      - c3.xlarge
-      - c3.2xlarge
-      - c3.4xlarge
-      - c3.8xlarge
       - c4.large
       - c4.xlarge
       - c4.2xlarge
@@ -277,6 +220,10 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
       - i2.xlarge
       - i2.2xlarge
       - i2.4xlarge
@@ -287,18 +234,18 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - m3.medium
       - m4.large
       - m4.xlarge
       - m4.2xlarge
       - m4.4xlarge
       - m4.10xlarge
       - m4.16xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.10xlarge
+      - m5.16xlarge
       - r4.large
       - r4.xlarge
       - r4.2xlarge
@@ -335,25 +282,24 @@ Parameters:
     Description: The version of Confluence to install
     Type: String
   CustomDnsName:
+    Default: ''
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
-    Default: db.m4.xlarge
+    Default: db.t2.medium
     AllowedValues:
-      - db.m3.medium
-      - db.m3.large
-      - db.m3.xlarge
-      - db.m3.2xlarge
       - db.m4.large
       - db.m4.xlarge
       - db.m4.2xlarge
       - db.m4.4xlarge
       - db.m4.10xlarge
-      - db.r3.large
-      - db.r3.xlarge
-      - db.r3.2xlarge
-      - db.r3.4xlarge
-      - db.r3.8xlarge
+      - db.m4.16xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
       - db.t2.medium
       - db.t2.large
     ConstraintDescription: Must be a valid RDS instance class, from the selection list
@@ -367,6 +313,7 @@ Parameters:
     MaxValue: 3000
     Type: Number
   DBMasterUserPassword:
+    Default: 'ChangeME'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -382,6 +329,7 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
+    Default: 'chaNGEmE'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -439,28 +387,8 @@ Parameters:
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
     Description: Database storage type
     Type: String
-  EnableBanner:
-    AllowedValues:
-      - true
-      - false
-    Default: false
-    Description: To include a banner to be displayed when connecting via SSH to the bastion, set this parameter to true
-    Type: String
-  EnableTCPForwarding:
-    Type: String
-    Description: Enable/Disable TCP Forwarding
-    Default: false
-    AllowedValues:
-      - true
-      - false
-  EnableX11Forwarding:
-    Type: String
-    Description: Enable/Disable X11 Forwarding
-    Default: false
-    AllowedValues:
-      - true
-      - false
   ExternalSubnets:
+    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
@@ -470,6 +398,7 @@ Parameters:
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InternalSubnets:
+    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
@@ -482,18 +411,10 @@ Parameters:
     Description: Override the default amount of memory to allocoate to the JVM for Synchrony, for your instance type - set size in meg or gig e.g. 1024m or 1g.
     Type: String
   KeyName:
+    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
-  NumBastionHosts:
-    AllowedValues:
-      - '1'
-      - '2'
-      - '3'
-      - '4'
-    Default: '1'
-    Description: Enter the number of bastion hosts to create
-    Type: String
   SubDomainName:
     Description: Leave this field blank to use your stack name as the sub-domain.
     Default: ''
@@ -519,12 +440,8 @@ Parameters:
     Default: 1
     Type: Number
   SynchronyNodeInstanceType:
-    Default: c5.large
+    Default: t2.medium
     AllowedValues:
-      - c3.xlarge
-      - c3.2xlarge
-      - c3.4xlarge
-      - c3.8xlarge
       - c4.large
       - c4.xlarge
       - c4.2xlarge
@@ -536,6 +453,10 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
       - i2.xlarge
       - i2.2xlarge
       - i2.4xlarge
@@ -546,18 +467,18 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - m3.medium
       - m4.large
       - m4.xlarge
       - m4.2xlarge
       - m4.4xlarge
       - m4.10xlarge
       - m4.16xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.10xlarge
+      - m5.16xlarge
       - r4.large
       - r4.xlarge
       - r4.2xlarge
@@ -583,7 +504,8 @@ Parameters:
     Type: String
   TomcatContextPath:
     Default: ''
-    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+    AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
+    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String
   TomcatDefaultConnectorPort:
     Default: 8080
@@ -606,7 +528,7 @@ Parameters:
     Description: Sets the protocol to handle incoming traffic
     Type: String
   TomcatProxyPort:
-    Default: 443
+    Default: 80
     Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
     Type: String
   TomcatRedirectPort:
@@ -623,6 +545,7 @@ Parameters:
     Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
     Type: String
   VPC:
+    Default: ''
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
     Type: AWS::EC2::VPC::Id
@@ -657,21 +580,6 @@ Conditions:
     !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
 Mappings:
   AWSInstanceType2Arch:
-    c3.large:
-      Arch: HVM64
-      Jvmheap: 2048m
-    c3.xlarge:
-      Arch: HVM64
-      Jvmheap: 6144m
-    c3.2xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    c3.4xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    c3.8xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
     c4.large:
       Arch: HVM64
       Jvmheap: 2048m
@@ -692,10 +600,10 @@ Mappings:
       Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
-      Jvmheap: 6144m
+      Jvmheap: 4608m
     c5.2xlarge:
       Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     c5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -747,9 +655,6 @@ Mappings:
     i3.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    m3.medium:
-      Arch: HVM64
-      Jvmheap: 2048m
     m4.large:
       Arch: HVM64
       Jvmheap: 6144m
@@ -768,19 +673,22 @@ Mappings:
     m4.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.large:
+    m5.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    m5.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.xlarge:
+    m5.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.2xlarge:
+    m5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.4xlarge:
+    m5.10xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    r3.8xlarge:
+    m5.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r4.large:
@@ -821,46 +729,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-75be3813
+      HVM64: ami-30c9a8dd
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-8ab91fe4
+      HVM64: ami-3055e15e
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-63eda40c
+      HVM64: ami-42b5832d
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-ceee8ab2
+      HVM64: ami-6b463881
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-78af581a
+      HVM64: ami-25548e47
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-0201ba66
+      HVM64: ami-e41e9c80
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-c7a32aa8
+      HVM64: ami-31696cda
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-69ec5410
+      HVM64: ami-c8aabb22
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-56fae432
+      HVM64: ami-58668e3f
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-51cb7b2c
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-1fb3f473
+      HVM64: ami-18200774
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-a78525d8
+      HVM64: ami-6a426815
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-edc9e088
+      HVM64: ami-a08eb6c5
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-666e6b06
+      HVM64: ami-a05dbdc3
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-eac1ac92
+      HVM64: ami-ef84d597
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -975,7 +886,7 @@ Resources:
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
                     - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]}]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
@@ -1065,7 +976,7 @@ Resources:
                 packages:
                   yum: [nfs-utils]
     Properties:
-      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -1078,7 +989,7 @@ Resources:
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
-          - !Ref 'AWS::Region'
+          - !Ref AWS::Region
           - !FindInMap
               - AWSInstanceType2Arch
               - !Ref ClusterNodeInstanceType
@@ -1204,7 +1115,7 @@ Resources:
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_SYNCHRONY_MEMORY=-Xmx${AtlJvmHeapSynchrony}", AtlJvmHeapSynchrony: !If [OverrideHeapSynchrony, !Ref 'JvmHeapOverrideSynchrony', '2g']]
                     - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]}]
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
@@ -1263,7 +1174,7 @@ Resources:
                           - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
                           - ElasticFileSystem: !Ref ElasticFileSystem
                             Region: !Ref "AWS::Region"
-                    - ":/ /media/atl nfs4 noatime,intr,rsize=32768,wsize=32768 0 0 >>/etc/fstab"
+                    - ":/ /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
               command: mount -a
@@ -1288,7 +1199,7 @@ Resources:
                   yum:
                     - nfs-utils
     Properties:
-      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvdf
           Ebs: {}
@@ -1490,7 +1401,7 @@ Resources:
   MainTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Port: 8080
+      Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
       VpcId: !Ref VPC
       HealthCheckIntervalSeconds: 20
@@ -1499,7 +1410,7 @@ Resources:
       Matcher:
         HttpCode: 200
       HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
-      HealthCheckPort: 8080
+      HealthCheckPort: !Ref TomcatDefaultConnectorPort
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
         - Key: stickiness.enabled
@@ -1581,27 +1492,42 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
-  ConfluenceTargetGroupARN:
-    Description: The name of the load balancer of Confluence cluster nodes
-    Value: !Ref MainTargetGroup
-  ClusterNodeGroup:
-    Description: The name of the auto scaling group of Confluence cluster nodes
-    Value: !Ref ClusterNodeGroup
-  ConfluenceURL:
-    Description: The URL of Confluence Data Center instance
+  ServiceURL:
+    Description: The URL to access this Atlassian service
     Value: !If
       - UseCustomDnsName
-      - !Ref CustomDnsName
+      - !Sub
+        - "${HTTP}://${CustomDNSName}${ContextPath}"
+        - HTTP: !If [SSLScheme, 'https', 'http']
+          CustomDNSName: !Ref CustomDnsName
+          ContextPath: !Ref TomcatContextPath
       - !If
         - UseHostedZone
-        - !Ref LoadBalancerCname
         - !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
+          - "${HTTP}://${LBCName}${ContextPath}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
+            LBCName: !Ref LoadBalancerCname
+            ContextPath: !Ref TomcatContextPath
+        - !Sub
+          - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            ContextPath: !Ref TomcatContextPath
+  LoadBalancerURL:
+    Description: The Load Balancer URL
+    Value: !Sub
+      - "${HTTP}://${LoadBalancerDNSName}"
+      - HTTP: !If [SSLScheme, 'https', 'http']
+        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+  SGname:
+    Description: The name of the SecurityGroup
+    Value: !Ref SecurityGroup
+    Export: {
+      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
+    }
+  DBEndpointAddress:
+    Description: The Database Connection String
+    Value: !GetAtt DB.Endpoint.Address
   EFSCname:
     Description: The cname of the EFS
     Value: !If
@@ -1611,27 +1537,12 @@ Outputs:
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
     }
-  LoadBalancerURL:
-    Description: The Load Balancer URL
-    Value: !If
-      - UseCustomDnsName
-      - !Ref CustomDnsName
-      - !If
-        - UseHostedZone
-        - !Ref LoadBalancerCname
-        - !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
-          - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
-  SGname:
-    Description: The name of the SecurityGroup
-    Value: !Ref SecurityGroup
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
-    }
+  ConfluenceTargetGroupARN:
+    Description: The name of the load balancer of Confluence cluster nodes
+    Value: !Ref MainTargetGroup
+  ClusterNodeGroup:
+    Description: The name of the auto scaling group of Confluence cluster nodes
+    Value: !Ref ClusterNodeGroup
   SynchronyClusterNodeGroup:
     Description: The name of the auto scaling group of Synchrony cluster nodes
     Value: !Ref SynchronyClusterNodeGroup

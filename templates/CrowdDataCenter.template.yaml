@@ -1,3 +1,7 @@
+---
+# bring up diffs between this file and the BitbucketDataCenter.template.yaml, ConfluenceDataCenter.template.yaml, and JiraDataCenter.template.yaml
+# As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
+# Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
 Description: Atlassian Crowd Data Center
 Metadata:
@@ -72,19 +76,9 @@ Metadata:
             - TomcatRedirectPort
             - TomcatScheme
             - TomcatSecure
-      - Label:
-          default: Platform Owner
-        Parameters:
-          - BusinessUnit
-      - Label:
-          default: Monitoring
-        Parameters:
-          - Monitoring
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
-      BusinessUnit:
-        default: Billing Cost Centre
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
@@ -149,8 +143,6 @@ Metadata:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
-      Monitoring:
-        default: LogicMonitor Monitoring
       SSLCertificateName:
         default: SSL Certificate Name
       TomcatAcceptCount:
@@ -186,18 +178,8 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
-  BusinessUnit:
-    Default: Workplace-Technology
-    Description: The cost centre that this instance will be billed to
-    Type: String
-    AllowedValues:
-      - Accounting
-      - Foundation
-      - Human-Resources
-      - Legal
-      - Operations
-      - Workplace-Technology
   CatalinaOpts:
+    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -283,6 +265,7 @@ Parameters:
       - db.m4.2xlarge
       - db.m4.4xlarge
       - db.m4.10xlarge
+      - db.m4.16xlarge
       - db.r4.large
       - db.r4.xlarge
       - db.r4.2xlarge
@@ -302,7 +285,6 @@ Parameters:
     MaxValue: 3000
     Type: Number
   DBMasterUserPassword:
-    Default: 'password1234'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -334,7 +316,6 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: 'password1234'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -383,17 +364,17 @@ Parameters:
     Description: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
     Type: String
   ExternalSubnets:
-    Default: 'subnet-df0c3597,subnet-f1fb87ab'
+    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
-    Default: 'wpt.atlassian.com.'
+    Default: ''
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InternalSubnets:
-    Default: 'subnet-df0c3597,subnet-f1fb87ab'
+    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
@@ -413,18 +394,10 @@ Parameters:
     Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
-    Default: 'WPE-GenericKeyPair-20161102'
+    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
-  Monitoring:
-    AllowedValues:
-      - true
-      - false
-    ConstraintDescription: Must be 'true' or 'false'.
-    Default: false
-    Description: Whether or not LogicMonitor monitoring is enabled
-    Type: String
   SSLCertificateName:
     Default: ''
     Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
@@ -449,7 +422,8 @@ Parameters:
     Type: String
   TomcatContextPath:
     Default: ''
-    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing
+    AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
+    Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String
   TomcatDefaultConnectorPort:
     Default: 8080
@@ -489,7 +463,7 @@ Parameters:
     Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
     Type: String
   VPC:
-    Default: 'vpc-320c1355'
+    Default: ''
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
     Type: AWS::EC2::VPC::Id
@@ -515,25 +489,6 @@ Conditions:
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
 Mappings:
-  AWSCostCentre2ServiceOwner:
-    Accounting:
-      ServiceOwner: mmoore
-      CostCentre: Accounting
-    Foundation:
-      ServiceOwner: jsrikanthan
-      CostCentre: Foundation
-    Human-Resources:
-      ServiceOwner: eyoung
-      CostCentre: IT G&A
-    Legal:
-      ServiceOwner: sshepard
-      CostCentre: Legal
-    Operations:
-      ServiceOwner: jseverino
-      CostCentre: Infrastructure  Svcs-SRE
-    Workplace-Technology:
-      ServiceOwner: brobson
-      CostCentre: Workplace Technology
   AWSInstanceType2Arch:
     c4.large:
       Arch: HVM64
@@ -681,46 +636,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-ce02a4a8
+      HVM64: ami-9d7f1970
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-f23c999c
+      HVM64: ami-b8893dd6
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-8cc486e3
+      HVM64: ami-972610f8
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-1c8ccd7f
+      HVM64: ami-ca8ff020
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-1dae417f
+      HVM64: ami-6bf92309
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-9a8d35fe
+      HVM64: ami-15129071
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-869d26e9
+      HVM64: ami-0c9fa5e7
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-c55983bc
+      HVM64: ami-729b8d98
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-e69d8082
+      HVM64: ami-3008e057
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-92cd7def
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-6d354d01
+      HVM64: ami-b47354d8
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-5c7d2223
+      HVM64: ami-19416866
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-6d8ca008
+      HVM64: ami-1c84bc79
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-f9734f99
+      HVM64: ami-870fefe4
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-cb1b50b3
+      HVM64: ami-e1b6e099
       HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
@@ -770,23 +728,8 @@ Resources:
         - Key: Cluster
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
-        - Key: business_unit
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - CostCentre
-          PropagateAtLaunch: true
-        - Key: resource_owner
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - ServiceOwner
-          PropagateAtLaunch: true
         - Key: service_name
           Value: !Ref AWS::StackName
-          PropagateAtLaunch: true
-        - Key: wpe_monitoring
-          Value: !Ref Monitoring
           PropagateAtLaunch: true
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -826,7 +769,7 @@ Resources:
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
                     - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
@@ -924,7 +867,7 @@ Resources:
           default:
             - 0
     Properties:
-      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -963,20 +906,8 @@ Resources:
           Value: !Join [' ', [!Ref 'AWS::StackName', 'cluster shared-files']]
         - Key: Application
           Value: !Ref AWS::StackId
-        - Key: business_unit
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - CostCentre
-        - Key: resource_owner
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - ServiceOwner
         - Key: service_name
           Value: !Ref AWS::StackName
-        - Key: wpe_monitoring
-          Value: !Ref Monitoring
   EFSMountAz1:
     Type: AWS::EFS::MountTarget
     Properties:
@@ -1018,20 +949,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ["${StackName} CROWD PostgreSQL Database", StackName: !Ref 'AWS::StackName']
-        - Key: business_unit
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - CostCentre
-        - Key: resource_owner
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - ServiceOwner
         - Key: service_name
           Value: !Ref AWS::StackName
-        - Key: wpe_monitoring
-          Value: !Ref Monitoring
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -1097,20 +1016,8 @@ Resources:
           Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
         - Key: Cluster
           Value: !Ref AWS::StackName
-        - Key: business_unit
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - CostCentre
-        - Key: resource_owner
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - ServiceOwner
         - Key: service_name
           Value: !Ref AWS::StackName
-        - Key: wpe_monitoring
-          Value: !Ref Monitoring
   LoadBalancerCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
@@ -1139,11 +1046,6 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: !Ref CidrBlock
-        - IpProtocol: tcp
-          FromPort: !Ref TomcatDefaultConnectorPort
-          ToPort: !Ref TomcatDefaultConnectorPort
-          CidrIp: 10.104.240.169/32
-          Description: 'Backmac'
       Tags:
         - Key: Name
           Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
@@ -1157,30 +1059,27 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
-  CrowdURL:
-    Description: The URL of Crowd Data Center instance
+  ServiceURL:
+    Description: The URL to access this Atlassian service
     Value: !If
       - UseCustomDnsName
-      - !Ref CustomDnsName
+      - !Sub
+        - "${HTTP}://${CustomDNSName}${ContextPath}"
+        - HTTP: !If [SSLScheme, 'https', 'http']
+          CustomDNSName: !Ref CustomDnsName
+          ContextPath: !Ref TomcatContextPath
       - !If
         - UseHostedZone
-        - !Ref LoadBalancerCname
         - !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
+          - "${HTTP}://${LBCName}${ContextPath}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
-  EFSCname:
-    Description: The cname of the EFS
-    Value: !If
-      - UseHostedZone
-      - !Ref EFSCname
-      - !Ref ElasticFileSystem
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
-    }
+            LBCName: !Ref LoadBalancerCname
+            ContextPath: !Ref TomcatContextPath
+        - !Sub
+          - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            ContextPath: !Ref TomcatContextPath
   LoadBalancerURL:
     Description: The Load Balancer URL
     Value: !Sub
@@ -1195,4 +1094,13 @@ Outputs:
     }
   DBEndpointAddress:
     Description: The Database Connection String
-    Value: !Ref DBCname
+    Value: !GetAtt DB.Endpoint.Address
+  EFSCname:
+    Description: The cname of the EFS
+    Value: !If
+      - UseHostedZone
+      - !Ref EFSCname
+      - !Ref ElasticFileSystem
+    Export: {
+      Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
+    }
