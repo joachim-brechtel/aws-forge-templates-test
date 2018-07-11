@@ -11,7 +11,7 @@ Metadata:
           default: Confluence setup
         Parameters:
           - ConfluenceVersion
-          - Environment
+          - DeployEnvironment
       - Label:
           default: Cluster nodes
         Parameters:
@@ -136,7 +136,7 @@ Metadata:
         default: Database storage
       DBStorageType:
         default: Database storage type
-      Environment:
+      DeployEnvironment:
         default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
@@ -390,13 +390,13 @@ Parameters:
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
     Description: Database storage type
     Type: String
-  Environment:
-    Default: Production
+  DeployEnvironment:
+    Default: prod
     AllowedValues:
-      - Production
-      - Staging
-      - Disaster Recovery (DR)
-    ConstraintDescription: Must be either Production, Staging, or DR.
+      - prod
+      - stg
+      - dr
+    ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
@@ -590,10 +590,6 @@ Conditions:
     !Not [!Equals [!Ref SubDomainName, '']]
   GovCloudCondition:
     !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
-  EnvironmentIsProd:
-    !Equals [!Ref Environment, 'Production']
-  EnvironmentIsStg:
-    !Equals [!Ref Environment, 'Staging']
 Mappings:
   AWSInstanceType2Arch:
     c4.large:
@@ -896,7 +892,7 @@ Resources:
                     - !Sub ["ATL_DB_PREFERREDTESTQUERY=\"${DBPreferredTestQuery}\"", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
                     - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
                     - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
-                    - !Sub ["ATL_ENVIRONMENT=${Environment}", Environment: !If [EnvironmentIsProd, prod, !If [EnvironmentIsStg, stg, dr]]]
+                    - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
