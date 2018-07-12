@@ -46,9 +46,9 @@ function start {
     configureRemoteDb
   fi
   configureCrowdContext
-  atl_log "=== BEGIN: service atl-init-confluence runLocalAnsible ==="
+  atl_log "=== BEGIN: service atl-init-crowd runLocalAnsible ==="
   runLocalAnsible
-  atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
+  atl_log "=== END:   service atl-init-crowd runLocalAnsible ==="
 
   goCrowd
 
