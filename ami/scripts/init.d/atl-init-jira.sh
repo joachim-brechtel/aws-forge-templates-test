@@ -58,8 +58,10 @@ function start {
 
     recursiveChown "root" "jira" "/etc/atl"
 
-    local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
-    if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
+    if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
+        local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
+        if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
+    fi
 
     goJIRA
 

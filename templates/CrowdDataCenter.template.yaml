@@ -8,6 +8,7 @@ Metadata:
           default: Crowd setup
         Parameters:
           - CrowdVersion
+          - DeployEnvironment
       - Label:
           default: Cluster nodes
         Parameters:
@@ -126,6 +127,8 @@ Metadata:
         default: DB Test While Idle?
       DBTimeBetweenEvictionRunsMillis:
         default: DB Time Between Eviction Runs
+      DeployEnvironment:
+        default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
       HostedZone:
@@ -359,6 +362,15 @@ Parameters:
   DBTimeBetweenEvictionRunsMillis:
     Default: 60000
     Description: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
+    Type: String
+  DeployEnvironment:
+    Default: prod
+    AllowedValues:
+      - prod
+      - stg
+      - dr
+    ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
+    Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
     Default: ''
@@ -768,6 +780,7 @@ Resources:
                     - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
                     - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
                     - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
+                    - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
