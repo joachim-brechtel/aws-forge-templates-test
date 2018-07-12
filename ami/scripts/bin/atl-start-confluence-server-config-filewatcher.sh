@@ -10,7 +10,7 @@ FILEPATH=$(dirname "${WATCHED_FILE}")
 INOTIFYCMD="inotifywait -m --timefmt '%Y-%m-%d %H:%M:%S' --format '%T %w%f' -e moved_to \"${FILEPATH}\""
 
 if [[ ! $(pgrep -f "${INOTIFYCMD}") ]]; then
-    "${INOTIFYCMD}" | while read -r date time file; do
+    eval "${INOTIFYCMD}" | while read -r date time file; do
         if [[ "${WATCHED_FILE}" == "${file}" ]]; then
             echo "${date} ${time} Watched file (${file}) has been modified; backing up to $(dirname "${FILE_DEST}")" >> "${LOG_FILE}" 2>&1
             cp -fp "${file}" "${FILE_DEST}" >> "${LOG_FILE}" 2>&1
