@@ -19,7 +19,7 @@ This directory contains the following AWS CloudFormation templates:
 |------|------------|
 | `{Productname}Server` | A single-instance deployment of `{Productname}`. May still utilize additional instances in RDS or EC2 for database or NFS usage, but the core application uses a single EC2 node and requires a "Server" license. |
 | `{Productname}DataCenter` | A multi-instance (clustered) deployment of `{Productname}`. Requires "Data Center" license. |
-| `{Productname}{Server\|DataCenter}STGorDR` | A variant template specifically designed for cloning an existing production stack to a new staging or disaster recovery stack. |
+| ```{Productname}{Server|DataCenter}STGorDR``` | A variant template specifically designed for cloning an existing production stack to a new staging or disaster recovery stack. |
 
 ### Use
 
