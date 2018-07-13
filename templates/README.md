@@ -2,19 +2,32 @@
 
 This directory contains the following AWS CloudFormation templates:
 
-| Template Name | Description | File Server | Database | Proxy | Documentation |
-|---------------|-------------|-------------|----------|-------|---------------|
-| `BitbucketServer.template` | Template to spin up Bitbucket Server as a standalone instance with onboard proxy and database. | None | PostgreSQL (onboard) | Nginx (onboard) | [Documentation](https://confluence.atlassian.com/x/wZZKLg) 
-| `BitbucketDataCenter.template` | Bitbucket Data Center template | EC2 & EBS based NFS Server | RDS PostgreSQL | ELB | - |
-| `JiraDataCenter.template` | JIRA Data Center template | Elastic File System | RDS PostgreSQL | ELB | - |
+| Template Name | File Server | Database | Proxy | Documentation |
+|---------------|-------------|----------|-------|---------------|
+| `BitbucketServer.template` | None | PostgreSQL (onboard) | Nginx (onboard) | [Documentation](https://confluence.atlassian.com/x/wZZKLg) |
+| `BitbucketDataCenter.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
+| `ConfluenceDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
+| `ConfluenceDataCenterSTGorDR.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
+| `CrowdDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
+| `CrowdDataCenterSTGorDR.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
+| `JiraDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
+| `JiraDataCenterSTGorDR.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
 
-To use, go to [the AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1) and click "Create New Stack"
-and follow the prompts. 
+**Key Terms:**
 
-You can also validate the template from the command line with the AWS Command Line Interface (CLI)
-tools. See [the AWS documentation](http://docs.aws.amazon.com/cli/latest/userguide/installing.html).
+| Term | Definition |
+|------|------------|
+| `{Productname}Server` | A single-instance deployment of `{Productname}`. May still utilize additional instances in RDS or EC2 for database or NFS usage, but the core application uses a single EC2 node and requires a "Server" license. |
+| `{Productname}DataCenter` | A multi-instance (clustered) deployment of `{Productname}`. Requires "Data Center" license. |
+| `{Productname}{Server|DataCenter}STGorDR` | A variant template specifically designed for cloning an existing production stack to a new staging or disaster recovery stack. |
 
-Alternatively, you can use the `test<TemplateName>.sh` scripts in `/test` to: 
+### Use
+
+To use, go to [the AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1) and click "Create New Stack" and follow the prompts.
+
+You can also validate the template from the command line with the AWS Command Line Interface (CLI) tools. See [the AWS documentation](http://docs.aws.amazon.com/cli/latest/userguide/installing.html).
+
+Alternatively, you can use the `test<TemplateName>.sh` scripts in `/test` to:
 
 - Create your AWS Key Pair
 - Create a VPC, subnets and an Internet Gateway
