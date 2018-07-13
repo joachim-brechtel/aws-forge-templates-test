@@ -196,7 +196,7 @@ Parameters:
     Description: Sets the Rememberme (autologin) cookie age length in seconds
     Type: String
   CatalinaOpts:
-    Default: '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true'
+    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
