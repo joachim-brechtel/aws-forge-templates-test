@@ -11,6 +11,7 @@ Metadata:
           default: Confluence setup
         Parameters:
           - ConfluenceVersion
+          - DeployEnvironment
       - Label:
           default: Instance parameters
         Parameters:
@@ -120,6 +121,8 @@ Metadata:
         default: Database storage
       DBStorageType:
         default: Database storage type
+      DeployEnvironment:
+        default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
       HostedZone:
@@ -302,6 +305,15 @@ Parameters:
       - Provisioned IOPS
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
     Description: Database storage type
+    Type: String
+  DeployEnvironment:
+    Default: prod
+    AllowedValues:
+      - prod
+      - stg
+      - dr
+    ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
+    Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
     Default: ''
@@ -861,6 +873,7 @@ Resources:
                     - !Sub ["ATL_DB_PREFERREDTESTQUERY=\"${DBPreferredTestQuery}\"", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
                     - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
                     - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
+                    - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideConfluenceHeap, !Ref 'JvmHeapOverrideConfluence', !FindInMap [AWSInstanceType2Arch, !Ref InstanceType, Jvmheap]]]
