@@ -12,9 +12,10 @@ function atl_toSentenceCase {
 
 function atl_awsLinuxAmi {
     local REGION=${1:?"A region must be specified"}
+    local AWS_LINUX_VERSION=${2:?"An AWS linux version must be specified"}
     aws --region "${REGION}" ec2 describe-images \
         --owners 137112412989 \
-        --filters Name=virtualization-type,Values=hvm Name=description,Values="Amazon Linux AMI 2016.09*HVM GP2" \
+        --filters Name=virtualization-type,Values=hvm Name=description,Values="Amazon Linux AMI ${AWS_LINUX_VERSION}.* x86_64 HVM GP2" \
         --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
         --output text
 }

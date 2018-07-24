@@ -920,6 +920,7 @@ Resources:
                     - "ATL_ENABLED_PRODUCTS=Confluence"
                     - "ATL_ENABLED_SHARED_HOMES="
                     - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
+                    - "ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER=ec2.amazonaws.com"
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
                     - "ATL_JDBC_USER=atlconfluence"
                     - "ATL_NGINX_ENABLED=false"
