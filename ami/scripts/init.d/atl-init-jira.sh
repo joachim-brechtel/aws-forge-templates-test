@@ -57,7 +57,7 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-jira runLocalAnsible ==="
 
-    recursiveChown "root" "jira" "/etc/atl"
+    atl_recursiveChown "root" "jira" "/etc/atl"
 
     if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
         local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
