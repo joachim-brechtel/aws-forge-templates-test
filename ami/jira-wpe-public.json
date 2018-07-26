@@ -8,20 +8,21 @@
     "subnet_id": null,
     "base_ami": null,
 
-    "availability_zone": "us-east-1a",
-    "config_location": "/etc/sysconfig/atl",
-    "log_location": "/var/log/atl.log",
-    "name": "jira",
-    "app_data_dir": "/var/atlassian/application-data",
-    "home_dir": "/var/atlassian/application-data/jira",
-    "install_dir": "/opt/atlassian/jira",
+    "availability_zone":        "us-east-1a",
+    "config_location":          "/etc/sysconfig/atl",
+    "log_location":             "/var/log/atl.log",
+    "name":                     "jira",
+    "app_data_dir":             "/var/atlassian/application-data",
+    "home_dir":                 "/var/atlassian/application-data/jira",
+    "install_dir":              "/opt/atlassian/jira",
     "instance_store_block_device": "/dev/xvdb",
-    "instance_store_mount": "/media/ephemeral0",
-    "app_data_mount": "/media/atl",
-    "app_data_block_device": "/dev/xvdf",
-    "app_data_fs_type": "zfs",
+    "instance_store_mount":     "/media/ephemeral0",
+    "app_data_mount":           "/media/atl",
+    "app_data_block_device":    "/dev/xvdf",
+    "app_data_fs_type":         "zfs",
 
-    "postgres_version": "9.6"
+    "git_version":              "2.13.6",
+    "postgres_version":         "9.6"
   },
 
   "builders": [{
@@ -96,9 +97,6 @@
     "script": "scripts/install-jq.sh"
   }, {
     "type": "shell",
-    "script": "scripts/install-xmllint.sh"
-  }, {
-    "type": "shell",
     "script": "scripts/install-nginx.sh"
   }, {
     "type": "shell",
@@ -106,6 +104,10 @@
     "environment_vars": [
       "VERSION={{user `postgres_version`}}"
     ]
+  }, {
+    "type": "file",
+    "source": "keys/RPM-GPG-KEY-zfsonlinux.key",
+    "destination": "/tmp/RPM-GPG-KEY-zfsonlinux.key"
   }, {
     "type": "shell",
     "script": "scripts/install-zfs.sh",
@@ -151,6 +153,13 @@
   }, {
     "type": "shell",
     "inline": "sudo mkdir -p /opt/atlassian/bin && sudo mv /tmp/atl-update-host-name.sh /opt/atlassian/bin/atl-update-host-name.sh && sudo chmod +x /opt/atlassian/bin/atl-update-host-name.sh && sudo chown root:root /opt/atlassian/bin/atl-update-host-name.sh"
+  }, {
+    "type": "file",
+    "source": "bin/local.ansible.run.cmd",
+    "destination": "/tmp/local-ansible-run"
+  }, {
+    "type": "shell",
+    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
   }, {
     "type": "file",
     "source": "scripts/init.d/atl-init-10-volume.sh",

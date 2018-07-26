@@ -8,35 +8,33 @@
     "subnet_id": null,
     "base_ami": null,
 
-    "availability_zone": "us-east-1a",
-    "config_location": "/etc/sysconfig/atl",
-    "log_location": "/var/log/atl.log",
-    "name": "confluence",
-    "short_display_name": "Confluence",
-    "full_display_name": "Atlassian Confluence",
-    "version": "latest",
-    "user": "confluence",
-    "user_id": "1001",
-    "db_name": "confluence",
-    "db_user": "atlconfluence",
-    "app_data_dir": "/var/atlassian/application-data",
-    "home_dir": "/var/atlassian/application-data/confluence",
-    "db_dir": "/var/atlassian/application-data/db",
-    "install_dir": "/opt/atlassian/confluence",
+    "config_location":          "/etc/sysconfig/atl",
+    "log_location":             "/var/log/atl.log",
+    "name":                     "confluence",
+    "short_display_name":       "Confluence",
+    "full_display_name":        "Atlassian Confluence",
+    "version":                  "latest",
+    "user":                     "confluence",
+    "user_id":                  "1001",
+    "db_name":                  "confluence",
+    "db_user":                  "atlconfluence",
+    "app_data_dir":             "/var/atlassian/application-data",
+    "home_dir":                 "/var/atlassian/application-data/confluence",
+    "db_dir":                   "/var/atlassian/application-data/db",
+    "install_dir":              "/opt/atlassian/confluence",
     "instance_store_block_device": "/dev/xvdb",
-    "instance_store_mount": "/media/ephemeral0",
-    "app_data_mount": "/media/atl",
-    "app_data_block_device": "/dev/xvdf",
-    "app_data_fs_type": "unknown",
+    "instance_store_mount":     "/media/ephemeral0",
+    "app_data_mount":           "/media/atl",
+    "app_data_block_device":    "/dev/xvdf",
+    "app_data_fs_type":         "unknown",
 
-    "release_s3_bucket": "atlassian-software",
-    "release_s3_path": "releases/confluence",
+    "release_s3_bucket":        "atlassian-software",
+    "release_s3_path":          "releases/confluence",
 
-    "postgres_version": "9.6"
+    "postgres_version":         "9.6"
   },
 
   "builders": [{
-    "availability_zone": "us-east-1a",
     "type": "amazon-ebs",
     "communicator": "ssh",
     "ssh_pty": "true",
@@ -57,7 +55,7 @@
 
     "region": "{{ user `aws_region` }}",
     "source_ami": "{{ user `base_ami` }}",
-    "instance_type": "c5.large",
+    "instance_type": "t2.medium",
     "vpc_id": "{{user `vpc_id`}}",
     "subnet_id": "{{user `subnet_id`}}",
     "associate_public_ip_address": true,
@@ -117,6 +115,10 @@
     "environment_vars": [
       "VERSION={{user `postgres_version`}}"
     ]
+  },  {
+    "type": "file",
+    "source": "keys/RPM-GPG-KEY-zfsonlinux.key",
+    "destination": "/tmp/RPM-GPG-KEY-zfsonlinux.key"
   }, {
     "type": "shell",
     "script": "scripts/install-zfs.sh",
@@ -169,6 +171,13 @@
   }, {
     "type": "shell",
     "inline": "sudo mkdir -p /opt/atlassian/bin && sudo mv /tmp/atl-update-host-name.sh /opt/atlassian/bin/atl-update-host-name.sh && sudo chmod +x /opt/atlassian/bin/atl-update-host-name.sh && sudo chown root:root /opt/atlassian/bin/atl-update-host-name.sh"
+  }, {
+    "type": "file",
+    "source": "bin/local.ansible.run.cmd",
+    "destination": "/tmp/local-ansible-run"
+  }, {
+    "type": "shell",
+    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
   }, {
     "type": "file",
     "source": "scripts/init.d/atl-init-10-volume.sh",
