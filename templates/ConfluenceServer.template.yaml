@@ -53,29 +53,29 @@ Metadata:
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
-            - TomcatContextPath
-            - CatalinaOpts
-            - DBPoolMaxSize
-            - DBPoolMinSize
-            - DBTimeout
-            - DBIdleTestPeriod
-            - DBMaxStatements
-            - DBValidate
-            - DBPreferredTestQuery
-            - DBAcquireIncrement
-            - JvmHeapOverrideConfluence
-            - JvmHeapOverrideSynchrony
-            - TomcatAcceptCount
-            - TomcatConnectionTimeout
-            - TomcatDefaultConnectorPort
-            - TomcatEnableLookups
-            - TomcatMaxThreads
-            - TomcatMinSpareThreads
-            - TomcatProtocol
-            - TomcatProxyPort
-            - TomcatRedirectPort
-            - TomcatScheme
-            - TomcatSecure
+          - TomcatContextPath
+          - CatalinaOpts
+          - DBPoolMaxSize
+          - DBPoolMinSize
+          - DBTimeout
+          - DBIdleTestPeriod
+          - DBMaxStatements
+          - DBValidate
+          - DBPreferredTestQuery
+          - DBAcquireIncrement
+          - JvmHeapOverrideConfluence
+          - JvmHeapOverrideSynchrony
+          - TomcatAcceptCount
+          - TomcatConnectionTimeout
+          - TomcatDefaultConnectorPort
+          - TomcatEnableLookups
+          - TomcatMaxThreads
+          - TomcatMinSpareThreads
+          - TomcatProtocol
+          - TomcatProxyPort
+          - TomcatRedirectPort
+          - TomcatScheme
+          - TomcatSecure
     ParameterLabels:
       AutologinCookieAge:
         default: Rememberme cookie age
