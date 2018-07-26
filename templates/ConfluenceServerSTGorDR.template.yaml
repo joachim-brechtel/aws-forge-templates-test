@@ -39,7 +39,7 @@ Metadata:
       - Label:
           default: Disaster Recovery Snapshot ID's
         Parameters:
-          - DBSnapshotId
+          - DBSnapshotName
           - EBSSnapshotId
       - Label:
           default: DNS (Optional)
@@ -118,8 +118,8 @@ Metadata:
         default: DB Preferred Test Query
       DBAcquireIncrement:
         default: DB Acquire Increment
-      DBSnapshotId:
-        default: Database snapshot ID to restore
+      DBSnapshotName:
+        default: Database snapshot name to restore
       DBStorageType:
         default: Database storage type
       DeployEnvironment:
@@ -203,7 +203,7 @@ Parameters:
     Type: String
   CustomDnsName:
     Default: ''
-    Description: 'Use custom existing DNS name for your Confluence Server instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the public IP address.'
+    Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the public IP address.'
     Type: String
   DBInstanceClass:
     Default: db.t2.medium
@@ -251,6 +251,7 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
+    Default: ''
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -290,12 +291,11 @@ Parameters:
     Default: 3
     Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
-  DBSnapshotId:
+  DBSnapshotName:
     Default: ''
-    Description: RDS snapshot ID of an existing snapshot to restore from (like "dr-eac-snap-201709241212").
+    Description: RDS snapshot name of an existing snapshot to restore from (like "dr-eac-snap-201709241212").
     Type: String
-    ConstraintDescription:
-        Must be a valid RDS snapshot ID, or blank.
+    ConstraintDescription: Must be a valid RDS snapshot name, or blank.
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -305,7 +305,7 @@ Parameters:
     Description: Database storage type
     Type: String
   DeployEnvironment:
-    Default: prod
+    Default: stg
     AllowedValues:
       - prod
       - stg
@@ -429,8 +429,8 @@ Parameters:
     Description: Controls if the load balancer is assigned a public IP address
     Type: String
   SubDomainName:
-    Description: Leave this field blank to use your stack name as the sub-domain.
     Default: ''
+    Description: Leave this field blank to use your stack name as the sub-domain.
     Type: String
   SSLCertificateName:
     Default: ''
@@ -507,7 +507,7 @@ Conditions:
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
   DoRestoreFromRDSSnapshot:
-    !Not [!Equals [!Ref DBSnapshotId, '']]
+    !Not [!Equals [!Ref DBSnapshotName, '']]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
@@ -906,7 +906,7 @@ Resources:
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
-              mode: 000640
+              mode: "000640"
               owner: root
               group: root
             /etc/cfn/cfn-hup.conf:
@@ -914,7 +914,7 @@ Resources:
                 [main]
                 region=${AWS::Region}
                 stack=${AWS::StackName}
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
@@ -924,7 +924,7 @@ Resources:
                 path=Resources.ConfluenceServerLaunchConfig.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
                 runas=root
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
           commands:
@@ -1094,7 +1094,7 @@ Resources:
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
-      DBSnapshotIdentifier: !Ref DBSnapshotId
+      DBSnapshotIdentifier: !Ref DBSnapshotName
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
@@ -1219,8 +1219,8 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
-  ConfluenceURL:
-    Description: The URL of the Confluence Server instance
+  ServiceURL:
+    Description: The URL to access this Atlassian service
     Value: !If
       - UseCustomDnsName
       - !Sub
