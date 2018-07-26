@@ -111,7 +111,8 @@
     "type": "shell",
     "script": "scripts/install-zfs.sh",
     "environment_vars": [
-      "APP_DATA_FS_TYPE={{user `app_data_fs_type`}}"
+      "APP_DATA_FS_TYPE={{user `app_data_fs_type`}}",
+      "AWS_LINUX_VERSION={{user `aws_linux_version`}}"
     ]
   }, {
     "type": "shell",

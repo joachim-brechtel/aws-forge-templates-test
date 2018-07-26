@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 function atl_createTag {
     local KEY=$1
