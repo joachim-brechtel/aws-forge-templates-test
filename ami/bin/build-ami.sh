@@ -4,7 +4,8 @@ set -e
 ## FOR LOCAL ANSIBLE
 ## set your ansible repo details here and uncomment
 # git archive --remote=ssh://your-repo-hosting/your-repo-name.git HEAD bin/your-ansible-filename.cmd -o scripts/local-ansible-run.tar
-# tar -zxf scripts/local-ansible-run.tar
+git archive --remote=ssh://git@stash.atlassian.com:7997/wpt/wpe-ansible.git HEAD bin/local.ansible.run.cmd -o scripts/local-ansible-run.tar
+tar -zxf scripts/local-ansible-run.tar
 
 ## then add this to the provisioners section of <product>.json
 #{
@@ -145,10 +146,6 @@ DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 
-# add the following line to the packer command for debugging but it will disable parallel builds
-# -debug \
-# add this to ensure the ami does not clean up after build
-# -on-error=abort
 packer -machine-readable build \
   -var aws_access_key="${AWS_ACCESS_KEY}" \
   -var aws_secret_key="${AWS_SECRET_KEY}" \
@@ -159,7 +156,11 @@ packer -machine-readable build \
   -var subnet_id="${AWS_SUBNET_ID}" \
   -var "aws_region"="${AWS_REGION}" \
   -var "aws_linux_version"="${AWS_LINUX_VERSION}" \
-  $(dirname $0)/../${ATL_PRODUCT_ID}.json | tee "${TMP_DIR}/packer.log"
+  $(dirname $0)/../${ATL_PRODUCT_ID}.json | tee "${TMP_DIR}/packer.log" \
+  # add the following line to the packer command for debugging but it will disable parallel builds
+  -debug \
+  # add this to ensure the ami does not clean up after build
+  -on-error=abort
 
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
 

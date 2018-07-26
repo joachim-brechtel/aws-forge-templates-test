@@ -20,7 +20,7 @@
     "app_data_block_device":    "/dev/xvdf",
     "app_data_fs_type":         "zfs",
 
-    "postgres_version": "9.6"
+    "postgres_version":         "9.6"
   },
 
   "builders": [{
@@ -150,6 +150,13 @@
   }, {
     "type": "shell",
     "inline": "sudo mkdir -p /opt/atlassian/bin && sudo mv /tmp/atl-update-host-name.sh /opt/atlassian/bin/atl-update-host-name.sh && sudo chmod +x /opt/atlassian/bin/atl-update-host-name.sh && sudo chown root:root /opt/atlassian/bin/atl-update-host-name.sh"
+  }, {
+    "type": "file",
+    "source": "bin/local.ansible.run.cmd",
+    "destination": "/tmp/local-ansible-run"
+  }, {
+    "type": "shell",
+    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
   }, {
     "type": "file",
     "source": "scripts/init.d/atl-init-10-volume.sh",

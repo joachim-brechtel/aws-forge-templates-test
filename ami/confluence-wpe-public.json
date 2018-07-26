@@ -8,6 +8,7 @@
     "subnet_id": null,
     "base_ami": null,
 
+    "availability_zone":        "us-east-1a",
     "config_location":          "/etc/sysconfig/atl",
     "log_location":             "/var/log/atl.log",
     "name":                     "confluence",
@@ -35,6 +36,7 @@
   },
 
   "builders": [{
+    "availability_zone": "us-east-1a",
     "type": "amazon-ebs",
     "communicator": "ssh",
     "ssh_pty": "true",

@@ -21,7 +21,6 @@
     "app_data_block_device":    "/dev/xvdf",
     "app_data_fs_type":         "zfs",
 
-    "git_version":              "2.13.6",
     "postgres_version":         "9.6"
   },
 
