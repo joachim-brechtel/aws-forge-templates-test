@@ -878,11 +878,7 @@ Resources:
                 enabled: true
                 ensureRunning: true
                 packages:
-                  yum:
-                    - nfs-utils
-        configSets:
-          default:
-            - 0
+                  yum: [nfs-utils]
     Properties:
       AssociatePublicIpAddress: false
       BlockDeviceMappings:
