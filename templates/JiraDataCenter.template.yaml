@@ -1,5 +1,5 @@
 ---
-# bring up diffs between this file and the BitbucketDataCenter.template.yaml, ConfluenceDataCenter.template.yaml, and JiraDataCenter.template.yaml
+# Bring up diffs between this file and the BitbucketDataCenter.template.yaml, ConfluenceDataCenter.template.yaml, and JiraDataCenter.template.yaml
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
@@ -179,7 +179,7 @@ Metadata:
         default: VPC *
 Parameters:
   AssociatePublicIpAddress:
-    Default: true
+    Default: false
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
@@ -247,6 +247,7 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
+      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -257,7 +258,7 @@ Parameters:
     Default: 1
     Type: Number
   ClusterNodeSize:
-    Default: 200
+    Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
   CustomDnsName:
@@ -409,14 +410,14 @@ Parameters:
       - ServiceDesk
       - Software
   JiraVersion:
-    Default: 'latest'
+    Default: latest
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))|(latest)'
     ConstraintDescription: Must be a valid Jira version number, for example 7.2.3. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes
     Description: The version of Jira to install (found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>-x64.bin)
     Type: String
   JvmHeapOverride:
     Default: ''
-    Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
     Default: ''
@@ -427,7 +428,7 @@ Parameters:
     Default: ''
     Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
     MinLength: 0
-    MaxLength: 32
+    MaxLength: 50
     Type: String
   StartCollectd:
     Default: true
@@ -471,7 +472,7 @@ Parameters:
     Description: Sets the protocol to handle incoming traffic
     Type: String
   TomcatProxyPort:
-    Default: 80
+    Default: 443
     Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
     Type: String
   TomcatRedirectPort:
@@ -479,12 +480,12 @@ Parameters:
     Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
     Type: String
   TomcatScheme:
-    Default: http
+    Default: https
     Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
     Type: String
     AllowedValues: [http, https]
   TomcatSecure:
-    Default: false
+    Default: true
     Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
     Type: String
   VPC:
@@ -697,7 +698,7 @@ Mappings:
       HVM64: ami-3a694e56
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-be4a63c1
+      HVM64: ami-7c919e03
       HVMG2: NOT_SUPPORTED
     us-east-2:
       HVM64: ami-b984bcdc
@@ -706,7 +707,7 @@ Mappings:
       HVM64: ami-840dede7
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-d98ed8a1
+      HVM64: ami-0a90c872
       HVMG2: NOT_SUPPORTED
   JIRAProduct2NameAndVersion:
     All:
@@ -726,6 +727,35 @@ Mappings:
       shortdisplayname: '"JIRA SW"'
       fulldisplayname: '"Atlassian JIRA Software"'
 Resources:
+  JiraClusterNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::515798882395:policy/osquery
+        - arn:aws:iam::515798882395:policy/CfnStackR53NodesSelfupdater
+        - arn:aws:iam::515798882395:policy/forge
+      Path: /
+      Policies:
+        - PolicyName: JiraClusterNodePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action: ['ec2:DescribeInstances']
+                Effect: Allow
+                Resource: ['*']
+  JiraClusterNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref JiraClusterNodeRole]
 # Jira node config
   ClusterNodeGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -752,7 +782,7 @@ Resources:
       - DB
     Metadata:
       Comment: ''
-      'AWS::CloudFormation::Init':
+      AWS::CloudFormation::Init:
         '0':
           files:
             /etc/atl:
@@ -879,8 +909,8 @@ Resources:
                 enabled: true
                 ensureRunning: true
                 packages:
-                  yum:
-                    - nfs-utils
+                  yum: [nfs-utils]
+
         configSets:
           default:
             - 0
@@ -894,6 +924,7 @@ Resources:
           Ebs: {}
           NoDevice: true
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref JiraClusterNodeInstanceProfile
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
@@ -905,7 +936,7 @@ Resources:
       InstanceType: !Ref ClusterNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
-        'Fn::Base64':
+        Fn::Base64:
           !Join
             - ""
             -
@@ -915,6 +946,7 @@ Resources:
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
+# Elastic file system
   ElasticFileSystem:
     Type: AWS::EFS::FileSystem
     Properties:
@@ -941,9 +973,9 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the efs
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']]
+      Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
       Type: CNAME
-      TTL: '900'
+      TTL: 900
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
 # Database
@@ -1094,9 +1126,9 @@ Outputs:
   LoadBalancerURL:
     Description: The Load Balancer URL
     Value: !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
-          - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+      - "${HTTP}://${LoadBalancerDNSName}"
+      - HTTP: !If [SSLScheme, 'https', 'http']
+        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
