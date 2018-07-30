@@ -739,9 +739,6 @@ Resources:
             Action: ['sts:AssumeRole']
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-        - arn:aws:iam::515798882395:policy/osquery
-        - arn:aws:iam::515798882395:policy/CfnStackR53NodesSelfupdater
-        - arn:aws:iam::515798882395:policy/forge
       Path: /
       Policies:
         - PolicyName: JiraClusterNodePolicy

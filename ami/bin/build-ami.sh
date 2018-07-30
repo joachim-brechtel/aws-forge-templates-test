@@ -22,7 +22,7 @@ TMP_DIR=$(mktemp -d -t atlaws)
 echo "TMP_DIR = ${TMP_DIR}"
 PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
 # comment out the trap if you want the debug output to persist after the run
-#trap "rm -rf ${TMP_DIR}" EXIT
+trap "rm -rf ${TMP_DIR}" EXIT
 
 BASEDIR=$(dirname $0)
 source ${BASEDIR}/atl-aws-functions.sh
