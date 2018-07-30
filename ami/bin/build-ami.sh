@@ -1,7 +1,27 @@
 #!/bin/bash
 set -e
 
+## FOR LOCAL ANSIBLE
+## set your ansible repo details here and uncomment
+# git archive --remote=ssh://your-repo-hosting/your-repo-name.git HEAD bin/your-ansible-filename.cmd -o scripts/local-ansible-run.tar
+git archive --remote=ssh://git@stash.atlassian.com:7997/wpt/wpe-ansible.git HEAD bin/local.ansible.run.cmd -o scripts/local-ansible-run.tar
+tar -zxf scripts/local-ansible-run.tar
+
+## then add this to the provisioners section of <product>.json
+#{
+#    "type": "file",
+#    "source": "bin/your-ansible-filename.cmd",
+#    "destination": "/tmp/local-ansible-run"
+#  }, {
+#    "type": "shell",
+#    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
+#  }
+
+
 TMP_DIR=$(mktemp -d -t atlaws)
+echo "TMP_DIR = ${TMP_DIR}"
+PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
+# comment out the trap if you want the debug output to persist after the run
 trap "rm -rf ${TMP_DIR}" EXIT
 
 BASEDIR=$(dirname $0)
@@ -19,6 +39,7 @@ OPTIONS:
    -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
    -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
    -c Whether to copy the AMI to other AWS regions. Defaults to false
+   -P make AMI public
    -u Whether to update the CloudFormation templates\' AMI mappings. Defaults to false
 EOF
 }
@@ -30,11 +51,12 @@ function err_usage {
     exit 1
 }
 
+export AWS_LINUX_VERSION="2018.03"
 COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
 
-while getopts "hr:cv:s:p:u" OPTION
+while getopts "hPr:cv:s:p:u" OPTION
 do
      case $OPTION in
          h)
@@ -52,6 +74,9 @@ do
              ;;
          c)
              COPY_AMIS=true
+             ;;
+         P)
+             PUBLIC_AMIS=true
              ;;
          u)
              UPDATE_CLOUDFORMATION=true
@@ -77,6 +102,9 @@ case $ATL_PRODUCT_ID in
     confluence)
         ATL_PRODUCT="Confluence"
         ;;
+    crowd)
+        ATL_PRODUCT="Crowd"
+        ;;
     *)
         echo "Unsupported product specified."
         exit 1
@@ -98,15 +126,15 @@ if [[ -z "${AWS_SUBNET_ID}" ]]; then
     err_usage "AWS Subnet option not supplied (-s) nor defined as an env var (AWS_SUBNET_ID)"
 fi
 
-if [[ -z "${AWS_ACCESS_KEY}" ]]; then
-    err_usage "AWS_ACCESS_KEY env var not defined"
+if [[ -z "${AWS_ACCESS_KEY:-$AWS_ACCESS_KEY_ID}" ]]; then
+    err_usage "AWS_ACCESS_KEY and AWS_ACCESS_KEY_ID env var not defined"
 fi
 
-if [[ -z "${AWS_SECRET_KEY}" ]]; then
-    err_usage "AWS_SECRET_KEY env var not defined"
+if [[ -z "${AWS_SECRET_KEY:-$AWS_SECRET_ACCESS_KEY}" ]]; then
+    err_usage "AWS_SECRET_KEY and AWS_SECRET_ACCESS_KEY env var not defined"
 fi
 
-DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION")
+DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION" "$AWS_LINUX_VERSION")
 BASE_AMI="${BASE_AMI:-$DEFAULT_BASE_AMI}"
 if [[ -z "${BASE_AMI}" ]]; then
     err_usage "BASE_AMI env var not defined and no mapping found to fall back on"
@@ -118,15 +146,22 @@ DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 
+  # add the following line to the packer command below for debugging, but it will disable parallel builds
+  # -debug \
+  # add this to ensure the ami does not clean up after build
+  # -on-error=abort \
 packer -machine-readable build \
   -var aws_access_key="${AWS_ACCESS_KEY}" \
   -var aws_secret_key="${AWS_SECRET_KEY}" \
   -var aws_session_token="${AWS_SESSION_TOKEN}" \
   -var vpc_id="${AWS_VPC_ID}" \
   -var base_ami="${BASE_AMI}" \
+  -var "availability_zone"="${AWS_AZ}" \
   -var subnet_id="${AWS_SUBNET_ID}" \
   -var "aws_region"="${AWS_REGION}" \
+  -var "aws_linux_version"="${AWS_LINUX_VERSION}" \
   $(dirname $0)/../${ATL_PRODUCT_ID}.json | tee "${TMP_DIR}/packer.log"
+
 
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
 
@@ -143,7 +178,7 @@ aws ec2 create-tags --resource "${AWS_AMI}" --tags "${NAME_TAG}"
 
 declare -a regionToAmi
 i=0
-regionToAmi[$i]=$(atl_regionMapping "${AWS_REGION}" "${AWS_AMI}")
+regionToAmi[$i]="${AWS_REGION} ${AWS_AMI}"
 
 if [[ -n "${COPY_AMIS}" ]]; then
     AWS_AMI_NAME=$(aws ec2 describe-images --image-ids ${AWS_AMI} | jq -r ".Images[0].Name")
@@ -157,23 +192,37 @@ if [[ -n "${COPY_AMIS}" ]]; then
             aws ec2 create-tags --region "${region}" --resource "${ami}" --tags "${NAME_TAG}"
         )
         i=$((i+1))
-        regionToAmi[$i]=$(atl_regionMapping "${region}" "${ami}")
+        regionToAmi[$i]="${region} ${ami}"
     done
 fi
 
 if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     echo "Updating ${ATL_PRODUCT} CloudFormation template AMI mapping(s)..."
-    TEMPLATES=$(find ${BASEDIR}/../../templates -iname "${ATL_PRODUCT}*.template" -maxdepth 1)
-    MAPPING_JSON=$(IFS=,\n; echo "${regionToAmi[*]}")
-
+    TEMPLATES=$(find ${BASEDIR}/../../templates -iname "${ATL_PRODUCT}*.template.yaml" -maxdepth 1)
     for template in ${TEMPLATES[@]}; do
-        if [[ $(head -n 1 "${template}") == "---" ]]; then
-            cat "${template}" | atl_replaceYAMLAmiMapping "${MAPPING_JSON}" > "${template}.tmp"
-        else
-            cat "${template}" | atl_replaceJSONAmiMapping "${MAPPING_JSON}" > "${template}.tmp"
-        fi
-        rm "${template}"
-        mv "${template}.tmp" "${template}"
+        for regionami in "${regionToAmi[@]}"; do
+            region=$(echo $regionami|cut -d' ' -f1)
+            ami=$(echo $regionami|cut -d' ' -f2)
+            echo "Update ami for region ${region} to ${ami} in template ${template}"
+            atl_replaceAmiByRegion ${region} ${ami} ${template}
+        done
+    done
+fi
+
+# this had to be done separate from the copies as the copy needs to have completed before it can be made public
+if [[ -n "${PUBLIC_AMIS}" ]]; then
+    echo "Making AMI Public in regions ${AWS_REGION}, ${AWS_OTHER_REGIONS}"
+    aws ec2 modify-image-attribute --region "${AWS_REGION}" --image-id "${AWS_AMI}" --launch-permission "{\"Add\": [{\"Group\":\"all\"}]}"
+    for regionami in "${regionToAmi[@]}"; do
+        region=$(echo $regionami|cut -d' ' -f1)
+        ami=$(echo $regionami|cut -d' ' -f2)
+        echo "Make AMI ${ami} in region ${region} public"
+        # make Public
+        until aws ec2 modify-image-attribute --region "${region}" --image-id "${ami}" --launch-permission "{\"Add\": [{\"Group\":\"all\"}]}";
+            do
+                echo ... most likely waiting AWS ... retrying shortly
+                sleep 30
+            done
     done
 fi
 echo "Done"

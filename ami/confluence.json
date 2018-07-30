@@ -31,11 +31,10 @@
     "release_s3_bucket":        "atlassian-software",
     "release_s3_path":          "releases/confluence",
 
-    "postgres_version":         "9.3"
+    "postgres_version":         "9.6"
   },
 
-  "builders": [
-  {
+  "builders": [{
     "type": "amazon-ebs",
     "communicator": "ssh",
     "ssh_pty": "true",
@@ -45,8 +44,8 @@
 
     "tags": {
       "Name": "{{user `full_display_name`}} {{isotime \"2006.01.02_1504\"}} (HVM)",
-      "business_unit": "RD:Dev Tools Engineering",
-      "resource_owner": "dluong",
+      "business_unit": "Workplace Technology",
+      "resource_owner": "brobson",
       "service_name": "aws_ami_packer_builder"
     },
 
@@ -56,7 +55,7 @@
 
     "region": "{{ user `aws_region` }}",
     "source_ami": "{{ user `base_ami` }}",
-    "instance_type": "m3.medium",
+    "instance_type": "t2.medium",
     "vpc_id": "{{user `vpc_id`}}",
     "subnet_id": "{{user `subnet_id`}}",
     "associate_public_ip_address": true,
@@ -92,13 +91,19 @@
   "provisioners": [{
     "type": "shell",
     "inline": "sudo yum -y -q update"
-  },{
+  }, {
     "type": "shell",
     "inline": "sudo yum -y -q remove java-1.7.0-openjdk.x86_64"
-  },{
+  }, {
+    "type": "shell",
+    "script": "scripts/install-git.sh",
+    "environment_vars": [
+      "GIT_VERSION={{user `git_version`}}"
+    ]
+  }, {
     "type": "shell",
     "script": "scripts/install-jq.sh"
-  },{
+  }, {
     "type": "shell",
     "script": "scripts/install-xmllint.sh"
   }, {
@@ -111,10 +116,15 @@
       "VERSION={{user `postgres_version`}}"
     ]
   }, {
+    "type": "file",
+    "source": "keys/RPM-GPG-KEY-zfsonlinux.key",
+    "destination": "/tmp/RPM-GPG-KEY-zfsonlinux.key"
+  }, {
     "type": "shell",
     "script": "scripts/install-zfs.sh",
     "environment_vars": [
-      "APP_DATA_FS_TYPE={{user `app_data_fs_type`}}"
+      "APP_DATA_FS_TYPE={{user `app_data_fs_type`}}",
+      "AWS_LINUX_VERSION={{user `aws_linux_version`}}"
     ]
   }, {
     "type": "shell",
@@ -148,7 +158,7 @@
   }, {
     "type": "shell",
     "inline": "sudo mv /tmp/atl-functions /etc/init.d/atl-functions && sudo chown root:root /etc/init.d/atl-functions"
-  },{
+  }, {
     "type": "file",
     "source": "scripts/init.d/atl-confluence-common",
     "destination": "/tmp/atl-confluence-common"
@@ -162,6 +172,13 @@
   }, {
     "type": "shell",
     "inline": "sudo mkdir -p /opt/atlassian/bin && sudo mv /tmp/atl-update-host-name.sh /opt/atlassian/bin/atl-update-host-name.sh && sudo chmod +x /opt/atlassian/bin/atl-update-host-name.sh && sudo chown root:root /opt/atlassian/bin/atl-update-host-name.sh"
+  }, {
+    "type": "file",
+    "source": "bin/local.ansible.run.cmd",
+    "destination": "/tmp/local-ansible-run"
+  }, {
+    "type": "shell",
+    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
   }, {
     "type": "file",
     "source": "scripts/init.d/atl-init-10-volume.sh",
@@ -187,7 +204,7 @@
     "type": "file",
     "source": "scripts/init.d/atl-init-20-instance-store.sh",
     "destination": "/tmp/atl-init-20-instance-store.sh"
-  },{
+  }, {
     "type": "shell",
     "script": "scripts/install-atl-init-service.sh",
     "environment_vars": [
@@ -226,12 +243,12 @@
       "INIT_SCRIPT=/tmp/atl-init-40-products.sh"
     ]
   }, {
-      "type": "file",
-      "source": "config/confluence-collectd.conf",
-      "destination": "/tmp/collectd.conf"
+    "type": "file",
+    "source": "config/confluence-collectd.conf",
+    "destination": "/tmp/collectd.conf"
   }, {
-      "type": "shell",
-      "script": "scripts/install-collectd.sh"
+    "type": "shell",
+    "script": "scripts/install-collectd.sh"
   }, {
     "type": "file",
     "source": "html/index.html",
@@ -259,6 +276,5 @@
   }, {
     "type": "shell",
     "inline": "sudo cp -f /dev/null /var/log/lastlog"
-    }
-  ]
+  }]
 }

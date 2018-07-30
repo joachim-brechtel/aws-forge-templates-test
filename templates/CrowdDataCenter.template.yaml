@@ -645,49 +645,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-9d7f1970
+      HVM64: ami-2ebaccc3
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-b8893dd6
+      HVM64: ami-004ff86e
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-972610f8
+      HVM64: ami-1d9fad72
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-ca8ff020
+      HVM64: ami-096524e3
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-6bf92309
+      HVM64: ami-a552f4c7
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-15129071
+      HVM64: ami-a3b13cc7
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-0c9fa5e7
+      HVM64: ami-a7989a4c
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-729b8d98
+      HVM64: ami-924eab7f
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-3008e057
+      HVM64: ami-c6946a2d
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-92cd7def
+      HVM64: ami-c776c6ba
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-b47354d8
+      HVM64: ami-99dffef5
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-19416866
+      HVM64: ami-0c151d73
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-1c84bc79
+      HVM64: ami-58caf03d
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-870fefe4
+      HVM64: ami-45b05c26
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-e1b6e099
+      HVM64: ami-52f3ab2a
       HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
@@ -878,11 +878,7 @@ Resources:
                 enabled: true
                 ensureRunning: true
                 packages:
-                  yum:
-                    - nfs-utils
-        configSets:
-          default:
-            - 0
+                  yum: [nfs-utils]
     Properties:
       AssociatePublicIpAddress: false
       BlockDeviceMappings:

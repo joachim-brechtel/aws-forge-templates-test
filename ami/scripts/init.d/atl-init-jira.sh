@@ -429,6 +429,7 @@ function installOBR {
         OBR_S3_LOCATION="s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/${JSD_OBR_NAME}"
         # if obr doesnt exist on efs, fetch it
         if [ ! -f /media/atl/${JSD_OBR_NAME} ]; then
+            atl_log "OBR does not exist in shared-home, downloading from ${OBR_S3_LOCATION}"
             aws s3 cp ${OBR_S3_LOCATION} /media/atl/${JSD_OBR_NAME}
         fi
         if ! mkdir -p ${PLUGIN_DIR};then echo "plugins dir already exists"; fi
