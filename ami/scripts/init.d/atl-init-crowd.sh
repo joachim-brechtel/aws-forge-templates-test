@@ -50,9 +50,27 @@ function start {
   runLocalAnsible
   atl_log "=== END:   service atl-init-crowd runLocalAnsible ==="
 
+    if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
+        local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
+        if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
+    fi
+
   goCrowd
 
   atl_log "=== END:   service atl-init-crowd start ==="
+}
+
+function updateBaseUrl {
+  atl_log "=== BEGIN: Updating Server URL ==="
+  local BASE_URL=$1
+  local DB_HOST=$2
+  local DB_PORT=$3
+  local DB_NAME=$4
+  set -f
+
+  (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update cwd_property set property_value = '${BASE_URL}' where property_name='base.url' and property_key='crowd';\"") >> "${ATL_LOG}" 2>&1
+
+  atl_log "=== END: Server baseUrl update ==="
 }
 
 function exportCatalinaOpts() {
