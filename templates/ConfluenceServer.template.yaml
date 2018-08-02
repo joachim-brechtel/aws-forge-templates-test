@@ -325,7 +325,7 @@ Parameters:
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InstanceType:
-    Default: t2.medium
+    Default: t2.large
     AllowedValues:
       - c4.xlarge
       - c4.2xlarge
