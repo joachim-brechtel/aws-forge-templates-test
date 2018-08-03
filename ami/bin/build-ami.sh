@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034,SC2064
+
 set -e
 
 ## LOCAL ANSIBLE - for more details and an example ansible playbook: https://bit.ly/2OcPSl9
@@ -16,15 +18,14 @@ set -e
 #    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
 #  }
 
-
 TMP_DIR=$(mktemp -d -t atlaws)
 echo "TMP_DIR = ${TMP_DIR}"
 PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
 # comment out the trap if you want the debug output to persist after the run
 trap "rm -rf ${TMP_DIR}" EXIT
 
-BASEDIR=$(dirname $0)
-source ${BASEDIR}/atl-aws-functions.sh
+BASEDIR=$(dirname "$0")
+source "${BASEDIR}/atl-aws-functions.sh"
 
 function usage {
     cat << EOF
@@ -39,7 +40,7 @@ OPTIONS:
    -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
    -c Whether to copy the AMI to other AWS regions. Defaults to false
    -P make AMI public
-   -u Whether to update the CloudFormation templates\' AMI mappings. Defaults to false
+   -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
 EOF
 }
 
@@ -110,8 +111,8 @@ case $ATL_PRODUCT_ID in
 
 esac
 
-AWS_REGION=$(echo "${AWS_REGION}" | tr [:upper:] [:lower:])
-AWS_VPC_ID=$(echo "${AWS_VPC_ID}" | tr [:upper:] [:lower:])
+AWS_REGION=$(echo "${AWS_REGION}" | tr "[:upper:]" "[:lower:]")
+AWS_VPC_ID=$(echo "${AWS_VPC_ID}" | tr "[:upper:]" "[:lower:]")
 
 if [[ -z "${AWS_REGION}" ]]; then
     err_usage "AWS region option not supplied (-r) nor defined as an env var (AWS_REGION)"
@@ -145,22 +146,22 @@ DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 
-  # add the following line to the packer command below for debugging, but it will disable parallel builds
-  # -debug \
-  # add this to ensure the ami does not clean up after build
-  # -on-error=abort \
+# add the following line to the packer command below for debugging, but it will disable parallel builds
+# -debug
+# add this to ensure the ami does not clean up after build
+# -on-error=abort
+
 packer -machine-readable build \
   -var aws_access_key="${AWS_ACCESS_KEY}" \
   -var aws_secret_key="${AWS_SECRET_KEY}" \
   -var aws_session_token="${AWS_SESSION_TOKEN}" \
   -var vpc_id="${AWS_VPC_ID}" \
   -var base_ami="${BASE_AMI}" \
-  -var "availability_zone"="${AWS_AZ}" \
+  -var availability_zone="${AWS_AZ}" \
   -var subnet_id="${AWS_SUBNET_ID}" \
-  -var "aws_region"="${AWS_REGION}" \
-  -var "aws_linux_version"="${AWS_LINUX_VERSION}" \
-  $(dirname $0)/../${ATL_PRODUCT_ID}.json | tee "${TMP_DIR}/packer.log"
-
+  -var aws_region="${AWS_REGION}" \
+  -var aws_linux_version="${AWS_LINUX_VERSION}" \
+  "$(dirname "$0")/../${ATL_PRODUCT_ID}.json" | tee "${TMP_DIR}/packer.log"
 
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
 
@@ -180,11 +181,11 @@ i=0
 regionToAmi[$i]="${AWS_REGION} ${AWS_AMI}"
 
 if [[ -n "${COPY_AMIS}" ]]; then
-    AWS_AMI_NAME=$(aws ec2 describe-images --image-ids ${AWS_AMI} | jq -r ".Images[0].Name")
+    AWS_AMI_NAME=$(aws ec2 describe-images --image-ids "${AWS_AMI}" | jq -r ".Images[0].Name")
     AWS_REGIONS=$(aws ec2 describe-regions | jq -r ".Regions[].RegionName")
-    AWS_OTHER_REGIONS=${AWS_REGIONS[@]/$AWS_REGION}
-    echo "Copying AMI ${AWS_AMI} to regions ${AWS_OTHER_REGIONS}"
-    for region in ${AWS_OTHER_REGIONS[@]}; do
+    read -ra AWS_OTHER_REGIONS <<< "${AWS_REGIONS[@]/$AWS_REGION}"
+    echo "Copying AMI ${AWS_AMI} to regions ${AWS_OTHER_REGIONS[*]}"
+    for region in "${AWS_OTHER_REGIONS[@]}"; do
         ami=$(aws ec2 copy-image --source-region "${AWS_REGION}" --source-image-id "${AWS_AMI}" --region "${region}" --name "${AWS_AMI_NAME}" | jq -r ".ImageId")
         (
             echo "Copy to ${region} started (AMI ID: ${ami})"
@@ -197,24 +198,24 @@ fi
 
 if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     echo "Updating ${ATL_PRODUCT} CloudFormation template AMI mapping(s)..."
-    TEMPLATES=$(find ${BASEDIR}/../../templates -iname "${ATL_PRODUCT}*.template.yaml" -maxdepth 1)
-    for template in ${TEMPLATES[@]}; do
+    TEMPLATES=$(find "${BASEDIR}/../../templates" -iname "${ATL_PRODUCT}*.template.yaml" -maxdepth 1)
+    for template in "${TEMPLATES[@]}"; do
         for regionami in "${regionToAmi[@]}"; do
-            region=$(echo $regionami|cut -d' ' -f1)
-            ami=$(echo $regionami|cut -d' ' -f2)
+            region=$(echo "$regionami" | cut -d' ' -f1)
+            ami=$(echo "$regionami" | cut -d' ' -f2)
             echo "Update ami for region ${region} to ${ami} in template ${template}"
-            atl_replaceAmiByRegion ${region} ${ami} ${template}
+            atl_replaceAmiByRegion "${region}" "${ami}" "${template}"
         done
     done
 fi
 
 # this had to be done separate from the copies as the copy needs to have completed before it can be made public
 if [[ -n "${PUBLIC_AMIS}" ]]; then
-    echo "Making AMI Public in regions ${AWS_REGION}, ${AWS_OTHER_REGIONS}"
+    echo "Making AMI Public in regions ${AWS_REGION} ${AWS_OTHER_REGIONS[*]}"
     aws ec2 modify-image-attribute --region "${AWS_REGION}" --image-id "${AWS_AMI}" --launch-permission "{\"Add\": [{\"Group\":\"all\"}]}"
     for regionami in "${regionToAmi[@]}"; do
-        region=$(echo $regionami|cut -d' ' -f1)
-        ami=$(echo $regionami|cut -d' ' -f2)
+        region=$(echo "$regionami" | cut -d' ' -f1)
+        ami=$(echo "$regionami" | cut -d' ' -f2)
         echo "Make AMI ${ami} in region ${region} public"
         # make Public
         until aws ec2 modify-image-attribute --region "${region}" --image-id "${ami}" --launch-permission "{\"Add\": [{\"Group\":\"all\"}]}";
