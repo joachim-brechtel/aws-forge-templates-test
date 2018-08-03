@@ -11,6 +11,9 @@ Metadata:
           default: Confluence setup
         Parameters:
           - ConfluenceVersion
+      - Label:
+          default: Deployment information
+        Parameters:
           - DeployEnvironment
       - Label:
           default: Cluster nodes
