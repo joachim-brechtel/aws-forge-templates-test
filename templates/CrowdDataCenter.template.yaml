@@ -8,6 +8,9 @@ Metadata:
           default: Crowd setup
         Parameters:
           - CrowdVersion
+      - Label:
+          default: Deployment information
+        Parameters:
           - DeployEnvironment
       - Label:
           default: Cluster nodes
