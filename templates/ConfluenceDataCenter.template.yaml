@@ -1114,7 +1114,7 @@ Resources:
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-              - Ref "AWS::NoValue"
+              - !Ref AWS::NoValue
           files:
             /etc/atl:
               mode: "000640"
