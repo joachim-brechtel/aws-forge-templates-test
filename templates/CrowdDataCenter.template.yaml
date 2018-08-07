@@ -749,7 +749,7 @@ Resources:
     Metadata:
       Comment: ''
       'AWS::CloudFormation::Init':
-        '0':
+        config:
           packages:
             !If
               - DoCollectd

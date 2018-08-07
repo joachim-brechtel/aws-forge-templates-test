@@ -783,7 +783,7 @@ Resources:
     Metadata:
       Comment: ''
       AWS::CloudFormation::Init:
-        '0':
+        config:
           files:
             /etc/atl:
               mode: "000640"
