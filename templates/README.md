@@ -7,11 +7,11 @@ This directory contains the following AWS CloudFormation templates:
 | `BitbucketServer.template` | None | PostgreSQL (onboard) | Nginx (onboard) | [Documentation](https://confluence.atlassian.com/x/wZZKLg) |
 | `BitbucketDataCenter.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
 | `ConfluenceDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
-| `ConfluenceDataCenterSTGorDR.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
+| `ConfluenceDataCenterClone.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
 | `CrowdDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
-| `CrowdDataCenterSTGorDR.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
+| `CrowdDataCenterClone.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
 | `JiraDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
-| `JiraDataCenterSTGorDR.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
+| `JiraDataCenterClone.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
 
 **Key Terms:**
 
@@ -19,7 +19,7 @@ This directory contains the following AWS CloudFormation templates:
 |------|------------|
 | `{Productname}Server` | A single-instance deployment of `{Productname}`. May still utilize additional instances in RDS or EC2 for database or NFS usage, but the core application uses a single EC2 node and requires a "Server" license. |
 | `{Productname}DataCenter` | A multi-instance (clustered) deployment of `{Productname}`. Requires "Data Center" license. |
-| `{Productname}{Server/DataCenter}STGorDR` | A variant template specifically designed for cloning an existing production stack to a new staging or disaster recovery stack. |
+| `{Productname}{Server/DataCenter}Clone` | A variant template specifically designed for cloning an existing production stack to a new staging or disaster recovery stack. |
 
 ### Use
 
