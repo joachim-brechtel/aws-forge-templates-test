@@ -7,6 +7,9 @@ Metadata:
           default: Confluence setup
         Parameters:
           - ConfluenceVersion
+      - Label:
+          default: Deployment information
+        Parameters:
           - DeployEnvironment
       - Label:
           default: Cluster nodes
@@ -60,6 +63,7 @@ Metadata:
           - TomcatContextPath
           - CatalinaOpts
           - JvmHeapOverride
+          - JvmHeapOverrideSynchrony
           - DBPoolMaxSize
           - DBPoolMinSize
           - DBTimeout
@@ -83,7 +87,7 @@ Metadata:
       AssociatePublicIpAddress:
         default: Assign public IP
       AutologinCookieAge:
-        default: Rememberme cookie age
+        default: Remember Me cookie expiry
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
@@ -136,7 +140,7 @@ Metadata:
         default: Database storage type
       EBSSnapshotId:
         default: EBS (shared filesystem) snapshot ID to restore from
-      Environment:
+      DeployEnvironment:
         default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
@@ -145,7 +149,9 @@ Metadata:
       InternalSubnets:
         default: Internal subnets *
       JvmHeapOverride:
-        default: JVM Heap Size Override
+        default: Confluence Heap Size Override
+      JvmHeapOverrideSynchrony:
+        default: Synchrony Heap Size Override
       KeyName:
         default: Key Name *
       SSLCertificateName:
@@ -193,7 +199,7 @@ Parameters:
     Type: String
   AutologinCookieAge:
     Default: ''
-    Description: Sets the Rememberme (autologin) cookie age length in seconds
+    Description: Sets the Remember Me (autologin) cookie exipry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
     Default: ''
@@ -258,6 +264,7 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
+      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -293,6 +300,7 @@ Parameters:
       - db.m4.2xlarge
       - db.m4.4xlarge
       - db.m4.10xlarge
+      - db.m4.16xlarge
       - db.r4.large
       - db.r4.xlarge
       - db.r4.2xlarge
@@ -417,7 +425,11 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
   JvmHeapOverride:
     Default: ''
-    Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Type: String
+  JvmHeapOverrideSynchrony:
+    Default: ''
+    Description: Override the default amount of memory to allocoate to the JVM for Synchrony, for your instance type - set size in meg or gig e.g. 1024m or 1g.
     Type: String
   KeyName:
     Default: 'WPE-GenericKeyPair-20161102'
@@ -499,6 +511,7 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
+      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Synchrony cluster node instance type.
     Type: String
@@ -572,6 +585,8 @@ Conditions:
     !Equals [!Ref TomcatScheme, 'https']
   OverrideHeap:
     !Not [!Equals [!Ref JvmHeapOverride, '']]
+  OverrideHeapSynchrony:
+    !Not [!Equals [!Ref JvmHeapOverrideSynchrony, '']]
   UseContextPath:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
@@ -603,7 +618,7 @@ Mappings:
       Jvmheap: 12288m
     c5.large:
       Arch: HVM64
-      Jvmheap: 3072m
+      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
       Jvmheap: 4608m
@@ -730,6 +745,9 @@ Mappings:
     x1.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    x1.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
       HVM64: ami-30c9a8dd
@@ -843,9 +861,7 @@ Resources:
       - DB
     Metadata:
       AWS::CloudFormation::Init:
-        configSets:
-          default: [1]
-        "1":
+        config:
           packages:
             !If
               - DoCollectd
@@ -858,6 +874,9 @@ Resources:
               - !Ref "AWS::NoValue"
           files:
             /etc/atl:
+              mode: "000640"
+              owner: root
+              group: root
               content:
                 !Join
                   - "\n"
@@ -886,7 +905,7 @@ Resources:
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
                     - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]}]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
@@ -907,6 +926,7 @@ Resources:
                     - "ATL_ENABLED_PRODUCTS=Confluence"
                     - "ATL_ENABLED_SHARED_HOMES="
                     - "ATL_HAZELCAST_NETWORK_AWS_TAG_KEY=Cluster"
+                    - "ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER=ec2.amazonaws.com"
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
                     - "ATL_JDBC_USER=atlconfluence"
                     - "ATL_NGINX_ENABLED=false"
@@ -915,13 +935,14 @@ Resources:
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
             /etc/cfn/cfn-hup.conf:
-              content: !Join
-                - "\n"
-                -
-                  - "[main]"
-                  - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
-                  - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
-              mode: 000400
+              content:
+                !Join
+                  - "\n"
+                  -
+                    - "[main]"
+                    - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
+                    - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
@@ -961,7 +982,9 @@ Resources:
               cfn-hup:
                 enabled: true
                 ensureRunning: true
-                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
               collectd:
                 !If [DoCollectd, {enabled: true, ensureRunning: true}, !Ref 'AWS::NoValue']
               rpcbind:
@@ -1072,9 +1095,7 @@ Resources:
       - DB
     Metadata:
       AWS::CloudFormation::Init:
-        configSets:
-          default: [1]
-        "1":
+        config:
           packages:
             !If
               - DoCollectd
@@ -1084,9 +1105,12 @@ Resources:
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-              - Ref "AWS::NoValue"
+              - !Ref AWS::NoValue
           files:
             /etc/atl:
+              mode: "000640"
+              owner: root
+              group: root
               content:
                 !Join
                   - "\n"
@@ -1105,7 +1129,8 @@ Resources:
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${ProxyName}", ProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
+                    - !Sub ["ATL_SYNCHRONY_MEMORY=-Xmx${AtlJvmHeapSynchrony}", AtlJvmHeapSynchrony: !If [OverrideHeapSynchrony, !Ref 'JvmHeapOverrideSynchrony', '2g']]
                     - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]}]
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
@@ -1120,7 +1145,6 @@ Resources:
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
-                    - "ATL_SYNCHRONY_MEMORY=-Xmx2g"
                     - "ATL_SYNCHRONY_STACK_SPACE=-Xss2048k"
                     - "ATL_SYNCHRONY_WAITING_CONFIG_TIME=20"
             /etc/cfn/cfn-hup.conf:
@@ -1131,7 +1155,7 @@ Resources:
                     - "[main]"
                     - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
                     - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
@@ -1183,7 +1207,7 @@ Resources:
                   yum:
                     - nfs-utils
     Properties:
-      AssociatePublicIpAddress: false
+      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
       BlockDeviceMappings:
         - DeviceName: /dev/xvdf
           Ebs: {}
@@ -1306,7 +1330,7 @@ Resources:
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
-          - !Ref AWS::Region
+          - !Ref "AWS::Region"
           - !FindInMap
               - AWSInstanceType2Arch
               - !Ref ClusterNodeInstanceType
@@ -1472,7 +1496,7 @@ Resources:
   MainTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Port: !Ref 'TomcatDefaultConnectorPort'
+      Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
       VpcId: !Ref VPC
       HealthCheckIntervalSeconds: 20
@@ -1481,7 +1505,7 @@ Resources:
       Matcher:
         HttpCode: 200
       HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
-      HealthCheckPort: !Ref 'TomcatDefaultConnectorPort'
+      HealthCheckPort: !Ref TomcatDefaultConnectorPort
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
         - Key: stickiness.enabled
@@ -1563,42 +1587,51 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
-  ConfluenceTargetGroupARN:
-    Description: The name of the load balancer of Confluence cluster nodes
-    Value: !Ref MainTargetGroup
-  ClusterNodeGroup:
-    Description: The name of the auto scaling group of Confluence cluster nodes
-    Value: !Ref ClusterNodeGroup
-  ConfluenceURL:
-    Description: The URL of Confluence Data Center instance
+  ServiceURL:
+    Description: The URL to access this Atlassian service
     Value: !If
       - UseCustomDnsName
-      - !Ref CustomDnsName
+      - !Sub
+        - "${HTTP}://${CustomDNSName}${ContextPath}"
+        - HTTP: !If [SSLScheme, 'https', 'http']
+          CustomDNSName: !Ref CustomDnsName
+          ContextPath: !Ref TomcatContextPath
       - !If
         - UseHostedZone
-        - !Ref LoadBalancerCname
         - !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
+          - "${HTTP}://${LBCName}${ContextPath}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
+            LBCName: !Ref LoadBalancerCname
+            ContextPath: !Ref TomcatContextPath
+        - !Sub
+          - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            ContextPath: !Ref TomcatContextPath
   LoadBalancerURL:
     Description: The Load Balancer URL
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [SSLScheme, 'https', 'http']
         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
-  NFSR53name:
-    Description: The DR NFS name
-    Value: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
     }
+  DBEndpointAddress:
+    Description: The Database Connection String
+    Value: !GetAtt DB.Endpoint.Address
+  NFSR53name:
+    Description: The DR NFS name
+    Value: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
+  ConfluenceTargetGroupARN:
+    Description: The name of the load balancer of Confluence cluster nodes
+    Value: !Ref MainTargetGroup
+  ClusterNodeGroup:
+    Description: The name of the auto scaling group of Confluence cluster nodes
+    Value: !Ref ClusterNodeGroup
   SynchronyClusterNodeGroup:
     Description: The name of the auto scaling group of Synchrony cluster nodes
     Value: !Ref SynchronyClusterNodeGroup

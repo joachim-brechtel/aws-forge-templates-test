@@ -8,6 +8,9 @@ Metadata:
         Parameters:
           - JiraProduct
           - JiraVersion
+      - Label:
+          default: Deployment information
+        Parameters:
           - DeployEnvironment
       - Label:
           default: Cluster nodes
@@ -277,6 +280,7 @@ Parameters:
       - db.m4.2xlarge
       - db.m4.4xlarge
       - db.m4.10xlarge
+      - db.m4.16xlarge
       - db.r4.large
       - db.r4.xlarge
       - db.r4.2xlarge
@@ -432,7 +436,7 @@ Parameters:
     Type: String
   JvmHeapOverride:
     Default: ''
-    Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
     Default: ''
@@ -548,7 +552,7 @@ Mappings:
       Jvmheap: 12288m
     c5.large:
       Arch: HVM64
-      Jvmheap: 3072m
+      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
       Jvmheap: 4608m
@@ -675,6 +679,9 @@ Mappings:
     x1.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    x1.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
       HVM64: ami-f260061f
@@ -789,9 +796,12 @@ Resources:
     Metadata:
       Comment: ''
       'AWS::CloudFormation::Init':
-        '0':
+        config:
           files:
             /etc/atl:
+              mode: "000640"
+              owner: root
+              group: root
               content:
                 'Fn::Join':
                   - "\n"
@@ -822,7 +832,7 @@ Resources:
                     - !Sub ["ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}", JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]]
                     - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
-                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
@@ -855,7 +865,7 @@ Resources:
                     - "[main]"
                     - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
                     - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
@@ -904,13 +914,9 @@ Resources:
                 enabled: true
                 ensureRunning: true
                 packages:
-                  yum:
-                    - nfs-utils
-        configSets:
-          default:
-            - 0
+                  yum: [nfs-utils]
     Properties:
-      AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -931,7 +937,7 @@ Resources:
       InstanceType: !Ref ClusterNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
-        'Fn::Base64':
+        Fn::Base64:
           !Join
             - ""
             -
@@ -1052,10 +1058,11 @@ Resources:
         Timeout: PT20M
   NFSR53name:
     Type: AWS::Route53::RecordSet
+    Condition: UseHostedZone
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 A rec for the nfs
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']]
+      Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
       Type: A
       TTL: 900
       ResourceRecords:
@@ -1127,7 +1134,7 @@ Resources:
                 - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
                 - AccountId: !Ref AWS::AccountId
                   SSLCertificateName: !Ref SSLCertificateName
-          - Ref: AWS::NoValue
+          - !Ref AWS::NoValue
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
         Timeout: 29
@@ -1183,33 +1190,42 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
-  JIRAURL:
-    Description: The URL of JIRA Data Center instance
+  ServiceURL:
+    Description: The URL to access this Atlassian service
     Value: !If
       - UseCustomDnsName
-      - !Ref CustomDnsName
+      - !Sub
+        - "${HTTP}://${CustomDNSName}${ContextPath}"
+        - HTTP: !If [SSLScheme, 'https', 'http']
+          CustomDNSName: !Ref CustomDnsName
+          ContextPath: !Ref TomcatContextPath
       - !If
         - UseHostedZone
-        - !Ref LoadBalancerCname
         - !Sub
-          - "${HTTP}://${LoadBalancerDNSName}"
+          - "${HTTP}://${LBCName}${ContextPath}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !If
-              - UseCustomDnsName
-              - !Ref CustomDnsName
-              - !GetAtt LoadBalancer.DNSName
+            LBCName: !Ref LoadBalancerCname
+            ContextPath: !Ref TomcatContextPath
+        - !Sub
+          - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
+          - HTTP: !If [SSLScheme, 'https', 'http']
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            ContextPath: !Ref TomcatContextPath
   LoadBalancerURL:
     Description: The Load Balancer URL
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [SSLScheme, 'https', 'http']
         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
-  NFSR53name:
-    Description: The DR NFS name
-    Value: NFSR53name
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
     }
+  DBEndpointAddress:
+    Description: The Database Connection String
+    Value: !GetAtt DB.Endpoint.Address
+  NFSR53name:
+    Description: The DR NFS name
+    Value: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
