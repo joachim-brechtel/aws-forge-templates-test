@@ -1,13 +1,12 @@
 #!/bin/bash
 set -e
 
-## FOR LOCAL ANSIBLE
-## set your ansible repo details here and uncomment
+## LOCAL ANSIBLE - for more details and an example ansible playbook: https://bit.ly/2OcPSl9
+## set your ansible repo details here and uncomment the below two lines
 # git archive --remote=ssh://your-repo-hosting/your-repo-name.git HEAD bin/your-ansible-filename.cmd -o scripts/local-ansible-run.tar
-git archive --remote=ssh://git@stash.atlassian.com:7997/wpt/wpe-ansible.git HEAD bin/local.ansible.run.cmd -o scripts/local-ansible-run.tar
-tar -zxf scripts/local-ansible-run.tar
+#tar -zxf scripts/local-ansible-run.tar
 
-## then add this to the provisioners section of <product>.json
+## then add this to the provisioners section of each <product>.json
 #{
 #    "type": "file",
 #    "source": "bin/your-ansible-filename.cmd",
