@@ -229,7 +229,7 @@ Parameters:
     ConstraintDescription: 'Must be in the range 1000 - 30000'
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
     MinValue: 1000
-    MaxValue: 3000
+    MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
     Default: 'ChangeME'
