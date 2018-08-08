@@ -22,7 +22,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMax
           - ClusterNodeMin
-          - ClusterNodeSize
+          - ClusterNodeVolumeSize
       - Label:
           default: Database
         Parameters:
@@ -94,7 +94,7 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Cluster node instance type
-      ClusterNodeSize:
+      ClusterNodeVolumeSize:
         default: Cluster node instance volume size
       CustomDnsName:
         default: Existing DNS name (optional)
@@ -260,7 +260,7 @@ Parameters:
   ClusterNodeMin:
     Default: 1
     Type: Number
-  ClusterNodeSize:
+  ClusterNodeVolumeSize:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
@@ -915,7 +915,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref ClusterNodeSize
+            VolumeSize: !Ref ClusterNodeVolumeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
