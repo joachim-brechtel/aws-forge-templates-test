@@ -60,40 +60,40 @@ ATL_PRODUCT="Bitbucket"
 
 while getopts "dhPr:cv:s:p:u" OPTION
 do
-     case $OPTION in
-         h)
-             usage
-             exit 1
-             ;;
-         p)
-             ATL_PRODUCT="${OPTARG}"
-             ;;
-         r)
-             AWS_REGION="${OPTARG}"
-             ;;
-         s)
-             AWS_SUBNET_ID="${OPTARG}"
-             ;;
-         c)
-             COPY_AMIS=true
-             ;;
-         P)
-             PUBLIC_AMIS=true
-             ;;
-         u)
-             UPDATE_CLOUDFORMATION=true
-             ;;
-         v)
-             AWS_VPC_ID="${OPTARG}"
-             ;;
-         d)
-             DEBUG_MODE="true"
-             ;;
-         ?)
-             usage
-             exit
-             ;;
-     esac
+    case $OPTION in
+        h)
+            usage
+            exit 1
+            ;;
+        p)
+            ATL_PRODUCT="${OPTARG}"
+            ;;
+        r)
+            AWS_REGION="${OPTARG}"
+            ;;
+        s)
+            AWS_SUBNET_ID="${OPTARG}"
+            ;;
+        c)
+            COPY_AMIS=true
+            ;;
+        P)
+            PUBLIC_AMIS=true
+            ;;
+        u)
+            UPDATE_CLOUDFORMATION=true
+            ;;
+        v)
+            AWS_VPC_ID="${OPTARG}"
+            ;;
+        d)
+            DEBUG_MODE="true"
+            ;;
+        ?)
+            usage
+            exit
+            ;;
+    esac
 done
 
 ATL_PRODUCT_ID=$(echo "${ATL_PRODUCT}" | tr '[:upper:]' '[:lower:]')
@@ -152,17 +152,17 @@ DATE=$(date '+%Y.%m.%d_%H%M')
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 
 packer -machine-readable build \
-  -var aws_access_key="${AWS_ACCESS_KEY}" \
-  -var aws_secret_key="${AWS_SECRET_KEY}" \
-  -var aws_session_token="${AWS_SESSION_TOKEN}" \
-  -var vpc_id="${AWS_VPC_ID}" \
-  -var base_ami="${BASE_AMI}" \
-  -var availability_zone="${AWS_AZ}" \
-  -var subnet_id="${AWS_SUBNET_ID}" \
-  -var aws_region="${AWS_REGION}" \
-  -var aws_linux_version="${AWS_LINUX_VERSION}" \
-  ${DEBUG_MODE:+ "-debug -on-error=abort"} \
-  "$(dirname "$0")/../${ATL_PRODUCT_ID}.json" | tee "${TMP_DIR}/packer.log"
+    -var aws_access_key="${AWS_ACCESS_KEY}" \
+    -var aws_secret_key="${AWS_SECRET_KEY}" \
+    -var aws_session_token="${AWS_SESSION_TOKEN}" \
+    -var vpc_id="${AWS_VPC_ID}" \
+    -var base_ami="${BASE_AMI}" \
+    -var availability_zone="${AWS_AZ}" \
+    -var subnet_id="${AWS_SUBNET_ID}" \
+    -var aws_region="${AWS_REGION}" \
+    -var aws_linux_version="${AWS_LINUX_VERSION}" \
+    ${DEBUG_MODE:+ "-debug -on-error=abort"} \
+    "$(dirname "$0")/../${ATL_PRODUCT_ID}.json" | tee "${TMP_DIR}/packer.log"
 
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
 
