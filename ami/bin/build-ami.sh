@@ -25,6 +25,7 @@ PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
 trap "rm -rf ${TMP_DIR}" EXIT
 
 BASEDIR=$(dirname "$0")
+DEBUG_MODE=
 source "${BASEDIR}/atl-aws-functions.sh"
 
 function usage {
@@ -39,8 +40,9 @@ OPTIONS:
    -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
    -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
    -c Whether to copy the AMI to other AWS regions. Defaults to false
-   -P make AMI public
    -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
+   -P make AMI public
+   -d debug mode
 EOF
 }
 
@@ -56,7 +58,7 @@ COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
 
-while getopts "hPr:cv:s:p:u" OPTION
+while getopts "dhPr:cv:s:p:u" OPTION
 do
      case $OPTION in
          h)
@@ -83,6 +85,9 @@ do
              ;;
          v)
              AWS_VPC_ID="${OPTARG}"
+             ;;
+         d)
+             DEBUG_MODE="true"
              ;;
          ?)
              usage
@@ -146,11 +151,6 @@ DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 
-# add the following line to the packer command below for debugging, but it will disable parallel builds
-# -debug
-# add this to ensure the ami does not clean up after build
-# -on-error=abort
-
 packer -machine-readable build \
   -var aws_access_key="${AWS_ACCESS_KEY}" \
   -var aws_secret_key="${AWS_SECRET_KEY}" \
@@ -161,6 +161,7 @@ packer -machine-readable build \
   -var subnet_id="${AWS_SUBNET_ID}" \
   -var aws_region="${AWS_REGION}" \
   -var aws_linux_version="${AWS_LINUX_VERSION}" \
+  ${DEBUG_MODE:+ "-debug -on-error=abort"} \
   "$(dirname "$0")/../${ATL_PRODUCT_ID}.json" | tee "${TMP_DIR}/packer.log"
 
 AWS_AMI=$(grep "amazon-ebs: AMI:" "${TMP_DIR}/packer.log" | awk '{ print $4 }')
