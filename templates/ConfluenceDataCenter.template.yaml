@@ -198,7 +198,7 @@ Parameters:
     Type: String
   AutologinCookieAge:
     Default: ''
-    Description: Sets the Remember Me (autologin) cookie exipry length in seconds. If blank this defaults to 1 year.
+    Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
     Default: ''
@@ -279,7 +279,7 @@ Parameters:
     Type: Number
   ConfluenceDownloadUrl:
     Default: ''
-    Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier. internal dev versions can be found at downloads.internal.atlassian.com:/import/downloads/software/confluence/downloads/atlassian-confluence-<version>.tar.gz
+    Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier. Internal dev versions can be found at downloads.internal.atlassian.com:/import/downloads/software/confluence/downloads/atlassian-confluence-<version>.tar.gz
     Type: String
     ConstraintDescription: "Must be a valid Confluence download url from version 6.1.x or higher. Find valid versions at https://confluence.atlassian.com/display/DOC/Confluence+Release+Notes"
   ConfluenceVersion:
@@ -318,7 +318,6 @@ Parameters:
     MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
-    Default: 'ChangeME'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -334,7 +333,6 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: 'chaNGEmE'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -356,7 +354,7 @@ Parameters:
     Type: String
   DBIdleTestPeriod:
     Default: 0
-    Description: If this is a number greater than 0, c3p0 will test all idle, pooled but unchecked-out connections, every this number of seconds
+    Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
     Type: String
   DBMaxStatements:
     Default: 0
@@ -403,7 +401,7 @@ Parameters:
     Type: String
   ExternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
@@ -413,7 +411,7 @@ Parameters:
     Type: String
   InternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   JvmHeapOverride:
@@ -435,7 +433,7 @@ Parameters:
     Type: String
   SSLCertificateName:
     Default: ''
-    Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon (IAM certificate), you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
     MaxLength: 50
     Type: String
@@ -547,7 +545,7 @@ Parameters:
     Type: String
   TomcatRedirectPort:
     Default: 8443
-    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+    Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: https
