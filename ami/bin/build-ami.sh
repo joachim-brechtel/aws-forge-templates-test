@@ -3,16 +3,6 @@
 
 set -e
 
-TMP_DIR=$(mktemp -d -t atlaws.XXXXXX)
-echo "TMP_DIR = ${TMP_DIR}"
-PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
-# comment out the trap if you want the debug output to persist after the run
-trap "rm -rf ${TMP_DIR}" EXIT
-
-BASEDIR=$(dirname "$0")
-DEBUG_MODE=
-source "${BASEDIR}/atl-aws-functions.sh"
-
 function usage {
 # -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
     cat << EOF
@@ -40,10 +30,10 @@ function err_usage {
     exit 1
 }
 
-export AWS_LINUX_VERSION="2018.03"
 COPY_AMIS=
 UPDATE_CLOUDFORMATION=
-ATL_PRODUCT="Bitbucket"
+ATL_PRODUCT=Bitbucket
+DEBUG_MODE=
 
 while getopts ":dhPr:cv:s:p:ub:o:" OPTION
 do
@@ -132,17 +122,27 @@ if [[ -z "${AWS_SECRET_KEY:-$AWS_SECRET_ACCESS_KEY}" ]]; then
     err_usage "AWS_SECRET_KEY and AWS_SECRET_ACCESS_KEY env var not defined"
 fi
 
+BASEDIR=$(dirname "$0")
+source "${BASEDIR}/atl-aws-functions.sh"
+
 DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION" "$AWS_LINUX_VERSION")
 BASE_AMI="${BASE_AMI:-$DEFAULT_BASE_AMI}"
 if [[ -z "${BASE_AMI}" ]]; then
     err_usage "BASE_AMI env var not defined and no mapping found to fall back on"
 fi
 
+export AWS_LINUX_VERSION="2018.03"
 export AWS_DEFAULT_REGION=${AWS_REGION}
 export TZ=GMT
 DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
+
+TMP_DIR=$(mktemp -d -t atlaws)
+echo "TMP_DIR = ${TMP_DIR}"
+PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
+# comment out the trap if you want the debug output to persist after the run
+trap "rm -rf ${TMP_DIR}" EXIT
 
 packer -machine-readable build \
     -var aws_access_key="${AWS_ACCESS_KEY}" \
