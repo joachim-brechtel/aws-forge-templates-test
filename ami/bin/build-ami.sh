@@ -27,8 +27,9 @@ OPTIONS:
    -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
    -c Whether to copy the AMI to other AWS regions. Defaults to false
    -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
-   -P make AMI public
-   -d debug mode
+   -P Make AMI public
+   -d Debug mode
+   -h Print usage
 EOF
 }
 
