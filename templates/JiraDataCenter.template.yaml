@@ -3,12 +3,12 @@
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: Atlassian JIRA Data Center
+Description: Atlassian Jira Data Center
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: JIRA setup
+          default: Jira setup
         Parameters:
           - JiraProduct
           - JiraVersion
@@ -143,7 +143,7 @@ Metadata:
       InternalSubnets:
         default: Internal subnets *
       JiraProduct:
-        default: JIRA Product *
+        default: Jira Product *
       JiraVersion:
         default: Version *
       JiraDownloadUrl:
@@ -308,7 +308,7 @@ Parameters:
     Type: String
   DBMaxWaitMillis:
     Default: 10000
-    Description: The length of time (in milliseconds) that JIRA is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
+    Description: The length of time (in milliseconds) that Jira is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
     Type: String
   DBMinEvictableIdleTimeMillis:
     Default: 180000
@@ -363,7 +363,7 @@ Parameters:
     Type: String
   DBTestOnBorrow:
     Default: false
-    Description: Tests if the database connection is valid when it is borrowed from the database connection pool by JIRA
+    Description: Tests if the database connection is valid when it is borrowed from the database connection pool by Jira
     Type: String
   DBTestWhileIdle:
     Default: true
@@ -384,7 +384,7 @@ Parameters:
     Type: String
   ExternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
@@ -394,17 +394,17 @@ Parameters:
     Type: String
   InternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   JiraDownloadUrl:
     Default: ''
-    Description: This parameter is used to download a custom Jira version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier. internal dev versions can be found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>.x64.bin
+    Description: This parameter is used to download a custom Jira version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
     ConstraintDescription: Must be a valid Jira download url from version 7 or higher
   JiraProduct:
     Default: All
-    Description: The JIRA Product to install. Installs latest available version of the selected product
+    Description: The Jira Product to install. Installs latest available version of the selected product
     Type: String
     ConstraintDescription: 'Must be "Core", "Software", "ServiceDesk", or "All"'
     AllowedValues:
@@ -429,7 +429,7 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   SSLCertificateName:
     Default: ''
-    Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon (IAM certificate), you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
     MaxLength: 50
     Type: String
@@ -480,7 +480,7 @@ Parameters:
     Type: String
   TomcatRedirectPort:
     Default: 8443
-    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+    Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: https
@@ -715,20 +715,20 @@ Mappings:
   JIRAProduct2NameAndVersion:
     All:
       name: jira-all
-      shortdisplayname: '"JIRA All"'
-      fulldisplayname: '"Atlassian JIRA All"'
+      shortdisplayname: '"Jira All"'
+      fulldisplayname: '"Atlassian Jira All"'
     Core:
       name: jira-core
-      shortdisplayname: '"JIRA Core"'
-      fulldisplayname: '"Atlassian JIRA Core"'
+      shortdisplayname: '"Jira Core"'
+      fulldisplayname: '"Atlassian Jira Core"'
     ServiceDesk:
       name: servicedesk
-      shortdisplayname: '"JIRA SD"'
-      fulldisplayname: '"Atlassian JIRA Service Desk"'
+      shortdisplayname: '"Jira SD"'
+      fulldisplayname: '"Atlassian Jira Service Desk"'
     Software:
       name: jira-software
-      shortdisplayname: '"JIRA SW"'
-      fulldisplayname: '"Atlassian JIRA Software"'
+      shortdisplayname: '"Jira SW"'
+      fulldisplayname: '"Atlassian Jira Software"'
 Resources:
   JiraClusterNodeRole:
     Type: AWS::IAM::Role
@@ -769,7 +769,7 @@ Resources:
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} JIRA Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub ["${StackName} Jira Node", StackName: !Ref 'AWS::StackName']
           PropagateAtLaunch: true
         - Key: Cluster
           Value: !Ref AWS::StackName
@@ -991,7 +991,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} JIRA PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+          Value: !Sub ["${StackName} Jira PostgreSQL Database", StackName: !Ref 'AWS::StackName']
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup

@@ -377,7 +377,7 @@ Parameters:
     Type: String
   ExternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
@@ -387,7 +387,7 @@ Parameters:
     Type: String
   InternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   CrowdDownloadUrl:
@@ -412,7 +412,7 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   SSLCertificateName:
     Default: ''
-    Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon (IAM certificate), you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
     MaxLength: 32
     Type: String
@@ -463,7 +463,7 @@ Parameters:
     Type: String
   TomcatRedirectPort:
     Default: 8443
-    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+    Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
