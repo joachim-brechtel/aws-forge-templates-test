@@ -16,7 +16,7 @@ source "${BASEDIR}/atl-aws-functions.sh"
 function usage {
 # -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
     cat << EOF
-usage: $0 options
+usage: $0 [options]
 
 This script generates an Atlassian AMI with Packer.
 
