@@ -399,7 +399,7 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
   JiraDownloadUrl:
     Default: ''
-    Description: This parameter is used to download a custom Jira version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier. Internal dev versions can be found at downloads.internal.atlassian.com:/import/downloads/software/jira/downloads/atlassian-jira-<product>-<version>.x64.bin
+    Description: This parameter is used to download a custom Jira version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
     ConstraintDescription: Must be a valid Jira download url from version 7 or higher
   JiraProduct:

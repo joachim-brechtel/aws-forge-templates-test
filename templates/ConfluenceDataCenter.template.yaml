@@ -279,7 +279,7 @@ Parameters:
     Type: Number
   ConfluenceDownloadUrl:
     Default: ''
-    Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier. Internal dev versions can be found at downloads.internal.atlassian.com:/import/downloads/software/confluence/downloads/atlassian-confluence-<version>.tar.gz
+    Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
     ConstraintDescription: "Must be a valid Confluence download url from version 6.1.x or higher. Find valid versions at https://confluence.atlassian.com/display/DOC/Confluence+Release+Notes"
   ConfluenceVersion:
