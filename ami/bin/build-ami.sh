@@ -21,15 +21,15 @@ usage: $0 options
 This script generates an Atlassian AMI with Packer.
 
 OPTIONS:
-   -p The product to build an AMI for. If not supplied 'Bitbucket' is assumed
-   -r The AWS region to use. If not supplied, the AWS_REGION environment variable must be set
-   -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
-   -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
-   -c Whether to copy the AMI to other AWS regions. Defaults to false
-   -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
-   -P Make AMI public
-   -d Debug mode
-   -h Print usage
+    -p  The product to build an AMI for. If not supplied 'Bitbucket' is assumed
+    -r  The AWS region to use. If not supplied, the AWS_REGION environment variable must be set
+    -v  The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
+    -s  The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
+    -c  Whether to copy the AMI to other AWS regions. Defaults to false
+    -u  Whether to update the CloudFormation templates' AMI mappings. Defaults to false
+    -P  Make AMI public
+    -d  Debug mode
+    -h  Print usage
 EOF
 }
 
