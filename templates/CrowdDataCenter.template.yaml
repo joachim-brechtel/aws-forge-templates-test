@@ -37,7 +37,7 @@ Metadata:
           - ExternalSubnets
           - InternalSubnets
           - KeyName
-          - SSLCertificateName
+          - SSLCertificateARN
           - VPC
       - Label:
           default: DNS (Optional)
@@ -146,8 +146,8 @@ Metadata:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
-      SSLCertificateName:
-        default: SSL Certificate Name
+      SSLCertificateARN:
+        default: SSL Certificate ARN
       TomcatAcceptCount:
         default: Tomcat Accept Count
       TomcatConnectionTimeout:
@@ -410,11 +410,11 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
-  SSLCertificateName:
+  SSLCertificateARN:
     Default: ''
-    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon (IAM certificate), you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
-    MaxLength: 32
+    MaxLength: 90
     Type: String
   StartCollectd:
     Default: true
@@ -487,7 +487,7 @@ Conditions:
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
-    !Not [!Equals [!Ref SSLCertificateName, '']]
+    !Not [!Equals [!Ref SSLCertificateARN, '']]
   SSLScheme:
     !Equals [!Ref TomcatScheme, 'https']
   OverrideHeap:
@@ -1012,11 +1012,7 @@ Resources:
             InstanceProtocol: HTTP
             PolicyNames:
               - JSessionIdStickiness
-            SSLCertificateId:
-              - !Sub
-                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref AWS::AccountId
-                  SSLCertificateName: !Ref SSLCertificateName
+            SSLCertificateId: !Ref SSLCertificateARN
           - !Ref AWS::NoValue
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
