@@ -172,6 +172,7 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Dcluster.join.type=aws \
 -Dcluster.join.aws.tag.key=${ATL_HAZELCAST_NETWORK_AWS_TAG_KEY} \
 -Dcluster.join.aws.tag.value=${ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE} \
+-Dcluster.join.aws.region=${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION} \
 -Djwt.private.key=${SYNCHRONY_JWT_PRIVATE_KEY} \
 -Djwt.public.key=${SYNCHRONY_JWT_PUBLIC_KEY}"
 }
@@ -262,7 +263,9 @@ function installConfluence {
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
         echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
         sudo ldconfig
-        service collectd restart
+        if [ -n $ATL_STARTCOLLECTD == "true" ]; then
+            service collectd restart
+        fi
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
     fi
 
@@ -273,8 +276,7 @@ function installConfluence {
     fi
 
     atl_log "Downloading ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} ${ATL_CONFLUENCE_VERSION} from ${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}"
-    if ! curl -L -f --silent "${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
-    then
+    if ! curl -L -f --silent "${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1 ; then
         local ERROR_MESSAGE="Could not download installer from ${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL} - aborting installation"
         atl_log "${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
@@ -319,10 +321,13 @@ function configureSharedHome {
     local CONFLUENCE_SHARED="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home"
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${CONFLUENCE_SHARED}"; then
         mkdir -p "${CONFLUENCE_SHARED}"
-        chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        if ! chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1; then
+            atl_log "Chown on contents of shared home failed most likley because this is a new cluster and no contents yet exist, moving on"
+        fi
         su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
-        atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
+        atl_log "No mountpoint for shared home exists."
     fi
     atl_log "=== END:   service atl-init-confluence configureSharedHome ==="
 }

@@ -293,6 +293,11 @@ function initSynchrony {
     service atl-init-synchrony start
 }
 
+function initCrowd {
+    atl_log "Starting service atl-init-crowd"
+    service atl-init-crowd start
+}
+
 function reloadNginxConfig {
     atl_log "Reloading NGINX Configuration"
     service nginx reload

@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-GIT_VERSION=${GIT_VERSION:?"The Git version must be supplied"}
+GIT_VERSION=${GIT_VERSION}
 
-echo "Installing Git ${GIT_VERSION}"
-sudo yum -y -q list installed git-${GIT_VERSION} || sudo yum -y -q install git-${GIT_VERSION}
+if [ -z ${GIT_VERSION} ]; then
+    echo "Installing latest Git"
+    sudo yum -y -q install git
+else
+    echo "Installing Git ${GIT_VERSION}"
+    sudo yum -y -q list installed git-${GIT_VERSION} || sudo yum -y -q install git-${GIT_VERSION}
+fi

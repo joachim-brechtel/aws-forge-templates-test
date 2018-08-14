@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Atlassian functions used by init.d services
 
 _ATL_TEMP_DIR=$(mktemp -d)
@@ -48,6 +49,14 @@ function atl_enabled_products {
     done
 }
 
+function recursiveChown {
+  local CH_USER=$1
+  local CH_GROUP=$2
+  local CH_OBJECT=$3
+
+  sudo chown -R -H ${CH_USER}:${CH_GROUP} ${CH_OBJECT} >> ${ATL_LOG} 2>&1
+}
+
 function atl_enabled_shared_homes {
     for shared_home in $(echo "${ATL_ENABLED_SHARED_HOMES}" | tr ',' '\n'); do
         echo ${shared_home} | tr '[A-Z]' '[a-z]'
@@ -96,6 +105,17 @@ function atl_configureDbPassword {
     (su postgres -c "echo '${DB_HOST}:${DB_PORT}:${DB_NAME}:postgres:${PASSWORD}' >> ~/.pgpass") >> "${ATL_LOG}" 2>&1
     (su postgres -c "chmod 600 ~/.pgpass") >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring DB password for ${DB_HOST}"
+}
+
+function atl_configureDbUserPassword {
+    local DB_USER=$1
+    local DB_PASSWORD=$2
+    local DB_HOST=${3:-"localhost"}
+    local DB_PORT=${4:-"5432"}
+
+    atl_log "Configuring DB user password for ${DB_USER}"
+    (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -U postgres -t --command \"ALTER USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';\"")
+    atl_log "Done configuring DB user password for ${DB_USER}"
 }
 
 function atl_dbExists {
@@ -187,7 +207,9 @@ function atl_setNginxHostName {
 }
 
 function atl_configureTomcatConnector {
-    local HOST_NAME="${1}"
+    atl_log "Configuring Tomcat connectors"
+
+    local HOST_NAME="$(atl_toLowerCase ${1})"
     local DEFAULT_CONNECTOR_PORT="${2}"
     local REDIRECT_CONNECTOR_PORT="${3}"
     local USER="${4}"
@@ -197,9 +219,22 @@ function atl_configureTomcatConnector {
     local WEB_XML="${6}/web.xml"
     local FORCE="${7:-"false"}"
 
-    local secure=false
-    local scheme=http
-    local proxyPort=80
+    if [[ -n "${ATL_TOMCAT_DEFAULTCONNECTORPORT}" ]]; then local defaultConnectorPort=${ATL_TOMCAT_DEFAULTCONNECTORPORT}; else local defaultConnectorPort=DEFAULT_CONNECTOR_PORT; fi
+    if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}; else local redirectPort=REDIRECT_CONNECTOR_PORT; fi
+    if [[ -n "${ATL_TOMCAT_SECURE}" ]]; then local secure=${ATL_TOMCAT_SECURE}; else local secure=false; fi
+    if [[ -n "${ATL_TOMCAT_SCHEME}" ]]; then local scheme=${ATL_TOMCAT_SCHEME}; else local scheme=http; fi
+    if [[ -n "${ATL_TOMCAT_PROXYPORT}" ]]; then local proxyPort=${ATL_TOMCAT_PROXYPORT}; else local proxyPort=80; fi
+    if [[ -n "${ATL_TOMCAT_ACCEPTCOUNT}" ]]; then local acceptCount=${ATL_TOMCAT_ACCEPTCOUNT}; else local acceptCount=100 ; fi
+    if [[ -n "${ATL_TOMCAT_CONNECTIONTIMEOUT}" ]]; then local connectionTimeout=${ATL_TOMCAT_CONNECTIONTIMEOUT}
+    else local connectionTimeout=60000 ; fi
+    if [[ -n "${ATL_TOMCAT_ENABLELOOKUPS}" ]]; then local enableLookups=${ATL_TOMCAT_ENABLELOOKUPS}
+    else local enableLookups=false ; fi
+    if [[ -n "${ATL_TOMCAT_MAXTHREADS}" ]]; then local maxThreads=${ATL_TOMCAT_MAXTHREADS}; else local maxThreads=200 ; fi
+    if [[ -n "${ATL_TOMCAT_MINSPARETHREADS}" ]]; then local minSpareThreads=${ATL_TOMCAT_MINSPARETHREADS}
+    else local minSpareThreads=200 ; fi
+    if [[ -n "${ATL_TOMCAT_PROTOCOL}" ]]; then local protocol=${ATL_TOMCAT_PROTOCOL}; else local protocol='HTTP/1.1' ; fi
+    if [[ -n "${ATL_TOMCAT_CONTEXTPATH}" ]]; then local contextPath=${ATL_TOMCAT_CONTEXTPATH}; else local contextPath='' ; fi
+
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_SELF_CERT_ENABLED})" || "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_PROXY})" ]]; then
         secure=true
         scheme=https
@@ -207,9 +242,9 @@ function atl_configureTomcatConnector {
     fi
 
     local CONNECTOR_MATCHER="@port='${DEFAULT_CONNECTOR_PORT}'"
-    if [ "x${FORCE}" = "xtrue" ]; then
+    if [ "x${FORCE}" == "xtrue" ]; then
         atl_log "Force updating server.xml"
-    else        
+    else
         CONNECTOR_MATCHER+=" and not(@proxyName)"
     fi
 
@@ -226,12 +261,25 @@ function atl_configureTomcatConnector {
     <xsl:template match="/Server/Service/Connector[${CONNECTOR_MATCHER}]">
         <xsl:copy>
             <xsl:apply-templates select="@*|node()"/>
+            <xsl:attribute name="port">${defaultConnectorPort}</xsl:attribute>
+            <xsl:attribute name="redirectPort">${redirectPort}</xsl:attribute>
             <xsl:attribute name="secure">${secure}</xsl:attribute>
             <xsl:attribute name="scheme">${scheme}</xsl:attribute>
             <xsl:attribute name="proxyName">${HOST_NAME}</xsl:attribute>
             <xsl:attribute name="proxyPort">${proxyPort}</xsl:attribute>
+            <xsl:attribute name="acceptCount">${acceptCount}</xsl:attribute>
+            <xsl:attribute name="connectionTimeout">${connectionTimeout}</xsl:attribute>
+            <xsl:attribute name="enableLookups">${enableLookups}</xsl:attribute>
+            <xsl:attribute name="maxThreads">${maxThreads}</xsl:attribute>
+            <xsl:attribute name="minSpareThreads">${minSpareThreads}</xsl:attribute>
+            <xsl:attribute name="protocol">${protocol}</xsl:attribute>
         </xsl:copy>
     </xsl:template>
+
+    <xsl:template match="/Server/Service/Engine/Host/Context[(@path='')]/@path">
+        <xsl:attribute name="path">${contextPath}</xsl:attribute>
+    </xsl:template>
+
 </xsl:stylesheet>
 EOT
     local SERVER_TMP="${SERVER_XML_PATH}/server.xml.tmp"
@@ -256,9 +304,11 @@ EOT
         set +C
     fi
 
-    if $secure ; then        
+    if $secure ; then
         atl_transformWebXml "${USER}" "${WEB_XML}"
     fi
+
+    atl_log "Tomcat connector configuration complete"
 }
 
 function atl_addRedirectConnectorServerXml {
@@ -274,15 +324,15 @@ function atl_addRedirectConnectorServerXml {
         </xsl:copy>
     </xsl:template>
 
-   
-    <xsl:template match="/Server/Service[not(Connector[@port='${REDIRECT_CONNECTOR_PORT}'])]">
+
+    <xsl:template match="/Server/Service[not(Connector[@port='${redirectPort}'])]">
          <xsl:copy>
             <xsl:apply-templates select="@*|node()"/>
-            
-            <Connector port="${REDIRECT_CONNECTOR_PORT}" protocol="HTTP/1.1"
+
+            <Connector port="${redirectPort}" protocol="${protocol}"
                    maxHttpHeaderSize="65536"
                    URIEncoding="UTF-8"
-                   connectionTimeout="20000"
+                   connectionTimeout="${connectionTimeout}"
                    useBodyEncodingForURI="true"
                    compression="on"
                    compressableMimeType="text/html,text/xml,text/plain,text/css,application/json,application/javascript,application/x-javascript" />
@@ -297,7 +347,7 @@ function atl_transformWebXml {
     local USER="${1}"
     local WEB_XML="${2}"
 
-    atl_log "Updating web.xml to redirect HTTP to HTTPS."            
+    atl_log "Updating web.xml to redirect HTTP to HTTPS."
 
     cat <<EOT | su "${USER}" -c "tee \"$(atl_tempDir)/web.xslt\"" >> "${ATL_LOG}" 2>&1
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -309,7 +359,7 @@ function atl_transformWebXml {
         </xsl:copy>
     </xsl:template>
 
-   
+
      <xsl:template match="/*[name() = 'web-app' and not(./*[name() = 'security-constraint'])]">
          <xsl:copy>
             <xsl:apply-templates select="@*"/>
@@ -339,6 +389,44 @@ EOT
     su "${USER}" -c "xsltproc -o \"${WEB_XML}\" \"$(atl_tempDir)/web.xslt\" \"${WEB_XML}\"" >> "${ATL_LOG}" 2>&1 || true
 }
 
+function atl_autologinCookieAge {
+    local USER="${1}"
+    local SERAPH_XML="${2}"
+    local COOKIE_AGE="${3}"
+
+    atl_log "Updating seraph.xml to limit cookie age."
+
+    cat <<EOT | su "${USER}" -c "tee \"$(atl_tempDir)/seraph.xslt\"" >> "${ATL_LOG}" 2>&1
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:output omit-xml-declaration="yes" indent="yes"/>
+    <xsl:template match="@*|node()">
+        <xsl:copy>
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:copy>
+    </xsl:template>
+    <xsl:template match="/security-config/parameters">
+     <xsl:choose>
+         <xsl:when test="not(init-param[contains(param-name, 'autologin.cookie.age')])">
+                <xsl:copy>
+                 <xsl:apply-templates select="@*|node()"/>
+                 <init-param>
+                    <param-name>autologin.cookie.age</param-name>
+                    <param-value>${COOKIE_AGE}</param-value>
+                 </init-param>
+                </xsl:copy>
+        </xsl:when>
+        <xsl:otherwise>
+            <xsl:copy>
+             <xsl:apply-templates select="@*|node()"/>
+            </xsl:copy>
+        </xsl:otherwise>
+     </xsl:choose>
+    </xsl:template>
+</xsl:stylesheet>
+EOT
+    su "${USER}" -c "xsltproc -o \"${SERAPH_XML}\" \"$(atl_tempDir)/seraph.xslt\" \"${SERAPH_XML}\"" >> "${ATL_LOG}" 2>&1 || true
+}
+
 function atl_hostName {
     atl_resolveHostNamesAndIps > /dev/null 2>&1
 
@@ -355,4 +443,10 @@ function atl_resolveHostNamesAndIps {
     _ATL_PUBLIC_HOST_NAME=$(curl -f --silent http://169.254.169.254/latest/meta-data/public-hostname || echo "")
     _ATL_PUBLIC_IPV4=$(curl -f --silent http://169.254.169.254/latest/meta-data/public-ipv4 || echo "")
     _ATL_PRIVATE_IPV4=$(curl -f --silent http://169.254.169.254/latest/meta-data/local-ipv4 || echo "")
+}
+
+function runLocalAnsible {
+    if ! /usr/local/bin/local-ansible-run; then
+        atl_log "Local ansible script does not exist"
+    fi
 }

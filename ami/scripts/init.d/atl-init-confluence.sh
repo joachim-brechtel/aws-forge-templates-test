@@ -17,16 +17,30 @@ function start {
     installConfluence
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_NGINX_ENABLED})" ]]; then
         configureNginx
-    elif [[ -n "${ATL_PROXY_NAME}" ]]; then
-        updateHostName "${ATL_PROXY_NAME}"
     fi
+
+    updateHostName "${ATL_PROXY_NAME}"
     configureConfluenceHome
     exportCatalinaOpts
     configureConfluenceEnvironmentVariables
+    if [[ -n "${ATL_AUTOLOGIN_COOKIE_AGE}" ]]; then
+        atl_autologinCookieAge "${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/classes/seraph-config.xml" "${ATL_AUTOLOGIN_COOKIE_AGE}"
+    fi
     if [[ "x${ATL_POSTGRES_ENABLED}" == "xtrue" ]]; then
         createConfluenceDbAndRole
     elif [[ -n "${ATL_DB_NAME}" ]]; then
         configureRemoteDb
+    fi
+
+    atl_log "=== BEGIN: service atl-init-confluence runLocalAnsible ==="
+    runLocalAnsible
+    atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
+
+    recursiveChown "root" "confluence" "/etc/atl"
+
+    if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
+        local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
+        if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
     fi
 
     goCONF
@@ -34,11 +48,48 @@ function start {
     atl_log "=== END:   service atl-init-confluence start ==="
 }
 
+function updateBaseUrl {
+  atl_log "=== BEGIN: Updating Server URL ==="
+  local QUERY_RESULT=''
+  local BASE_URL=$1
+  local DB_HOST=$2
+  local DB_PORT=$3
+  local DB_NAME=$4
+  set -f
+
+  (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update bandana set bandanavalue=regexp_replace(bandanavalue, '<baseUrl>.*</baseUrl>', '<baseUrl>${BASE_URL}</baseUrl>') where bandanacontext = '_GLOBAL' and bandanakey = 'atlassian.confluence.settings';\"") >> "${ATL_LOG}" 2>&1
+
+  atl_log "=== END: Server baseUrl update ==="
+}
+
 function configureConfluenceEnvironmentVariables (){
    atl_log "=== BEGIN: service configureConfluenceEnvironmentVariables ==="
-   cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
+   if [ -n "${ATL_JVM_HEAP}" ]; then
+       if [[ ! "${ATL_JVM_HEAP}" =~ ^.*[mMgG]$ ]]; then
+            ATL_JVM_HEAP="${ATL_JVM_HEAP}m"
+       fi
+       su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xmx(\w+) (.*)$/\1Xmx${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
+       su "${ATL_CONFLUENCE_USER}" -c "sed -i -r 's/^(.*)Xms(\w+) (.*)$/\1Xms${ATL_JVM_HEAP} \3/' /opt/atlassian/confluence/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
+   fi
 
+   atl_resolveHostNamesAndIps > /dev/null 2>&1
+
+   cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintAdaptiveSizePolicy"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintGCDetails"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:NumberOfGCLogFiles=10"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:GCLogFileSize=5m"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+UseGCLogFileRotation"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.upgrade.recovery.file.enabled=false"
+CATALINA_OPTS="\${CATALINA_OPTS} -Djava.net.preferIPv4Stack=true"
+CATALINA_OPTS="\${CATALINA_OPTS} -Djira.executor.threadpool.size=16"
+CATALINA_OPTS="\${CATALINA_OPTS} -Datlassian.event.thread_pool_configuration.queue_size=4096"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dshare.group.email.mapping=atlassian-all:atlassian-all@atlassian.com,atlassian-staff:atlassian-staff@atlassian.com"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.hazelcast.max.no.heartbeat.seconds=60"
+CATALINA_OPTS="\${CATALINA_OPTS} -Datlassian.plugins.enable.wait=300"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.node.name=${_ATL_PRIVATE_IPV4}"
 CATALINA_OPTS="\${CATALINA_OPTS} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
+
 export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
@@ -73,10 +124,13 @@ function configureSharedHome {
     if mountpoint -q "${ATL_APP_DATA_MOUNT}" || mountpoint -q "${CONFLUENCE_SHARED}"; then
         atl_log "Linking ${CONFLUENCE_SHARED} to ${ATL_CONFLUENCE_SHARED_HOME}"
         mkdir -p "${CONFLUENCE_SHARED}"
-        chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
+        if ! chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1; then
+            atl_log "Chown on contents of shared home failed most likley because this is a new cluster and no contents yet exist, moving on"
+        fi
         su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
     else
-        atl_log "No mountpoint for shared home exists. Failed to create cluster.properties file."
+        atl_log "No mountpoint for shared home exists."
     fi
     atl_log "=== END:   service atl-init-confluence configureSharedHome ==="
 }
@@ -85,12 +139,12 @@ function configureConfluenceHome {
     atl_log "Configuring ${ATL_CONFLUENCE_HOME}"
     mkdir -p "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
 
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then 
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
         configureSharedHome
     fi
-    
+
     atl_log "Setting ownership of ${ATL_CONFLUENCE_HOME} to '${ATL_CONFLUENCE_USER}' user"
-    chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1 
+    chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring ${ATL_CONFLUENCE_HOME}"
 }
 
@@ -114,6 +168,14 @@ function configureDbProperties {
     <property name="hibernate.connection.url">${ATL_JDBC_URL}</property>
     <property name="hibernate.connection.password">${ATL_JDBC_PASSWORD}</property>
     <property name="hibernate.connection.username">${ATL_JDBC_USER}</property>
+    <property name="hibernate.c3p0.max_size">${ATL_DB_POOLMAXSIZE}</property>
+    <property name="hibernate.c3p0.min_size">${ATL_DB_POOLMINSIZE}</property>
+    <property name="hibernate.c3p0.timeout">${ATL_DB_TIMEOUT}</property>
+    <property name="hibernate.c3p0.idle_test_period">${ATL_DB_IDLETESTPERIOD}</property>
+    <property name="hibernate.c3p0.max_statements">${ATL_DB_MAXSTATEMENTS}</property>
+    <property name="hibernate.c3p0.validate">${ATL_DB_VALIDATE}</property>
+    <property name="hibernate.c3p0.preferredTestQuery">${ATL_DB_PREFERREDTESTQUERY}</property>
+    <property name="hibernate.c3p0.acquire_increment">${ATL_DB_ACQUIREINCREMENT}</property>
     <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect</property>
     <property name="webwork.multipart.saveDir">\${localHome}/temp</property>
     <property name="attachments.dir">\${confluenceHome}/attachments</property>
@@ -171,9 +233,11 @@ function configureRemoteDb {
 
     if [[ -n "${ATL_DB_PASSWORD}" ]]; then
         atl_configureDbPassword "${ATL_DB_PASSWORD}" "*" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
-        
+
         if atl_roleExists ${ATL_JDBC_USER} "postgres" ${ATL_DB_HOST} ${ATL_DB_PORT}; then
             atl_log "${ATL_JDBC_USER} role already exists. Skipping role creation."
+            atl_log "Setting password for ${ATL_JDBC_USER}."
+            atl_configureDbUserPassword "${ATL_JDBC_USER}" "${ATL_JDBC_PASSWORD}" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
         else
             atl_createRole "${ATL_CONFLUENCE_SHORT_DISPLAY_NAME}" "${ATL_JDBC_USER}" "${ATL_JDBC_PASSWORD}" "${ATL_DB_HOST}" "${ATL_DB_PORT}"
             atl_createRemoteDb "${ATL_CONFLUENCE_SHORT_DISPLAY_NAME}" "${ATL_DB_NAME}" "${ATL_JDBC_USER}" "${ATL_DB_HOST}" "${ATL_DB_PORT}" "C" "C" "template0"
@@ -191,11 +255,13 @@ function configureNginx {
 function installConfluence {
     atl_log "Checking if ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} has already been installed"
 
-    if [ "true" = "${ATL_USE_COLLECTD}" ] && [ -e /etc/init.d/collectd ]; then
+    if [[ "${ATL_USE_COLLECTD}" = true && -e /etc/init.d/collectd ]]; then
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
         echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
         sudo ldconfig
-        service collectd restart
+        if [ -n $ATL_STARTCOLLECTD == "true" ]; then
+            service collectd restart
+        fi
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"
     fi
 
@@ -206,8 +272,7 @@ function installConfluence {
     fi
 
     atl_log "Downloading ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} ${ATL_CONFLUENCE_VERSION} from ${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}"
-    if ! curl -L -f --silent "${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
-    then
+    if ! curl -L -f --silent "${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL}" -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1; then
         local ERROR_MESSAGE="Could not download installer from ${ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL} - aborting installation"
         atl_log "${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
@@ -283,4 +348,3 @@ case "$1" in
         RETVAL=1
 esac
 exit ${RETVAL}
-

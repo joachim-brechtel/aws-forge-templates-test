@@ -8,36 +8,27 @@
     "subnet_id": null,
     "base_ami": null,
 
+    "availability_zone":        "us-east-1a",
     "config_location":          "/etc/sysconfig/atl",
     "log_location":             "/var/log/atl.log",
-    "name":                     "confluence",
-    "short_display_name":       "Confluence",
-    "full_display_name":        "Atlassian Confluence",
-    "version":                  "latest",
-    "user":                     "confluence",
-    "user_id":                  "1001",
-    "db_name":                  "confluence",
-    "db_user":                  "atlconfluence",
+    "name":                     "crowd",
     "app_data_dir":             "/var/atlassian/application-data",
-    "home_dir":                 "/var/atlassian/application-data/confluence",
-    "db_dir":                   "/var/atlassian/application-data/db",
-    "install_dir":              "/opt/atlassian/confluence",
+    "home_dir":                 "/var/atlassian/application-data/crowd",
+    "install_dir":              "/opt/atlassian/crowd",
     "instance_store_block_device": "/dev/xvdb",
     "instance_store_mount":     "/media/ephemeral0",
     "app_data_mount":           "/media/atl",
     "app_data_block_device":    "/dev/xvdf",
-    "app_data_fs_type":         "unknown",
+    "app_data_fs_type":         "zfs",
 
-    "release_s3_bucket":        "atlassian-software",
-    "release_s3_path":          "releases/confluence",
-
-    "postgres_version":         "9.6"
+    "postgres_version": "9.6"
   },
 
   "builders": [{
     "type": "amazon-ebs",
     "communicator": "ssh",
     "ssh_pty": "true",
+    "availability_zone": "us-east-1a",
 
     "ami_name": "{{user `full_display_name`}} {{isotime \"2006.01.02_1504\"}} (HVM)",
     "ami_description": "The {{user `full_display_name`}} AMI is an EBS-backed image based off Amazon Linux AMI (HVM). On first boot it downloads and installs the latest version of {{user `short_display_name`}} ready for you to use.",
@@ -105,9 +96,6 @@
     "script": "scripts/install-jq.sh"
   }, {
     "type": "shell",
-    "script": "scripts/install-xmllint.sh"
-  }, {
-    "type": "shell",
     "script": "scripts/install-nginx.sh"
   }, {
     "type": "shell",
@@ -126,6 +114,9 @@
       "APP_DATA_FS_TYPE={{user `app_data_fs_type`}}",
       "AWS_LINUX_VERSION={{user `aws_linux_version`}}"
     ]
+  }, {
+    "type": "shell",
+    "script": "scripts/install-openjdk.sh"
   }, {
     "type": "shell",
     "script": "scripts/write-product-config.sh",
@@ -158,13 +149,6 @@
   }, {
     "type": "shell",
     "inline": "sudo mv /tmp/atl-functions /etc/init.d/atl-functions && sudo chown root:root /etc/init.d/atl-functions"
-  }, {
-    "type": "file",
-    "source": "scripts/init.d/atl-confluence-common",
-    "destination": "/tmp/atl-confluence-common"
-  }, {
-    "type": "shell",
-    "inline": "sudo mv /tmp/atl-confluence-common /etc/init.d/atl-confluence-common && sudo chown root:root /etc/init.d/atl-confluence-common"
   }, {
     "type": "file",
     "source": "scripts/bin/atl-update-host-name.sh",
@@ -205,25 +189,14 @@
     ]
   }, {
     "type": "file",
-    "source": "scripts/init.d/atl-init-confluence.sh",
-    "destination": "/tmp/atl-init-confluence.sh"
+    "source": "scripts/init.d/atl-init-crowd.sh",
+    "destination": "/tmp/atl-init-crowd.sh"
   }, {
     "type": "shell",
     "script": "scripts/install-atl-init-product-service.sh",
     "environment_vars": [
       "POSTGRES_VERSION={{user `postgres_version`}}",
-      "INIT_SCRIPT=/tmp/atl-init-confluence.sh"
-    ]
-  }, {
-    "type": "file",
-    "source": "scripts/init.d/atl-init-synchrony.sh",
-    "destination": "/tmp/atl-init-synchrony.sh"
-  }, {
-    "type": "shell",
-    "script": "scripts/install-atl-init-product-service.sh",
-    "environment_vars": [
-      "POSTGRES_VERSION={{user `postgres_version`}}",
-      "INIT_SCRIPT=/tmp/atl-init-synchrony.sh"
+      "INIT_SCRIPT=/tmp/atl-init-crowd.sh"
     ]
   }, {
     "type": "file",
@@ -237,7 +210,7 @@
     ]
   }, {
     "type": "file",
-    "source": "config/confluence-collectd.conf",
+    "source": "config/crowd-collectd.conf",
     "destination": "/tmp/collectd.conf"
   }, {
     "type": "shell",
