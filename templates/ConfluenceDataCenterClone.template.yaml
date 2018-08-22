@@ -17,7 +17,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMax
           - ClusterNodeMin
-          - ClusterNodeSize
+          - ClusterNodeVolumeSize
           - SynchronyClusterNodeMax
           - SynchronyClusterNodeMin
           - SynchronyNodeInstanceType
@@ -38,10 +38,10 @@ Metadata:
           - ExternalSubnets
           - InternalSubnets
           - KeyName
-          - SSLCertificateName
+          - SSLCertificateARN
           - VPC
       - Label:
-          default: Disaster Recovery Snapshot ID's
+          default: Disaster Recovery Snapshot IDs
         Parameters:
           - DBSnapshotName
           - EBSSnapshotId
@@ -98,7 +98,7 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Cluster node instance type
-      ClusterNodeSize:
+      ClusterNodeVolumeSize:
         default: Cluster node instance volume size
       ConfluenceDownloadUrl:
         default: Confluence download URL
@@ -154,8 +154,8 @@ Metadata:
         default: Synchrony Heap Size Override
       KeyName:
         default: Key Name *
-      SSLCertificateName:
-        default: SSL Certificate Name
+      SSLCertificateARN:
+        default: SSL Certificate ARN
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       SynchronyClusterNodeMax:
@@ -274,7 +274,7 @@ Parameters:
   ClusterNodeMin:
     Default: 1
     Type: Number
-  ClusterNodeSize:
+  ClusterNodeVolumeSize:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
@@ -329,7 +329,7 @@ Parameters:
     MaxLength: 128
     Type: String
   DBMultiAZ:
-    Default: true
+    Default: false
     AllowedValues:
       - true
       - false
@@ -357,7 +357,7 @@ Parameters:
     Type: String
   DBIdleTestPeriod:
     Default: 0
-    Description: If this is a number greater than 0, c3p0 will test all idle, pooled but unchecked-out connections, every this number of seconds
+    Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
     Type: String
   DBMaxStatements:
     Default: 0
@@ -440,11 +440,11 @@ Parameters:
     Description: Leave this field blank to use your stack name as the sub-domain.
     Default: ''
     Type: String
-  SSLCertificateName:
+  SSLCertificateARN:
     Default: ''
-    Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
-    MaxLength: 50
+    MaxLength: 90
     Type: String
   StartCollectd:
     Default: true
@@ -554,7 +554,7 @@ Parameters:
     Type: String
   TomcatRedirectPort:
     Default: 8443
-    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+    Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
@@ -580,7 +580,7 @@ Conditions:
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
-    !Not [!Equals [!Ref SSLCertificateName, '']]
+    !Not [!Equals [!Ref SSLCertificateARN, '']]
   SSLScheme:
     !Equals [!Ref TomcatScheme, 'https']
   OverrideHeap:
@@ -997,7 +997,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref ClusterNodeSize
+            VolumeSize: !Ref ClusterNodeVolumeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1456,10 +1456,7 @@ Resources:
         - CertificateArn:
             !If
               - DoSSL
-              - !Sub
-                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref AWS::AccountId
-                  SSLCertificateName: !Ref SSLCertificateName
+              - !Ref SSLCertificateARN
               - !Ref AWS::NoValue
       DefaultActions:
         - Type: forward

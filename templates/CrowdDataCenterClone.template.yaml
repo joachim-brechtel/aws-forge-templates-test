@@ -18,7 +18,7 @@ Metadata:
           - ClusterNodeInstanceType
           - ClusterNodeMax
           - ClusterNodeMin
-          - ClusterNodeSize
+          - ClusterNodeVolumeSize
       - Label:
           default: Database
         Parameters:
@@ -37,10 +37,10 @@ Metadata:
           - ExternalSubnets
           - InternalSubnets
           - KeyName
-          - SSLCertificateName
+          - SSLCertificateARN
           - VPC
       - Label:
-          default: Disaster Recovery Snapshot ID's
+          default: Disaster Recovery Snapshot IDs
         Parameters:
           - DBSnapshotName
           - EBSSnapshotId
@@ -95,7 +95,7 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Cluster node instance type
-      ClusterNodeSize:
+      ClusterNodeVolumeSize:
         default: Cluster node instance volume size
       CustomDnsName:
         default: Existing DNS name (optional)
@@ -155,8 +155,8 @@ Metadata:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
-      SSLCertificateName:
-        default: SSL Certificate Name
+      SSLCertificateARN:
+        default: SSL Certificate ARN
       TomcatAcceptCount:
         default: Tomcat Accept Count
       TomcatConnectionTimeout:
@@ -262,7 +262,7 @@ Parameters:
   ClusterNodeMin:
     Default: 1
     Type: Number
-  ClusterNodeSize:
+  ClusterNodeVolumeSize:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
@@ -322,7 +322,7 @@ Parameters:
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBMultiAZ:
-    Default: true
+    Default: false
     AllowedValues:
       - true
       - false
@@ -430,11 +430,11 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
-  SSLCertificateName:
+  SSLCertificateARN:
     Default: ''
-    Description: The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
-    MaxLength: 32
+    MaxLength: 90
     Type: String
   StartCollectd:
     Default: true
@@ -483,7 +483,7 @@ Parameters:
     Type: String
   TomcatRedirectPort:
     Default: 8443
-    Description: For a non-ssl conenctor actioning a redirect to ssl URI, Catalina will automatically redirect the request to the port number specified here
+    Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
@@ -507,7 +507,7 @@ Conditions:
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
-    !Not [!Equals [!Ref SSLCertificateName, '']]
+    !Not [!Equals [!Ref SSLCertificateARN, '']]
   SSLScheme:
     !Equals [!Ref TomcatScheme, 'https']
   OverrideHeap:
@@ -896,7 +896,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref ClusterNodeSize
+            VolumeSize: !Ref ClusterNodeVolumeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1104,11 +1104,7 @@ Resources:
             InstanceProtocol: HTTP
             PolicyNames:
               - JSessionIdStickiness
-            SSLCertificateId:
-              - !Sub
-                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref AWS::AccountId
-                  SSLCertificateName: !Ref SSLCertificateName
+            SSLCertificateId: !Ref SSLCertificateARN
           - !Ref AWS::NoValue
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
