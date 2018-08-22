@@ -224,7 +224,7 @@ Parameters:
     MinLength: 9
     MaxLength: 18
   ClusterNodeInstanceType:
-    Default: t2.medium
+    Default: t3.medium
     AllowedValues:
       - c4.large
       - c4.xlarge
@@ -298,6 +298,10 @@ Parameters:
       - t2.large
       - t2.xlarge
       - t2.2xlarge
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - x1.16xlarge
       - x1.32xlarge
       - x1e.xlarge
@@ -517,7 +521,7 @@ Parameters:
     Default: 1
     Type: Number
   SynchronyNodeInstanceType:
-    Default: t2.medium
+    Default: t3.medium
     AllowedValues:
       - c4.large
       - c4.xlarge
@@ -591,6 +595,10 @@ Parameters:
       - t2.large
       - t2.xlarge
       - t2.2xlarge
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - x1.16xlarge
       - x1.32xlarge
       - x1e.xlarge
@@ -908,6 +916,18 @@ Mappings:
       Arch: HVM64
       Jvmheap: 9728m
     t2.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    t3.medium:
+      Arch: HVM64
+      Jvmheap: 2048m
+    t3.large:
+      Arch: HVM64
+      Jvmheap: 4608m
+    t3.xlarge:
+      Arch: HVM64
+      Jvmheap: 9728m
+    t3.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     x1.16xlarge:

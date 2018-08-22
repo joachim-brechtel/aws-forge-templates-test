@@ -335,7 +335,7 @@ Parameters:
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InstanceType:
-    Default: t2.large
+    Default: t3.large
     AllowedValues:
       - c4.xlarge
       - c4.2xlarge
@@ -405,6 +405,9 @@ Parameters:
       - t2.large
       - t2.xlarge
       - t2.2xlarge
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - x1.16xlarge
       - x1.32xlarge
       - x1e.xlarge
@@ -764,6 +767,15 @@ Mappings:
       Arch: HVM64
       Jvmheap: 10240m
     t2.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    t3.large:
+      Arch: HVM64
+      Jvmheap: 3584m
+    t3.xlarge:
+      Arch: HVM64
+      Jvmheap: 8704m
+    t3.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     x1.16xlarge:
