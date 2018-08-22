@@ -53,7 +53,9 @@ function start {
     if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
         local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
         if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
+        if updateDBConfig; then echo "DB Config updated in crowd.cfg.xml";fi
     fi
+
 
   goCrowd
 
@@ -71,6 +73,20 @@ function updateBaseUrl {
   (su postgres -c "psql -w -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -t --command \"update cwd_property set property_value = '${BASE_URL}' where property_name='base.url' and property_key='crowd';\"") >> "${ATL_LOG}" 2>&1
 
   atl_log "=== END: Server baseUrl update ==="
+}
+
+function updateDBConfig {
+  atl_log "=== BEGIN: crowd.cfg.xml DB update ==="
+    xmlstarlet edit --inplace \
+    --update '//application-configuration/properties/property[@name="hibernate.connection.password"]' \
+    --value ${ATL_JDBC_PASSWORD} \
+    --update '//application-configuration/properties/property[@name="hibernate.connection.url"]' \
+    --value ${ATL_JDBC_URL} \
+    --update '//application-configuration/properties/property[@name="hibernate.connection.username"]' \
+    --value ${ATL_JDBC_USER} \
+    /media/atl/crowd/shared/crowd.cfg.xml
+
+  atl_log "=== END: crowd.cfg.xml DB update ==="
 }
 
 function exportCatalinaOpts() {

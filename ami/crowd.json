@@ -104,6 +104,9 @@
       "VERSION={{user `postgres_version`}}"
     ]
   }, {
+    "type": "shell",
+    "script": "scripts/install-xmlstarlet.sh"
+  }, {
     "type": "file",
     "source": "keys/RPM-GPG-KEY-zfsonlinux.key",
     "destination": "/tmp/RPM-GPG-KEY-zfsonlinux.key"
