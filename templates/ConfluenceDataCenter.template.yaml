@@ -57,9 +57,9 @@ Metadata:
           - AutologinCookieAge
           - ConfluenceDownloadUrl
           - DBSnapshotId
-          - StartCollectd
           - LocalAnsibleGitRepo
           - LocalAnsibleGitKey
+          - StartCollectd
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
@@ -1211,6 +1211,27 @@ Resources:
                       - StackName: !Ref "AWS::StackName"
                         Region: !Ref "AWS::Region"
                     - runas=root
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
@@ -1238,6 +1259,8 @@ Resources:
               ignoreErrors: false
             050_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               cfn-hup:
