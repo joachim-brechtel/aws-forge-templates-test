@@ -114,6 +114,9 @@
     ]
   }, {
     "type": "shell",
+    "script": "scripts/install-openjdk.sh"
+  }, {
+    "type": "shell",
     "script": "scripts/write-product-config.sh",
     "environment_vars": [
       "LOCATION={{user `config_location`}}",
@@ -237,5 +240,21 @@
   }, {
     "type": "shell",
     "inline": "sudo cp -f /dev/null /var/log/lastlog"
+  }, {
+    "type": "file",
+    "source": "scripts/j2ee_heap_dump_live",
+    "destination": "/tmp/j2ee_heap_dump_live"
+  }, {
+    "type": "file",
+    "source": "scripts/j2ee_thread_dump",
+    "destination": "/tmp/j2ee_thread_dump"
+  }, {
+    "type": "file",
+    "source": "scripts/j2ee_tools_common.sh",
+    "destination": "/tmp/j2ee_tools_common.sh"
+  }, {
+    "type": "shell",
+    "inline": "sudo chown root:root /tmp/j2ee* && sudo mv -f /tmp/j2ee* /usr/local/bin/"
+
   }]
 }
