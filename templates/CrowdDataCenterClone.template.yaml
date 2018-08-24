@@ -828,6 +828,8 @@ Resources:
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
                     - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
+                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleRepo: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
