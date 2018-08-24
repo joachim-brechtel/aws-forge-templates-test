@@ -23,6 +23,7 @@ function start {
     configureConfluenceHome
     exportCatalinaOpts
     configureConfluenceEnvironmentVariables
+    atl_configureThreadHeapScripts
     if [[ -n "${ATL_AUTOLOGIN_COOKIE_AGE}" ]]; then
         atl_autologinCookieAge "${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_INSTALL_DIR}/confluence/WEB-INF/classes/seraph-config.xml" "${ATL_AUTOLOGIN_COOKIE_AGE}"
     fi

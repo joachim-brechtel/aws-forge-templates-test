@@ -450,3 +450,8 @@ function runLocalAnsible {
         atl_log "Local ansible script does not exist"
     fi
 }
+
+function atl_configureThreadHeapScripts {
+    atl_log "Adding product to j2ee_tools_commons.sh"
+    sed -i "s|{{ run_user }}|${ATL_ENABLED_PRODUCTS}|" /usr/local/bin/j2ee_tools_common.sh >> "${ATL_LOG}" 2>&1
+}

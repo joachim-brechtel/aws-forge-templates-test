@@ -48,6 +48,7 @@ function start {
     installOBR
     exportCatalinaOpts
     configureJiraEnvironmentVariables
+    atl_configureThreadHeapScripts
     if [[ -n "${ATL_DB_NAME}" ]]; then
         configureRemoteDb
     fi
