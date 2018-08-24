@@ -276,6 +276,17 @@ Parameters:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
+  CrowdDownloadUrl:
+    Default: ''
+    Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
+    Type: String
+    ConstraintDescription: Must be a valid Crowd download url
+  CrowdVersion:
+    Default: 3.2.1
+    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
+    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
+    Description: The version of Crowd to install
+    Type: String
   CustomDnsName:
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
@@ -419,17 +430,6 @@ Parameters:
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
-  CrowdDownloadUrl:
-    Default: ''
-    Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
-    Type: String
-    ConstraintDescription: Must be a valid Crowd download url
-  CrowdVersion:
-    Default: 3.2.1
-    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
-    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
-    Description: The version of Crowd to install
-    Type: String
   JvmHeapOverride:
     Default: ''
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
