@@ -58,7 +58,6 @@ Metadata:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
         Parameters:
             - TomcatContextPath
-            - CatalinaOpts
             - JvmHeapOverride
             - DBPoolMaxSize
             - DBPoolMinSize
@@ -85,8 +84,6 @@ Metadata:
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
-      CatalinaOpts:
-        default: Catalina options
       CidrBlock:
         default: Permitted IP range
       ClusterNodeMax:
@@ -191,10 +188,6 @@ Parameters:
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
-    Type: String
-  CatalinaOpts:
-    Default: ''
-    Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
@@ -728,6 +721,13 @@ Mappings:
     us-west-2:
       HVM64: ami-d98ed8a1
       HVMG2: NOT_SUPPORTED
+  CatalinaOpts:
+    prod:
+      Opts: ''
+    stg:
+      Opts: '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true'
+    dr:
+      Opts: '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true'
   JIRAProduct2NameAndVersion:
     All:
       name: jira-all
@@ -808,7 +808,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !FindInMap [CatalinaOpts, !Ref DeployEnvironment, Opts]]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
                     - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
                     - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
