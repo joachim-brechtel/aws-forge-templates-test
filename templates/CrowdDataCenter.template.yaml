@@ -421,11 +421,11 @@ Parameters:
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
   LocalAnsibleGitRepo:
-    Default: 'git@bitbucket.org:atlassian/atlassian-local-ansible-example.git'
+    Default: ''
     Description: For additional node customization, provide repo location to git clone (ie git@bitbucket.org:atlassian/atlassian-local-ansible-example.git)
     Type: String
   LocalAnsibleGitKey:
-    Default: 'gitkey'
+    Default: ''
     Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
     Type: String
   SSLCertificateARN:
