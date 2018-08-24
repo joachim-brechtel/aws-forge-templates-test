@@ -1,6 +1,9 @@
 ---
+# Bring up diffs between this file and the ConfluenceDataCenterClone.template.yaml, JiraDataCenterClone.template.yaml, and CrowdDataCenter.template.yaml
+# As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
+# Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: Atlassian Crowd Data Center STAGING or DR stack
+Description: Atlassian Crowd Data Center Clone Stack
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -253,6 +256,7 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
+      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -267,7 +271,6 @@ Parameters:
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
   CustomDnsName:
-    Default: 'CHANGEME.stg.internal.atlassian.com'
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
@@ -278,6 +281,7 @@ Parameters:
       - db.m4.2xlarge
       - db.m4.4xlarge
       - db.m4.10xlarge
+      - db.m4.16xlarge
       - db.r4.large
       - db.r4.xlarge
       - db.r4.2xlarge
@@ -294,10 +298,9 @@ Parameters:
     ConstraintDescription: 'Must be in the range 1000 - 30000'
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
     MinValue: 1000
-    MaxValue: 3000
+    MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
-    Default: 'password1234'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -322,7 +325,7 @@ Parameters:
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBMultiAZ:
-    Default: false
+    Default: true
     AllowedValues:
       - true
       - false
@@ -397,7 +400,7 @@ Parameters:
     Type: String
   ExternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
@@ -407,7 +410,7 @@ Parameters:
     Type: String
   InternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   CrowdDownloadUrl:
@@ -423,7 +426,7 @@ Parameters:
     Type: String
   JvmHeapOverride:
     Default: ''
-    Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
     Default: ''
@@ -539,7 +542,7 @@ Mappings:
       Jvmheap: 12288m
     c5.large:
       Arch: HVM64
-      Jvmheap: 3072m
+      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
       Jvmheap: 4608m
@@ -666,6 +669,9 @@ Mappings:
     x1.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    x1.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
       HVM64: ami-9d7f1970
@@ -723,6 +729,8 @@ Resources:
             Principal:
               Service: [ec2.amazonaws.com]
             Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
         - PolicyName: CrowdClusterNodePolicy
@@ -762,7 +770,7 @@ Resources:
       - DB
     Metadata:
       Comment: ''
-      'AWS::CloudFormation::Init':
+      AWS::CloudFormation::Init:
         config:
           packages:
             !If
@@ -876,6 +884,8 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/crowd/shared
               ignoreErrors: false
+            050_ensure_ssm:
+              command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           services:
             sysvinit:
               cfn-hup:
@@ -913,7 +923,7 @@ Resources:
       InstanceType: !Ref ClusterNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
-        'Fn::Base64':
+        Fn::Base64:
           !Join
             - ""
             -
