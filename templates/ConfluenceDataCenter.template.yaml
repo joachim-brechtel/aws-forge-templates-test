@@ -57,6 +57,8 @@ Metadata:
           - AutologinCookieAge
           - ConfluenceDownloadUrl
           - DBSnapshotId
+          - LocalAnsibleGitRepo
+          - LocalAnsibleGitKey
           - StartCollectd
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
@@ -153,6 +155,10 @@ Metadata:
         default: Synchrony Heap Size Override
       KeyName:
         default: Key Name *
+      LocalAnsibleGitRepo:
+        default: Git repo for local-ansible
+      LocalAnsibleGitKey:
+        default: Git key for local-ansible
       SSLCertificateARN:
         default: SSL Certificate ARN
       SubDomainName:
@@ -428,6 +434,14 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LocalAnsibleGitRepo:
+    Default: ''
+    Description: For additional node customization, provide repo location to git clone (ie git@bitbucket.org:atlassian/atlassian-local-ansible-example.git)
+    Type: String
+  LocalAnsibleGitKey:
+    Default: ''
+    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
   SubDomainName:
     Description: Leave this field blank to use your stack name as the sub-domain.
     Default: ''
@@ -897,9 +911,12 @@ Resources:
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
+                    - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
+                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
                     - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]]}]
@@ -953,6 +970,27 @@ Resources:
                       - StackName: !Ref "AWS::StackName"
                         Region: !Ref "AWS::Region"
                     - runas=root
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
@@ -980,6 +1018,8 @@ Resources:
               ignoreErrors: false
             050_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               cfn-hup:
@@ -1130,9 +1170,12 @@ Resources:
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_REGION=${HazelcastAWSRegion}", HazelcastAWSRegion: !Ref "AWS::Region"]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE=${ConfluenceClusterNodeRole}", ConfluenceClusterNodeRole: !Ref ConfluenceClusterNodeRole]
                     - !Sub ["ATL_HAZELCAST_NETWORK_AWS_TAG_VALUE=${HazelcastAWSTagValue}", HazelcastAWSTagValue: !Ref "AWS::StackName"]
+                    - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
+                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_SYNCHRONY_MEMORY=-Xmx${AtlJvmHeapSynchrony}", AtlJvmHeapSynchrony: !If [OverrideHeapSynchrony, !Ref 'JvmHeapOverrideSynchrony', '2g']]
                     - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]}]
@@ -1175,6 +1218,27 @@ Resources:
                       - StackName: !Ref "AWS::StackName"
                         Region: !Ref "AWS::Region"
                     - runas=root
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
@@ -1202,6 +1266,8 @@ Resources:
               ignoreErrors: false
             050_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               cfn-hup:

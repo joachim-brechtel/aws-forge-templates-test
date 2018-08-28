@@ -57,6 +57,8 @@ Metadata:
           default: Advanced (Optional)
         Parameters:
           - JiraDownloadUrl
+          - LocalAnsibleGitRepo
+          - LocalAnsibleGitKey
           - StartCollectd
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
@@ -161,6 +163,10 @@ Metadata:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
+      LocalAnsibleGitRepo:
+        default: Git repo for local-ansible
+      LocalAnsibleGitKey:
+        default: Git key for local-ansible
       SSLCertificateARN:
         default: SSL Certificate ARN
       TomcatAcceptCount:
@@ -446,6 +452,14 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LocalAnsibleGitRepo:
+    Default: ''
+    Description: For additional node customization, provide repo location to git clone (ie git@bitbucket.org:atlassian/atlassian-local-ansible-example.git)
+    Type: String
+  LocalAnsibleGitKey:
+    Default: ''
+    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
   SSLCertificateARN:
     Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
@@ -829,6 +843,7 @@ Resources:
                     - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
                     - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
+                    - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/jira", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JIRA_FULL_DISPLAY_NAME=${JiraFullDisplayName}", JiraFullDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "fulldisplayname"]]
@@ -837,6 +852,8 @@ Resources:
                     - !Sub ["ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}", JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]]
                     - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
+                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
@@ -886,6 +903,27 @@ Resources:
                       - StackName: !Ref "AWS::StackName"
                         Region: !Ref "AWS::Region"
                     - runas=root
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
@@ -907,6 +945,8 @@ Resources:
               ignoreErrors: false
             050_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               cfn-hup:
