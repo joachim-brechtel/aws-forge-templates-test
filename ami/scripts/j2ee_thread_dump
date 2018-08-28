@@ -9,8 +9,8 @@ upload_s3() {
   local IP=$(curl -f --silent http://169.254.169.254/latest/meta-data/local-ipv4 || echo "127.0.0.1")
   source /etc/atl
   local ACCOUNT_ID=`aws sts get-caller-identity | grep Account | awk {'print $2'} | sed 's/\"\|,//g'`
-  local BUCKET=atl-forge-diagnostics-${ACCOUNT_ID}
-  local DEST="${BUCKET}/${ATL_AWS_STACK_NAME}/$(date +%Y-%m-%d)"
+  local BUCKET=atl-forge-${ACCOUNT_ID}
+  local DEST="${BUCKET}/diagnostics/${ATL_AWS_STACK_NAME}/$(date +%Y-%m-%d)"
   aws s3 cp "${FILE}" "s3://${DEST}/${ATL_AWS_STACK_NAME}_${IP}_${FILENAME}" || echo "Upload of ${ATL_AWS_STACK_NAME}_${IP}_${FILENAME} to ${DEST} Failed"
 }
 
