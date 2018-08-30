@@ -426,18 +426,28 @@ function installOBR {
         JIRA_VERSION=$(cat /media/atl/${ATL_JIRA_NAME}.version)
         PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
         atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
-        JSD_OBR_NAME=$(aws s3 ls s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/|grep jira-servicedesk-application|grep obr|awk '{print $4}')
-        OBR_S3_LOCATION="s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/${JSD_OBR_NAME}"
-        # if obr doesnt exist on efs, fetch it
-        if [ ! -f /media/atl/${JSD_OBR_NAME} ]; then
+        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep $JIRA_VERSION |  awk '{print $NF}')
+        MPLACE_REDIRECT_URL=$(curl -Ls $MPLACE_URL -o /dev/null -w %{url_effective})
+        MPLACE_FILE=$(basename $MPLACE_REDIRECT_URL)
+        # if obr doesnt exist on efs, try to fetch it first from marketplace
+        if [ ! -f /media/atl/${MPLACE_FILE} ]; then
+            curl -s $MPLACE_REDIRECT_URL -o /media/atl/${MPLACE_FILE}
+            ZIP_FILENAME=$MPLACE_FILE
+        fi
+        # if obr still doesnt exist on efs, try to fetch it from downlaods-internal
+        if [ ! -f /media/atl/${MPLACE_FILE} ]; then
+            INTERNAL_OBR_S3_LOCATION="s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/${INTERNAL_JSD_OBR_NAME}"
+            INTERNAL_JSD_OBR_NAME=$(aws s3 ls s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/|grep jira-servicedesk-application|grep obr|awk '{print $4}')
             atl_log "OBR does not exist in shared-home, downloading from ${OBR_S3_LOCATION}"
             aws s3 cp ${OBR_S3_LOCATION} /media/atl/${JSD_OBR_NAME}
+            ZIP_FILENAME=$INTERNAL_JSD_OBR_NAME
         fi
+        if [ -e /media/atl/${ZIP_FILENAME} ]; then atl_log "Retrieved JSD OBR ${ZIP_FILENAME} for Jira ${JIRA_VERSION}"; fi
         if ! mkdir -p ${PLUGIN_DIR};then echo "plugins dir already exists"; fi
         if ! chown -R jira:jira /media/atl/jira/shared/plugins; then echo "chown of plugins failed"; fi
         # and unpack the JARS to /media/atl/jira/shared/plugins/installed-plugins
         cd /media/atl/jira/shared/plugins/installed-plugins
-        unzip -nj /media/atl/${JSD_OBR_NAME} '*.jar'
+        unzip -nj /media/atl/${ZIP_FILENAME} '*.jar'
     fi
 }
 
