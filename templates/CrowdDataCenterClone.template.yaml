@@ -1084,6 +1084,7 @@ Resources:
         Timeout: PT20M
   NFSR53name:
     Type: AWS::Route53::RecordSet
+    Condition: UseHostedZone
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 A rec for the nfs
