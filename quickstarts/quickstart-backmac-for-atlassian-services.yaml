@@ -98,7 +98,7 @@ Parameters:
       Subnets (two or more) where your cluster nodes and other internal
       infrastructure will be deployed. MUST be within the selected VPC.
   KeyName:
-    Default: WPE-GenericKeyPair-20161102
+    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Type: 'AWS::EC2::KeyPair::KeyName'
     Description: The EC2 Key Pair to allow SSH access to the instances
