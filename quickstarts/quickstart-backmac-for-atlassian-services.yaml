@@ -1,0 +1,1517 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Backmac (Backup Machine)
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Backmac Basics
+        Parameters:
+          - BackmacDRRegion
+          - BackupSchedule
+          - S3LambdaBucketPrefix
+      - Label:
+          default: Backupmachine node
+        Parameters:
+          - NodeInstanceType
+      - Label:
+          default: Networking
+        Parameters:
+          - AccessCIDR
+          - AssociatePublicIpAddress
+          - InternalSubnets
+          - KeyName
+          - VPC
+      - Label:
+          default: Integrations
+        Parameters:
+          - StrideRoomAPIURL
+          - StrideRoomToken
+    ParameterLabels:
+      AccessCIDR:
+        default: Permitted IP range
+      AssociatePublicIpAddress:
+        default: Assign public IP
+      BackmacDRRegion:
+        default: Region to copy snapshots to
+      BackupSchedule:
+        default: Cron scheule for backups
+      InternalSubnets:
+        default: Internal subnets *
+      KeyName:
+        default: Key Name *
+      NodeInstanceType:
+        default: Backupmachine node instance type
+      S3LambdaBucketPrefix:
+        default: S3 Lambda Bucket Name
+      VPC:
+        default: VPC *
+Parameters:
+  AccessCIDR:
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    Description: >-
+      The CIDR IP range that is permitted to access the Backupmachine. Use
+      0.0.0.0/0 if you want public access from the internet.
+    Default: 0.0.0.0/0
+    MinLength: 9
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    MaxLength: 18
+    Type: String
+  AssociatePublicIpAddress:
+    Default: false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Type: String
+    Description: Controls if the EC2 instances are assigned a public IP address
+    AllowedValues:
+      - true
+      - false
+  BackmacDRRegion:
+    Default: us-east-1
+    Type: String
+    Description: Must be a valid AWS region.
+    AllowedValues:
+      - ap-south-1
+      - eu-west-3
+      - eu-west-2
+      - eu-west-1
+      - ap-northeast-2
+      - ap-northeast-1
+      - sa-east-1
+      - ca-central-1
+      - ap-southeast-1
+      - ap-southeast-2
+      - eu-central-1
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+  BackupSchedule:
+    AllowedPattern: >-
+      ^\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|\/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|\/|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\/|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|\/|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|\/|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\/|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\/|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|\/|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\/|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|\/|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|\/|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|\/|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|\/|\,)(?:|\d{4}))?)*))$
+    Default: 0 0 * * ? *
+    Type: String
+    Description: A cron based backup schedule to run backups (in UTC).
+  InternalSubnets:
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: >-
+      Subnets (two or more) where your cluster nodes and other internal
+      infrastructure will be deployed. MUST be within the selected VPC.
+  KeyName:
+    Default: ''
+    ConstraintDescription: Must be the name of an existing EC2 Key Pair.
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: The EC2 Key Pair to allow SSH access to the instances
+  NodeInstanceType:
+    Default: c5.xlarge
+    ConstraintDescription: Must be one of the provided instance types
+    Type: String
+    Description: Backupmachine node instance type.
+    AllowedValues:
+      - c5.18xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.large
+      - c5.xlarge
+      - c5d.18xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.large
+      - c5d.xlarge
+      - h1.16xlarge
+      - h1.2xlarge
+      - h1.4xlarge
+      - h1.8xlarge
+      - i3.16xlarge
+      - i3.2xlarge
+      - i3.4xlarge
+      - i3.8xlarge
+      - i3.large
+      - i3.metal
+      - i3.xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.large
+      - m5.xlarge
+      - m5d.12xlarge
+      - m5d.24xlarge
+      - m5d.2xlarge
+      - m5d.4xlarge
+      - m5d.large
+      - m5d.xlarge
+      - r4.16xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.large
+      - r4.xlarge
+  S3LambdaBucketPrefix:
+    Default: 'atlassian-aws-lambdaresources'
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Description: S3 bucket name for the Quick Start assets. Quick Start bucket name
+      can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Type: String
+  StrideRoomAPIURL:
+    Default: ''
+    Type: String
+    Description: The Stride Room API URL for notifications
+  StrideRoomToken:
+    Default: ''
+    Type: String
+    Description: The Stride Room Token for notifications
+  VPC:
+    ConstraintDescription: Must be the ID of a VPC.
+    Type: 'AWS::EC2::VPC::Id'
+    Description: Virtual Private Cloud
+
+Mappings:
+  AWSRegionArch2AMI:
+    ap-south-1:
+      HVM64: ami-0d7b208dc5b0fe76a
+    us-east-1:
+      HVM64: ami-0ff8a91507f77f867
+    ap-northeast-1:
+      HVM64: ami-094524ca01aa224d2
+    ap-southeast-2:
+      HVM64: ami-01ab4a3bc7e75f44a
+    eu-west-1:
+      HVM64: ami-047bb4163c506cd98
+    ap-southeast-1:
+      HVM64: ami-0f248bcac6ff5bc17
+    eu-west-2:
+      HVM64: ami-f976839e
+    ca-central-1:
+      HVM64: ami-0b18956f
+    ap-northeast-2:
+      HVM64: ami-07d5665d0c129d8b7
+    us-west-2:
+      HVM64: ami-a0cfeed8
+    us-west-1:
+      HVM64: ami-0bdb828fd58c52235
+    eu-central-1:
+      HVM64: ami-0233214e13e500f77
+    sa-east-1:
+      HVM64: ami-07b14488da8ea02a0
+    us-east-2:
+      HVM64: ami-0b59bfac6be064b78
+
+Conditions:
+  UsePublicIp: !Equals
+    - !Ref AssociatePublicIpAddress
+    - 'true'
+
+Resources:
+  backmacsuccessloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_success
+  BackmacNode:
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT20M
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      UserData: !Base64
+        'Fn::Sub':
+          - >-
+            #!/bin/bash -xe
+
+            exec > >(tee /var/log/user-data.log|logger -t user-data ) 2>&1
+
+            /bin/mkdir -p /media/atl
+
+            /bin/mkdir -p /backup
+
+            yum -y update aws-cfn-bootstrap
+
+            yum -y install nfs-utils amazon-efs-utils nvme-cli
+
+            yum -y install yum -y install
+            https://rpmfind.net/linux/fedora/linux/development/rawhide/Everything/x86_64/os/Packages/r/rsync-3.1.3-4.fc29.x86_64.rpm
+
+            ${Param1}chmod u+x /usr/local/bin/parallel_sync
+
+            ${Param2}${Param3}${Param4}${Param5}
+          - Param5: !Sub
+              - ' --resource BackmacNode --region ${Region}'
+              - Region: !Ref 'AWS::Region'
+            Param4: !Sub
+              - '/opt/aws/bin/cfn-signal -e $? --stack ${StackName}'
+              - StackName: !Ref 'AWS::StackName'
+            Param3: !Sub
+              - |2
+                 --resource BackmacNode --region ${Region}
+              - Region: !Ref 'AWS::Region'
+            Param2: !Sub
+              - '/opt/aws/bin/cfn-init -v --stack ${StackName}'
+              - StackName: !Ref 'AWS::StackName'
+            Param1: !Sub
+              - >
+                /usr/bin/aws s3 cp
+                s3://atlassian-aws-resources/scripts/parallel_sync
+                /usr/local/bin/parallel_sync
+              - Region: !Ref 'AWS::Region'
+                AccountId: !Ref 'AWS::AccountId'
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - '${StackName} Backup Node'
+            - StackName: !Ref 'AWS::StackName'
+        - Key: Cluster
+          Value: !Ref 'AWS::StackName'
+        - Key: service_name
+          Value: !Ref 'AWS::StackName'
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - HVM64
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdc
+          VirtualName: ephemeral0
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref BackmacNodeInstanceProfile
+      InstanceType: !Ref NodeInstanceType
+      NetworkInterfaces:
+        - SubnetId: !Select
+            - 0
+            - !Ref InternalSubnets
+          DeviceIndex: 0
+          DeleteOnTermination: true
+          GroupSet:
+            - !Ref SecurityGroup
+          AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+    Metadata:
+      'AWS::CloudFormation::Init':
+        config:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub
+                - |-
+                  [main]
+                  ${Param1}
+                  ${Param2}
+                - Param2: !Sub
+                    - 'region=${Region}'
+                    - Region: !Ref 'AWS::Region'
+                  Param1: !Sub
+                    - 'stack=${StackId}'
+                    - StackId: !Ref 'AWS::StackId'
+              owner: root
+              group: root
+              mode: 256
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub
+                - |-
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.BackmacNode.Metadata.AWS::CloudFormation::Init
+                  ${Param1}
+                  runas=root
+                - Param1: !Sub
+                    - >-
+                      action=/opt/aws/bin/cfn-init -v --stack ${StackName}
+                      --resource BackmacNode --region ${Region}
+                    - StackName: !Ref 'AWS::StackName'
+                      Region: !Ref 'AWS::Region'
+          services:
+            sysvinit:
+              rpcbind:
+                ensureRunning: true
+                packages:
+                  yum:
+                    - nfs-utils
+                enabled: true
+          packages:
+            yum:
+              amazon-ssm-agent: []
+              nvme-cli: []
+              nfs-utils: []
+              amazon-efs-utils: []
+  backmacefs2ebs:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_efs2ebs.py.zip
+      FunctionName: backmac_efs2ebs
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_efs2ebs.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 300
+      Runtime: python3.6
+      Description: ''
+  backmaccleanuploggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_cleanup
+  backmacqueuenext:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_queue_next.py.zip
+      FunctionName: backmac_queue_next
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_queue_next.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 3
+      Runtime: python3.6
+      Description: ''
+  backmacrdssnap:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_rds_snap.py.zip
+      FunctionName: backmac_rds_snap
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_rds_snap.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 30
+      Runtime: python3.6
+      Description: ''
+  SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      SecurityGroupIngress:
+        - ToPort: 22
+          FromPort: 22
+          CidrIp: !Ref AccessCIDR
+          IpProtocol: tcp
+      VpcId: !Ref VPC
+      GroupDescription: Security group allowing SSH and NFS access
+  backmacrds2drloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_rds2dr
+  backmacefs2ebsstatus:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_efs2ebs_status.py.zip
+      FunctionName: backmac_efs2ebs_status
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_efs2ebs_status.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 30
+      Runtime: python3.6
+      Description: ''
+  backmacefs2ebsstatusloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_efs2ebs_status
+  backmacqueuenextloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_queue_next
+  backmacsuccess:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_success.py.zip
+      FunctionName: backmac_success
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Environment:
+        Variables:
+          room_token: !Ref StrideRoomToken
+          room_api_url: !Ref StrideRoomAPIURL
+      Handler: backmac_success.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 3
+      Runtime: python3.6
+      Description: ''
+  backmacruncomplete:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_runcomplete.py.zip
+      FunctionName: backmac_runcomplete
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Environment:
+        Variables:
+          room_token: !Ref StrideRoomToken
+          room_api_url: !Ref StrideRoomAPIURL
+      Handler: backmac_runcomplete.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: ''
+  BackmacNodeInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref BackmacRole
+  backmacrequeuenotify:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_requeue_notify.py.zip
+      FunctionName: backmac_requeue_notify
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Environment:
+        Variables:
+          room_token: !Ref StrideRoomToken
+          room_api_url: !Ref StrideRoomAPIURL
+      Handler: backmac_requeue_notify.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: ''
+  BackmacBackupSchedule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      State: ENABLED
+      ScheduleExpression: !Sub
+        - 'cron(${BackupSchedule})'
+        - BackupSchedule: !Ref BackupSchedule
+      Name: Backmac_Backups
+      Targets:
+        - Id: Backmac_RunBackups
+          Arn: !GetAtt
+            - backmacrunbackups
+            - Arn
+        - Id: Backmac_SnapshotCleaner
+          Arn: !GetAtt
+            - backmacsnapshotcleaner
+            - Arn
+      Description: Schedule for Backmac Backups
+  backmaccleanup:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_cleanup.py.zip
+      FunctionName: backmac_cleanup
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_cleanup.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 300
+      Runtime: python3.6
+      Description: ''
+  backmacrequeuestack:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_requeue_stack.py.zip
+      FunctionName: backmac_requeue_stack
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_requeue_stack.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: ''
+  backmacebs2drstatus:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_ebs2dr_status.py.zip
+      FunctionName: backmac_ebs2dr_status
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_ebs2dr_status.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: ''
+  backmacefs2ebsloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_efs2ebs
+  SecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      SourceSecurityGroupId: !Ref SecurityGroup
+      FromPort: -1
+      ToPort: -1
+      GroupId: !Ref SecurityGroup
+      IpProtocol: -1
+  backmacrdssnaploggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_rds_snap
+  backmacreadqueueloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_read_queue
+  backmaccreateebs:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_create_ebs.py.zip
+      FunctionName: backmac_create_ebs
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_create_ebs.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: Creates an EBS volume
+  backmacebssnaploggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_ebs_snap
+  backmacrunbackupsloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_runbackups
+  backmacfailloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_fail
+  backmacebs2drloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_ebs2dr
+  backmacmountefsloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_mount_efs
+  backmacmountefs:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_mount_efs.py.zip
+      FunctionName: backmac_mount_efs
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+        - Value: batch-get-job-python27
+          Key: 'lambda-console:blueprint'
+      MemorySize: 128
+      Handler: backmac_mount_efs.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 30
+      Runtime: python3.6
+      Description: mount EFS to backup machine
+  backmacruncompleteloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_runcomplete
+  backmacrds2drstatusloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_rds2dr_status
+  backmacrunbackups:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_runbackups.py.zip
+      FunctionName: backmac_runbackups
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Environment:
+        Variables:
+          room_token: !Ref StrideRoomToken
+          room_api_url: !Ref StrideRoomAPIURL
+          dr_region: !Ref BackmacDRRegion
+      Handler: backmac_runbackups.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: Finds stacks to add to backup queue
+  backmacebssnap:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_ebs_snap.py.zip
+      FunctionName: backmac_ebs_snap
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_ebs_snap.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 30
+      Runtime: python3.6
+      Description: ''
+  backmacfail:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_fail.py.zip
+      FunctionName: backmac_fail
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Environment:
+        Variables:
+          room_token: !Ref StrideRoomToken
+          room_api_url: !Ref StrideRoomAPIURL
+      Handler: backmac_fail.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 3
+      Runtime: python3.6
+      Description: ''
+  backmacrequeuestackloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_requeue_stack
+  backmacstatemachine:
+    Type: 'AWS::StepFunctions::StateMachine'
+    Properties:
+      RoleArn: !GetAtt
+        - BackmacRole
+        - Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "Atlassian Service backup orchestration state machine",
+            "StartAt": "read_backmac_queue",
+            "States": {
+              "read_backmac_queue": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["KeyError"],
+                    "Next": "BackupRunComplete"
+                  },
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification",
+                    "ResultPath": "$.error"
+                  }
+                ],
+                "Resource": "${backmac_read_queueArn}",
+                "Next": "precleanup"
+              },
+              "precleanup": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification",
+                    "ResultPath": "$.error"
+                  }
+                ],
+                "Resource": "${backmac_cleanupArn}",
+                "Next": "mount_efs"
+              },
+              "mount_efs": {
+                "Type": "Task",
+                "Catch": [
+                 {
+                    "ErrorEquals": ["InvalidInstanceId"],
+                    "Next": "RequeueNotification",
+                    "ResultPath": "$.error"
+                  },
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification",
+                    "ResultPath": "$.error"
+                  }
+                ],
+                "Resource": "${backmac_mount_efsArn}",
+                "Next": "ebsvolume_waiter"
+              },
+              "ebsvolume_waiter": {
+                "Type": "Wait",
+                "Seconds": 20,
+                "Next": "ebs_status"
+              },
+              "ebs_status": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["IndexError"],
+                    "Next": "create_volume",
+                    "ResultPath": "$.error"
+                  },
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_ebs_statusArn}",
+                "Next": "ebsvolume_available?"
+              },
+              "ebsvolume_available?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.ebsvolume_status",
+                    "StringEquals": "Failed",
+                    "Next": "FailNotification"
+                  },
+                  {
+                    "Variable": "$.ebsvolume_status",
+                    "StringEquals": "Available",
+                    "Next": "mount_ebs"
+                  }
+                ],
+                "Default": "ebsvolume_waiter"
+              },
+              "mount_ebs": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["IndexError"],
+                    "Next": "create_volume",
+                    "ResultPath": "$.error"
+                  },
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_mount_ebsArn}",
+                "Next": "resize_choice"
+              },
+              "resize_choice": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.resize_required",
+                    "StringEquals": "True",
+                    "Next": "resize_volume"
+                  }
+                ],
+                "Default": "rds_snap"
+              },
+              "create_volume": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_create_ebsArn}",
+                "Next": "ebsvolume_waiter"
+              },
+              "resize_volume": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification",
+                    "ResultPath": "$.error"
+                  }
+                ],
+                "Resource": "${backmac_resize_ebsArn}",
+                "Next": "RequeueNotification"
+              },
+              "rds_snap": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification",
+                    "ResultPath": "$.error"
+                  }
+                ],
+                "Resource": "${backmac_rds_snapArn}",
+                "Next": "efs2ebs"
+              },
+              "efs2ebs": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_efs2ebsArn}",
+                "Next": "efs2ebs_waiter"
+              },
+              "efs2ebs_waiter": {
+                "Type": "Wait",
+                "Seconds": 120,
+                "Next": "efs2ebs_status"
+              },
+              "efs2ebs_status": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_efs2ebs_statusArn}",
+                "Next": "efs2ebs_complete?"
+              },
+              "efs2ebs_complete?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.rsync_status",
+                    "StringEquals": "Failed",
+                    "Next": "FailNotification"
+                  },
+                  {
+                    "Variable": "$.rsync_status",
+                    "StringEquals": "Success",
+                    "Next": "ebs_snap"
+                  }
+                ],
+                "Default": "efs2ebs_waiter"
+              },
+              "ebs_snap": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_ebs_snapArn}",
+                "Next": "cleanup"
+              },
+              "cleanup": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_cleanupArn}",
+                "Next": "queue_next_backup"
+              },
+              "queue_next_backup": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_queue_nextArn}",
+                "Next": "snapshot_waiter"
+              },
+              "snapshot_waiter": {
+                "Type": "Wait",
+                "Seconds": 60,
+                "Next": "snapshot_status"
+              },
+              "snapshot_status": {
+                "Type": "Task",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Resource": "${backmac_snap_statusArn}",
+                "Next": "snapshot_complete?"
+              },
+              "snapshot_complete?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.snapshot_status",
+                    "StringEquals": "failed",
+                    "Next": "FailNotification"
+                  },
+                  {
+                    "Variable": "$.snapshot_status",
+                    "StringEquals": "complete",
+                    "Next": "dr_fork"
+                  }
+                ],
+                "Default": "snapshot_waiter"
+              },
+              "dr_fork": {
+                "Type": "Parallel",
+                "Catch": [
+                  {
+                    "ErrorEquals": ["States.ALL"],
+                    "Next": "FailNotification"
+                  }
+                ],
+                "Branches": [
+                  {
+                    "StartAt": "ebs2dr",
+                    "States": {
+                      "ebs2dr": {
+                        "Type": "Task",
+                        "Catch": [
+                          {
+                            "ErrorEquals": ["States.ALL"],
+                            "Next": "ebs2dr_failed"
+                          }
+                        ],
+                        "Resource": "${backmac_ebs2drArn}",
+                        "Next": "ebs2dr_waiter"
+                      },
+                      "ebs2dr_waiter": {
+                        "Type": "Wait",
+                        "Seconds": 30,
+                        "Next": "ebs2dr_status"
+                      },
+                      "ebs2dr_status": {
+                        "Type": "Task",
+                        "Catch": [
+                          {
+                            "ErrorEquals": ["States.ALL"],
+                            "Next": "ebs2dr_failed"
+                          }
+                        ],
+                        "Resource": "${backmac_ebs2dr_statusArn}",
+                        "Next": "ebs2dr_complete?"
+                      },
+                      "ebs2dr_complete?": {
+                        "Type": "Choice",
+                        "Choices": [
+                          {
+                            "Variable": "$.ebs2dr_status",
+                            "StringEquals": "failed",
+                            "Next": "ebs2dr_failed"
+                          },
+                          {
+                            "Variable": "$.ebs2dr_status",
+                            "StringEquals": "completed",
+                            "Next": "ebs2dr_final"
+                          }
+                        ],
+                        "Default": "ebs2dr_waiter"
+                      },
+                      "ebs2dr_failed": {
+                        "Type": "Fail",
+                        "Cause": "ebs2dr Job Failed",
+                        "Error": "DescribeJob returned FAILED"
+                      },
+                      "ebs2dr_final": {
+                        "Type": "Task",
+                        "Resource": "${backmac_ebs2dr_statusArn}",
+                        "End": true
+                      }
+                    }
+                  },
+                  {
+                    "StartAt": "rds2dr",
+                    "States": {
+                      "rds2dr": {
+                        "Type": "Task",
+                        "Catch": [
+                          {
+                            "ErrorEquals": ["States.ALL"],
+                            "Next": "rds2dr_failed"
+                          }
+                        ],
+                        "Resource": "${backmac_rds2drArn}",
+                        "Next": "rds2dr_waiter"
+                      },
+                      "rds2dr_waiter": {
+                        "Type": "Wait",
+                        "Seconds": 30,
+                        "Next": "rds2dr_status"
+                      },
+                      "rds2dr_status": {
+                        "Type": "Task",
+                        "Catch": [
+                          {
+                            "ErrorEquals": ["States.ALL"],
+                            "Next": "rds2dr_failed"
+                          }
+                        ],
+                        "Resource": "${backmac_rds2dr_statusArn}",
+                        "Next": "rds2dr_complete?"
+                      },
+                      "rds2dr_complete?": {
+                        "Type": "Choice",
+                        "Choices": [
+                          {
+                            "Variable": "$.rds2dr_status",
+                            "StringEquals": "failed",
+                            "Next": "rds2dr_failed"
+                          },{
+                            "Variable": "$.rds2dr_status",
+                            "StringEquals": "available",
+                            "Next": "rds2dr_final"
+                          }
+                        ],
+                        "Default": "rds2dr_waiter"
+                      },
+                      "rds2dr_failed": {
+                        "Type": "Fail",
+                        "Cause": "rds2dr Job Failed",
+                        "Error": "DescribeJob returned FAILED"
+                      },
+                      "rds2dr_final": {
+                        "Type": "Task",
+                        "Resource": "${backmac_rds2dr_statusArn}",
+                        "End": true
+                      }
+                    }
+                  }
+                ],
+                "Next": "SuccessNotification"
+              },
+              "RequeueNotification": {
+                "Type": "Task",
+                "Resource": "${backmac_requeue_notifyArn}",
+                "Next": "RequeueStack"
+              },
+              "FailNotification": {
+                "Type": "Task",
+                "Resource": "${backmac_failArn}",
+                "Next": "FailClean"
+              },
+              "FailClean": {
+                "Type": "Task",
+                "Resource": "${backmac_cleanupArn}",
+                "Next": "FailRequeue"
+              },
+              "FailRequeue": {
+                "Type": "Task",
+                "Resource": "${backmac_queue_nextArn}",
+                "Next": "FailState"
+              },
+              "FailState": {
+                "Type": "Fail",
+                "Error": "BackupFailed",
+                "Cause": "Badness"
+              },
+              "SuccessNotification": {
+                "Type": "Task",
+                "Resource": "${backmac_successArn}",
+                "Next": "SuccessState"
+              },
+              "BackupRunComplete": {
+                "Type": "Task",
+                "Resource": "${backmac_runcompleteArn}",
+                "End": true
+              },
+              "RequeueStack": {
+                "Type": "Task",
+                "Resource": "${backmac_requeue_stackArn}",
+                "Next": "FailRequeue"
+              },
+              "SuccessState": {
+                "Type": "Succeed"
+              }
+            }
+          }
+        - backmac_snap_statusArn: !GetAtt
+            - backmacsnapstatus
+            - Arn
+          backmac_resize_ebsArn: !GetAtt
+            - backmacresizeebs
+            - Arn
+          backmac_rds2dr_statusArn: !GetAtt
+            - backmacrds2drstatus
+            - Arn
+          backmac_rds_snapArn: !GetAtt
+            - backmacrdssnap
+            - Arn
+          backmac_runcompleteArn: !GetAtt
+            - backmacruncomplete
+            - Arn
+          backmac_ebs2drArn: !GetAtt
+            - backmacebs2dr
+            - Arn
+          backmac_rds2drArn: !GetAtt
+            - backmacrds2dr
+            - Arn
+          backmac_ebs_statusArn: !GetAtt
+            - backmacebsstatus
+            - Arn
+          backmac_ebs_snapArn: !GetAtt
+            - backmacebssnap
+            - Arn
+          backmac_efs2ebsArn: !GetAtt
+            - backmacefs2ebs
+            - Arn
+          backmac_efs2ebs_statusArn: !GetAtt
+            - backmacefs2ebsstatus
+            - Arn
+          backmac_successArn: !GetAtt
+            - backmacsuccess
+            - Arn
+          backmac_requeue_notifyArn: !GetAtt
+            - backmacrequeuenotify
+            - Arn
+          backmac_cleanupArn: !GetAtt
+            - backmaccleanup
+            - Arn
+          backmac_create_ebsArn: !GetAtt
+            - backmaccreateebs
+            - Arn
+          backmac_requeue_stackArn: !GetAtt
+            - backmacrequeuestack
+            - Arn
+          backmac_ebs2dr_statusArn: !GetAtt
+            - backmacebs2drstatus
+            - Arn
+          backmac_mount_efsArn: !GetAtt
+            - backmacmountefs
+            - Arn
+          backmac_mount_ebsArn: !GetAtt
+            - backmacmountebs
+            - Arn
+          backmac_failArn: !GetAtt
+            - backmacfail
+            - Arn
+          backmac_read_queueArn: !GetAtt
+            - backmacreadqueue
+            - Arn
+          backmac_queue_nextArn: !GetAtt
+            - backmacqueuenext
+            - Arn
+      StateMachineName: backup_machine
+  BackmacRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonElasticFileSystemReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AmazonSQSFullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole'
+      Policies:
+        - PolicyName: BackmacNodePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'cloudformation:DescribeStacks'
+                  - 'cloudformation:ListExports'
+                  - 'ec2:AttachVolume'
+                  - 'ec2:CreateVolume'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeInstanceAttribute'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DescribeVolumeAttribute'
+                  - 'ec2:DescribeVolumeStatus'
+                  - 'ec2:DescribeVolumesModifications'
+                  - 'ec2:DetachVolume'
+                  - 'ec2:ModifyInstanceAttribute'
+                  - 'ec2:ModifyVolume'
+                  - 'ec2:ModifyVolumeAttribute'
+                  - 'elasticfilesystem:DescribeMountTargets'
+                  - 'lambda:InvokeFunction'
+                  - 'rds:CreateDBSnapshot'
+                  - 'rds:CreateDBClusterSnapshot'
+                  - 'rds:CopyDBClusterSnapshot'
+                  - 'rds:CopyDBSnapshot'
+                  - 'rds:DeleteDBClusterSnapshot'
+                  - 'rds:DeleteDBSnapshot'
+                  - 'rds:DescribeDBClusterSnapshotAttributes'
+                  - 'rds:DescribeDBSnapshotAttributes'
+                  - 'rds:DescribeDBSnapshots'
+                  - 'rds:ListTagsForResource'
+                  - 'rds:ModifyDBClusterSnapshotAttribute'
+                  - 'rds:ModifyDBSnapshotAttribute'
+                  - 'ssm:GetCommandInvocation'
+                  - 'ssm:ListCommands'
+                  - 'ssm:SendCommand'
+                  - 'states:StartExecution'
+                Resource:
+                  - '*'
+                Effect: Allow
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub
+                  - 'states.${Region}.amazonaws.com'
+                  - Region: !Ref 'AWS::Region'
+                - ec2.amazonaws.com
+                - lambda.amazonaws.com
+                - sqs.amazonaws.com
+  backmacsnapshotcleaner:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_snapshot_cleaner.py.zip
+      FunctionName: backmac_snapshot_cleaner
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_snapshot_cleaner.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: Cleans up old snapshots from EBS & RDS based off their tags
+  backmacebsstatus:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_ebs_status.py.zip
+      FunctionName: backmac_ebs_status
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_ebs_status.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 30
+      Runtime: python3.6
+      Description: ''
+  backmacrds2dr:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_rds2dr.py.zip
+      FunctionName: backmac_rds2dr
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_rds2dr.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 300
+      Runtime: python3.6
+      Description: ''
+  backmacebs2drstatusloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_ebs2dr_status
+  backmacresizeebs:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_resize_ebs.py.zip
+      FunctionName: backmac_resize_ebs
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_resize_ebs.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 300
+      Runtime: python3.6
+      Description: ''
+  backmacrds2drstatus:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_rds2dr_status.py.zip
+      FunctionName: backmac_rds2dr_status
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_rds2dr_status.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 60
+      Runtime: python3.6
+      Description: ''
+  backmaccreateebsloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_create_ebs
+  backmacreadqueue:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_read_queue.py.zip
+      FunctionName: backmac_read_queue
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_read_queue.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 30
+      Runtime: python3.6
+      Description: Reads the Backmac queue and looks for jobs
+  backmacsnapstatus:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_snap_status.py.zip
+      FunctionName: backmac_snap_status
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+        - Value: batch-get-job-python27
+          Key: 'lambda-console:blueprint'
+      MemorySize: 128
+      Handler: backmac_snap_status.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 15
+      Runtime: python3.6
+      Description: have local snapshots completed?
+  BackmacSQSQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      ContentBasedDeduplication: false
+      ReceiveMessageWaitTimeSeconds: 0
+      DelaySeconds: 0
+      FifoQueue: true
+      VisibilityTimeout: 30
+      QueueName: backmac.fifo
+  backmacmountebs:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_mount_ebs.py.zip
+      FunctionName: backmac_mount_ebs
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_mount_ebs.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 180
+      Runtime: python3.6
+      Description: ''
+  backmacsnapstatusloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_snap_status
+  backmacebs2dr:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: backmac_ebs2dr.py.zip
+      FunctionName: backmac_ebs2dr
+      Tags:
+        - Value: SAM
+          Key: 'lambda:createdBy'
+      MemorySize: 128
+      Handler: backmac_ebs2dr.lambda_handler
+      Role: !GetAtt
+        - BackmacRole
+        - Arn
+      Timeout: 300
+      Runtime: python3.6
+      Description: ''
+  backmacmountebsloggroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/backmac_mount_ebs
+
+Outputs:
+  BackmacAZ:
+    Export:
+      Name: BackmacAZ
+    Description: The Load Balancer URL
+    Value: !GetAtt
+      - BackmacNode
+      - AvailabilityZone
+  BackmacNode:
+    Export:
+      Name: BackmacNode
+    Description: The name of the Backupmachine node
+    Value: !Ref BackmacNode
+  BackmacSG:
+    Export:
+      Name: BackmacSG
+    Description: The Backmac Security Group
+    Value: !Ref SecurityGroup
+  BackmacSQSQueue:
+    Description: The SQS Queue ARN
+    Value: !GetAtt
+      - BackmacSQSQueue
+      - Arn
+  SGname:
+    Export:
+      Name: !Sub '${AWS::StackName}-SGname'
+    Description: The name of the SecurityGroup
+    Value: !Ref SecurityGroup
