@@ -32,6 +32,9 @@ pipelines:
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName
               # did backmack get "Create_Complete"?
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName | grep Backmac
+              # did forge come up ?
+              - export FORGEURL=$(aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Forge"))|.StackName')
+              - curl --fail ${FORGEURL}/status
         - step:
             name: Cleanup Atlassian Services Stack
             trigger: manual
