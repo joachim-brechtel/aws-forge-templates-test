@@ -12,8 +12,8 @@ pipelines:
               - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
               - aws configure set default.region ${CI_DEFAULT_REGION}
-              # override region manually
-              - aws configure set default.region us-west-1
+              # override region manually, if needed, on the line below
+              - aws configure set default.region us-east-2
               - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
               - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
               - cd ami
@@ -30,6 +30,8 @@ pipelines:
               - if [ ! -e "vpcExists" ]; then aws cloudformation create-stack --stack-name ATL --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-services-stack.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
               - if [ ! -e "vpcExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATL; fi
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName
+              # did backmack get "Create_Complete"?
+              - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName | grep backmac
         - step:
             name: Cleanup Atlassian Services Stack
             trigger: manual
@@ -40,8 +42,8 @@ pipelines:
               - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
               - aws configure set default.region ${CI_DEFAULT_REGION}
-              # override region manually
-              - aws configure set default.region us-west-1
+              # override region manually, if needed, on the line below
+              - aws configure set default.region us-east-2
               - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
               - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
               - aws cloudformation delete-stack --stack-name ATL
