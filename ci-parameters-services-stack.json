@@ -1,0 +1,19 @@
+[{
+  "ParameterKey": "AvailabilityZones",
+  "ParameterValue": "us-west-1b,us-west-1c"
+}, {
+  "ParameterKey": "DRRegion",
+  "ParameterValue": "us-west-2"
+}, {
+  "ParameterKey": "FlaskSecretKey",
+  "ParameterValue": "s3333333cret"
+}, {
+  "ParameterKey": "KeyPairName",
+  "ParameterValue": "WPE-GenericKeyPair-20161102"
+}, {
+  "ParameterKey": "QSS3BucketName",
+  "ParameterValue": "itops-ci"
+}, {
+  "ParameterKey": "QSS3KeyPrefix",
+  "ParameterValue": ""
+}]
