@@ -33,7 +33,8 @@ pipelines:
               # did backmack get "Create_Complete"?
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName | grep Backmac
               # did forge come up ?
-              - export FORGEURL=$(aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Forge"))|.StackName')
+              - export FORGESTACK=$(aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Forge"))|.StackName')
+              - export FORGEURL=$(aws cloudformation describe-stacks --stack-name=$FORGESTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
               - echo $FORGEURL
               - curl --fail ${FORGEURL}/status
         - step:
