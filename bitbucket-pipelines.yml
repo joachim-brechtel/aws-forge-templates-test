@@ -31,7 +31,7 @@ pipelines:
               - if [ ! -e "vpcExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATL; fi
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName
               # did backmack get "Create_Complete"?
-              - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName | grep backmac
+              - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName | grep Backmac
         - step:
             name: Cleanup Atlassian Services Stack
             trigger: manual
