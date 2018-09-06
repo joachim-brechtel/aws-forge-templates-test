@@ -1,6 +1,6 @@
 [{
   "ParameterKey": "AvailabilityZones",
-  "ParameterValue": "us-west-1b,us-west-1c"
+  "ParameterValue": "us-east-2a,us-east-2b"
 }, {
   "ParameterKey": "DRRegion",
   "ParameterValue": "us-west-2"
