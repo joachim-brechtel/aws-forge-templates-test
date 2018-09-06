@@ -295,7 +295,7 @@ Resources:
         VPC: !GetAtt VPCStack.Outputs.VPCID
 Outputs:
   VPCID:
-    Description: The URL of the JIRA deployment
+    Description: Atlassian Services VPC ID
     Value: !GetAtt VPCStack.Outputs.VPCID
     Export:
       Name: !Join ['', [!Ref 'AWS::StackName', '-VPCID']]
