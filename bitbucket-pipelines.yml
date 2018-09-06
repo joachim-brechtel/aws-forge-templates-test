@@ -36,7 +36,7 @@ pipelines:
               - export BACKMACSTACK=$(aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Backmac"))|.StackName')
               # is bastion listening for ssh ?
               - export BASTIONSTACK=$(aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Bastion"))|.StackName')
-              - export BASTIONIP=$(aws cloudformation describe-stacks --stack-name=$FORGESTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="BastionPubIp")|.OutputValue'|tr -d '"')
+              - export BASTIONIP=$(aws cloudformation describe-stacks --stack-name=$BASTIONSTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="BastionPubIp")|.OutputValue'|tr -d '"')
               - echo $BASTIONIP
               - nc -n -w3 -z $BASTIONIP 22
               # did forge come up ?
