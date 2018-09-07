@@ -567,10 +567,10 @@ Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
       Arch: HVM64
-      Jvmheap: 4096m
+      Jvmheap: 3584m
     c4.2xlarge:
       Arch: HVM64
-      Jvmheap: 9728m
+      Jvmheap: 11264m
     c4.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -579,10 +579,10 @@ Mappings:
       Jvmheap: 12288m
     c5.xlarge:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     c5.2xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     c5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -594,10 +594,10 @@ Mappings:
       Jvmheap: 12288m
     c5d.xlarge:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     c5d.2xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     c5d.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -633,7 +633,7 @@ Mappings:
       Jvmheap: 12288m
     i3.large:
       Arch: HVM64
-      Jvmheap: 9728m
+      Jvmheap: 11264m
     i3.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -654,10 +654,10 @@ Mappings:
       Jvmheap: 12288m
     m4.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     m4.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     m4.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -672,10 +672,10 @@ Mappings:
       Jvmheap: 12288m
     m5.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     m5.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     m5.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -690,10 +690,10 @@ Mappings:
       Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     m5d.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     m5d.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -708,7 +708,7 @@ Mappings:
       Jvmheap: 12288m
     r4.large:
       Arch: HVM64
-      Jvmheap: 9728m
+      Jvmheap: 11264m
     r4.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -726,7 +726,7 @@ Mappings:
       Jvmheap: 12288m
     r5.large:
       Arch: HVM64
-      Jvmheap: 8704m
+      Jvmheap: 12288m
     r5.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -744,7 +744,7 @@ Mappings:
       Jvmheap: 12288m
     r5d.large:
       Arch: HVM64
-      Jvmheap: 8704m
+      Jvmheap: 12288m
     r5d.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -762,19 +762,19 @@ Mappings:
       Jvmheap: 12288m
     t2.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     t2.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     t2.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     t3.large:
       Arch: HVM64
-      Jvmheap: 3584m
+      Jvmheap: 4096m
     t3.xlarge:
       Arch: HVM64
-      Jvmheap: 8704m
+      Jvmheap: 12288m
     t3.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -804,7 +804,7 @@ Mappings:
       Jvmheap: 12288m
     z1d.large:
       Arch: HVM64
-      Jvmheap: 8704m
+      Jvmheap: 12288m
     z1d.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
