@@ -23,7 +23,7 @@ pipelines:
               - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
               - if [ -x "${MASTERSTACK}"]; then MASTERSTACK="ATL";fi
               - echo $MASTERSTACK
-              - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE,UPDATE_COMPLETE" | grep StackName|grep "\"${MASTERSTACK}\""; then touch vpcExists; fi
+              - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep "\"${MASTERSTACK}\""; then touch vpcExists; fi
               - ls
               - aws s3 cp quickstarts/quickstart-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
