@@ -11,14 +11,17 @@ pipelines:
               - pip --no-cache-dir install awscli
               - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - if [ -z "${CI_ALTERNATE_REGION}" ]; then aws configure set default.region ${CI_DEFAULT_REGION}; else aws configure set default.region ${CI_ALTERNATE_REGION}; fi
               - aws configure set default.region ${CI_DEFAULT_REGION}
               # override region manually, if needed, on the line below
               - aws configure set default.region us-east-2
               - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
               - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
-              - cd ami
+              #- cd ami
               #- ./bin/build-ami.sh -p JIRA      -r us-east-1 -v ${CI_VPC_ID} -s ${CI_SUBNET_ID} -c
-              - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATL\"; then touch vpcExists; fi
+              # tests to determine state
+              - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
+              - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE,UPDATE_COMPLETE" | grep StackName|grep \"${MASTERSTACK}\"; then touch vpcExists; fi
               - aws s3 cp ../quickstarts/quickstart-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws s3 cp ../quickstarts/quickstart-backmac-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
