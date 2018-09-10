@@ -42,7 +42,7 @@ pipelines:
               - echo $FORGEENABLED
               - aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.' | grep StackName
               # did backmack get "Create_Complete"?
-              - aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.' | grep StackName | grep Backmac
+              - if [ "${BACKMACENABLED}" = "true" ]; then aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.' | grep StackName | grep Backmac;fi
               # whats ackmac stack called ?
               - if [ "${BACKMACENABLED}" = "true" ]; then export BACKMACSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Backmac"))|.StackName');fi
               # is bastion listening for ssh ?
