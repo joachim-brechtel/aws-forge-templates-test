@@ -1,0 +1,76 @@
+image: hashicorp/packer
+
+pipelines:
+  branches:
+    'ITOPS-*':
+        - step:
+            name: Build Atlassian Services AWS Environment (VPC + tooling) from quickstart (if doesnt exist)
+            script:
+              - apk update
+              - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+              - pip --no-cache-dir install awscli
+              - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - if [ -z "${CI_ALTERNATE_REGION}" ]; then aws configure set default.region ${CI_DEFAULT_REGION}; else aws configure set default.region ${CI_ALTERNATE_REGION}; fi
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              # override region manually, if needed, on the line below
+              - aws configure set default.region us-east-2
+              - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+              #- cd ami
+              #- ./bin/build-ami.sh -p JIRA      -r us-east-1 -v ${CI_VPC_ID} -s ${CI_SUBNET_ID} -c
+              # test to determine MASTERSTACK
+              - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
+              - if [ -x "${MASTERSTACK}"]; then MASTERSTACK="ATL";fi
+              - echo $MASTERSTACK
+              - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep "\"${MASTERSTACK}\""; then touch vpcExists; fi
+              - ls
+              - aws s3 cp quickstarts/quickstart-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
+              - aws s3 cp quickstarts/quickstart-backmac-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
+              - aws s3 cp quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
+              - aws s3 cp quickstarts/quickstart-forge-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-forge-for-atlassian-services.yaml
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-forge-for-atlassian-services.yaml
+              - if [ ! -e "vpcExists" ]; then aws cloudformation create-stack --stack-name "${MASTERSTACK}" --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-services-stack.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
+              - if [ ! -e "vpcExists" ]; then aws cloudformation wait stack-create-complete --stack-name "${MASTERSTACK}"; fi
+              # tests to determine MASTERSTASCK state
+              - export BACKMACENABLED=$(aws cloudformation describe-stacks --stack-name="${MASTERSTACK}"|jq '.Stacks[0].Parameters' | jq -r '.[] | select(.ParameterKey=="EnableBackmac")|.ParameterValue')
+              - echo $BACKMACENABLED
+              - export FORGEENABLED=$(aws cloudformation describe-stacks --stack-name="${MASTERSTACK}"|jq '.Stacks[0].Parameters' | jq -r '.[] | select(.ParameterKey=="EnableForge")|.ParameterValue')
+              - echo $FORGEENABLED
+              - aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.' | grep StackName
+              # did backmack get "Create_Complete"?
+              - if [ "${BACKMACENABLED}" = "true" ]; then aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.' | grep StackName | grep Backmac;fi
+              # whats ackmac stack called ?
+              - if [ "${BACKMACENABLED}" = "true" ]; then export BACKMACSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Backmac"))|.StackName');fi
+              # is bastion listening for ssh ?
+              - export BASTIONSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Bastion"))|.StackName')
+              - export BASTIONIP=$(aws cloudformation describe-stacks --stack-name=$BASTIONSTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="BastionPubIp")|.OutputValue'|tr -d '"')
+              - echo $BASTIONIP
+              - nc -n -w3 -z $BASTIONIP 22
+              # did forge come up ?
+              - if [ "${FORGEENABLED}" = "true" ]; then export FORGESTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Forge"))|.StackName');fi
+              - if [ "${FORGEENABLED}" = "true" ]; then export FORGEURL=$(aws cloudformation describe-stacks --stack-name=$FORGESTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"');fi
+              - echo $FORGEURL
+              - if [ "${FORGEENABLED}" = "true" ]; then export FORGEELBNAME=$(aws elb describe-load-balancers | jq '.LoadBalancerDescriptions'|jq '.[]'|jq '.LoadBalancerName'|grep Forge|tr -d '"');fi
+              - echo "${FORGEELBNAME}"
+              - if [ "${FORGEENABLED}" = "true" ]; then aws elb wait any-instance-in-service --load-balancer-name $FORGEELBNAME;fi
+              - if [ "${FORGEENABLED}" = "true" ]; then curl --fail ${FORGEURL}/status;fi
+        - step:
+            name: Cleanup Atlassian Services Stack
+            trigger: manual
+            script:
+              - apk update
+              - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+              - pip --no-cache-dir install awscli
+              - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              # override region manually, if needed, on the line below
+              - aws configure set default.region us-east-2
+              - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+              - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
+              - aws cloudformation delete-stack --stack-name $MASTERSTACK

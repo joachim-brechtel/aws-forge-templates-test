@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'VPC for Atlassian Services License: Apache 2.0 (Please do
-  not remove) June,21,2017'
+Description: 'Master Template for Atlassian Services'
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
