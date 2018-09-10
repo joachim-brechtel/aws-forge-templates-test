@@ -21,6 +21,7 @@ pipelines:
               #- ./bin/build-ami.sh -p JIRA      -r us-east-1 -v ${CI_VPC_ID} -s ${CI_SUBNET_ID} -c
               # tests to determine state
               - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
+              - if [ -x "${MASTERSTACK}"]; then MASTERSTACK="ATL";fi
               - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE,UPDATE_COMPLETE" | grep StackName|grep \"${MASTERSTACK}\"; then touch vpcExists; fi
               - aws s3 cp quickstarts/quickstart-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml
@@ -30,8 +31,8 @@ pipelines:
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-forge-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-forge-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-forge-for-atlassian-services.yaml
-              - if [ ! -e "vpcExists" ]; then aws cloudformation create-stack --stack-name ATL --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-services-stack.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
-              - if [ ! -e "vpcExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATL; fi
+              - if [ ! -e "vpcExists" ]; then aws cloudformation create-stack --stack-name "${MASTERSTACK}" --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-services-stack.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
+              - if [ ! -e "vpcExists" ]; then aws cloudformation wait stack-create-complete --stack-name "${MASTERSTACK}"; fi
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName
               # did backmack get "Create_Complete"?
               - aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.' | grep StackName | grep Backmac
@@ -46,6 +47,9 @@ pipelines:
               - export FORGESTACK=$(aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Forge"))|.StackName')
               - export FORGEURL=$(aws cloudformation describe-stacks --stack-name=$FORGESTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
               - echo $FORGEURL
+              - export FORGEELBNAME=$(aws elb describe-load-balancers | jq '.LoadBalancerDescriptions'|jq '.[]'|jq '.LoadBalancerName'|grep Forge|tr -d '"')
+              - echo "${ELBNAME}"
+              - aws elb wait any-instance-in-service --load-balancer-name $FORGEELBNAME
               - curl --fail ${FORGEURL}/status
         - step:
             name: Cleanup Atlassian Services Stack
