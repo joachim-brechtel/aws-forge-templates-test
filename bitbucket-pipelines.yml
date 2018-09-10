@@ -36,9 +36,9 @@ pipelines:
               - if [ ! -e "vpcExists" ]; then aws cloudformation create-stack --stack-name "${MASTERSTACK}" --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-services-stack.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
               - if [ ! -e "vpcExists" ]; then aws cloudformation wait stack-create-complete --stack-name "${MASTERSTACK}"; fi
               # tests to determine MASTERSTASCK state
-              - export BACKMACENABLED=$(aws cloudformation describe-stacks --stack-name="${MASTERSTACK}"|jq '.Stacks[0].Parameters' | jq '.[] | select(.ParameterKey=="EnableBackmac")|.ParameterValue')
+              - export BACKMACENABLED=$(aws cloudformation describe-stacks --stack-name="${MASTERSTACK}"|jq '.Stacks[0].Parameters' | jq -r '.[] | select(.ParameterKey=="EnableBackmac")|.ParameterValue')
               - echo $BACKMACENABLED
-              - export FORGEENABLED=$(aws cloudformation describe-stacks --stack-name="${MASTERSTACK}"|jq '.Stacks[0].Parameters' | jq '.[] | select(.ParameterKey=="EnableForge")|.ParameterValue')
+              - export FORGEENABLED=$(aws cloudformation describe-stacks --stack-name="${MASTERSTACK}"|jq '.Stacks[0].Parameters' | jq -r '.[] | select(.ParameterKey=="EnableForge")|.ParameterValue')
               - echo $FORGEENABLED
               - aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.' | grep StackName
               # did backmack get "Create_Complete"?
