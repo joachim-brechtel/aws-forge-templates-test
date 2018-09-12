@@ -53,6 +53,7 @@ Metadata:
           default: Application Tuning (Optional)
         Parameters:
             - TomcatContextPath
+            - CatalinaOpts
             - JvmHeapOverride
             - DBPoolMaxSize
             - DBPoolMinSize
@@ -65,6 +66,7 @@ Metadata:
             - DBTestOnBorrow
             - DBTestWhileIdle
             - DBTimeBetweenEvictionRunsMillis
+            - MailEnabled
             - TomcatAcceptCount
             - TomcatConnectionTimeout
             - TomcatDefaultConnectorPort
@@ -79,6 +81,8 @@ Metadata:
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
+      CatalinaOpts:
+        default: Catalina options
       CidrBlock:
         default: Permitted IP range
       ClusterNodeMax:
@@ -143,6 +147,8 @@ Metadata:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
+      MailEnabled:
+        default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
       TomcatAcceptCount:
@@ -177,6 +183,10 @@ Parameters:
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
+    Type: String
+  CatalinaOpts:
+    Default: ''
+    Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
@@ -403,6 +413,14 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  MailEnabled:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Default: true
+    Description: Enable mail processing and sending
+    Type: String
   SSLCertificateARN:
     Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
@@ -475,6 +493,8 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
+  DisableMail:
+    !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
   DoSetDBMasterUserPassword:
@@ -685,13 +705,6 @@ Mappings:
     us-west-2:
       HVM64: ami-41d0f639
       HVMG2: NOT_SUPPORTED
-  CatalinaOpts:
-    prod:
-      Opts: ''
-    stg:
-      Opts: '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true'
-    dr:
-      Opts: '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true'
 Resources:
   CrowdClusterNodeRole:
     Type: AWS::IAM::Role
@@ -762,13 +775,16 @@ Resources:
               - !Ref "AWS::NoValue"
           files:
             /etc/atl:
+              mode: "000640"
+              owner: root
+              group: root
               content:
                 'Fn::Join':
                   - "\n"
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !FindInMap [CatalinaOpts, !Ref DeployEnvironment, Opts]]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', ''] }]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
                     - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
                     - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
@@ -824,7 +840,7 @@ Resources:
                     - "[main]"
                     - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
                     - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
-              mode: 000400
+              mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
