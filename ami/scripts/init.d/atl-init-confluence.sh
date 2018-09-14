@@ -156,8 +156,8 @@ function configureConfluenceHome {
 
 function configureDbProperties {
 
-    local LOCAL_CONFIG="${ATL_CONFLUENCE_HOME}/confluence.cfg.xml"
-    local SHARED_CONFIG="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home/confluence.cfg.xml"
+    local LOCAL_CFG_XML="${ATL_CONFLUENCE_HOME}/confluence.cfg.xml"
+    local SHARED_CFG_XML="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home/confluence.cfg.xml"
 
     declare -A SERVER_PROPS=(
         ["hibernate.connection.driver_class"]="${ATL_JDBC_DRIVER}"
@@ -175,14 +175,14 @@ function configureDbProperties {
         ["shared-home"]="${ATL_CONFLUENCE_SHARED_HOME}"
     )
 
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]] && [[ -f "${SHARED_CONFIG}" ]] && grep "setupStep>complete" "${SHARED_CONFIG}" >> "${ATL_LOG}" 2>&1; then
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]] && [[ -f "${SHARED_CFG_XML}" ]] && grep "setupStep>complete" "${SHARED_CFG_XML}" >> "${ATL_LOG}" 2>&1; then
         # Confluence Server doesn't really use the shared-home config at all, but we want it to for resiliency/recovery in a cloud environment
         # Hence, if this run isn't for Data Center and we find a completed config in the shared-home, we'll grab it and update it with any new/updated values
         atl_log "Found complete Confluence Server config in shared-home; restoring configuration"
-        su "${ATL_CONFLUENCE_USER}" -c "cp -fpv \"${SHARED_CONFIG}\" \"${LOCAL_CONFIG}\"" >> "${ATL_LOG}" 2>&1
+        su "${ATL_CONFLUENCE_USER}" -c "cp -fpv \"${SHARED_CFG_XML}\" \"${LOCAL_CFG_XML}\"" >> "${ATL_LOG}" 2>&1
         atl_log "Editing restored confluence.cfg.xml with updated configuration options"
         for PROP in "${!SERVER_PROPS[@]}"; do
-            xmlstarlet edit --inplace --update "/confluence-configuration/properties/property[@name='${PROP}']" --value "${SERVER_PROPS[${PROP}]}" "${LOCAL_CONFIG}"
+            xmlstarlet edit --inplace --update "/confluence-configuration/properties/property[@name='${PROP}']" --value "${SERVER_PROPS[${PROP}]}" "${LOCAL_CFG_XML}"
         done
     else
         # Otherwise, consider this a "new install" and we'll create the configuration from scratch
@@ -191,7 +191,7 @@ function configureDbProperties {
         local CONFLUENCE_SETUP_STEP="setupstart"
         local CONFLUENCE_SETUP_TYPE="custom"
         local CONFLUENCE_BUILD_NUMBER="0"
-        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee \"${LOCAL_CONFIG}\"" > /dev/null
+        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee \"${LOCAL_CFG_XML}\"" > /dev/null
 <?xml version="1.0" encoding="UTF-8"?>
 
 <${PRODUCT_CONFIG_NAME}-configuration>
@@ -207,11 +207,11 @@ function configureDbProperties {
 EOT
 
         for PROP in "${!SERVER_PROPS[@]}"; do
-            echo "    <property name=\"${PROP}\">${SERVER_PROPS[${PROP}]}</property>" | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CONFIG}\"" > /dev/null
+            echo "    <property name=\"${PROP}\">${SERVER_PROPS[${PROP}]}</property>" | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
         done
 
         if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
-            cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CONFIG}\"" > /dev/null
+            cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
     <property name="confluence.cluster">true</property>
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
@@ -224,12 +224,12 @@ EOT
     <property name="confluence.cluster.ttl">1</property>
 EOT
         fi
-        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CONFIG}\"" > /dev/null
+        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
   </properties>
 </${PRODUCT_CONFIG_NAME}-configuration>
 EOT
 
-        su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${LOCAL_CONFIG}\"" >> "${ATL_LOG}" 2>&1
+        su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${LOCAL_CFG_XML}\"" >> "${ATL_LOG}" 2>&1
         atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
     fi
 
@@ -237,7 +237,7 @@ EOT
         local WATCHER_SCRIPT="/opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh"
         if [[ -x ${WATCHER_SCRIPT} ]]; then
             atl_log "Starting filewatcher to copy Confluence Server config to shared-home on-edit"
-            WATCHED_FILE=${LOCAL_CONFIG} FILE_DEST=${SHARED_CONFIG} LOG_FILE=${ATL_LOG} ${WATCHER_SCRIPT} >> "${ATL_LOG}" 2>&1 &
+            WATCHED_FILE=${LOCAL_CFG_XML} FILE_DEST=${SHARED_CFG_XML} LOG_FILE=${ATL_LOG} ${WATCHER_SCRIPT} >> "${ATL_LOG}" 2>&1 &
         else
             atl_log "Script for monitoring Confluence Server configuration changes is not available; config will not persist"
         fi
