@@ -22,6 +22,8 @@ OPTIONS:
    -i The AWS instance type to use. If not supplied, the AWS_INSTANCE_TYPE environment variable must be set or else \"m4.large\" is assumed
    -l The location of the installer that should be downloaded when the AWS instance boots
    -d Enable debug logging in product (if it is supported) and install tools to enable debugging on the box
+   -b The business unit to bill to
+   -o The resource owner, required
    -u Append the following entries to /etc/sysconfig/atl  
 EOF
 }

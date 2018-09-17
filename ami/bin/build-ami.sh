@@ -25,6 +25,8 @@ OPTIONS:
    -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
    -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
    -c Whether to copy the AMI to other AWS regions. Defaults to false
+   -b The business unit to bill to, required
+   -o The resource owner, required
    -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
    -P make AMI public
    -d debug mode
@@ -43,7 +45,7 @@ COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
 
-while getopts "dhPr:cv:s:p:u" OPTION
+while getopts "dhPr:cv:s:p:ub:o:" OPTION
 do
     case $OPTION in
         h)
@@ -73,6 +75,12 @@ do
             ;;
         d)
             DEBUG_MODE="true"
+            ;;
+        b)
+            BUSINESS_UNIT="${OPTARG}"
+            ;;
+        o)
+            RESOURCE_OWNER="${OPTARG}"
             ;;
         ?)
             usage
@@ -142,7 +150,9 @@ packer -machine-readable build \
     -var aws_session_token="${AWS_SESSION_TOKEN}" \
     -var vpc_id="${AWS_VPC_ID}" \
     -var base_ami="${BASE_AMI}" \
-    -var availability_zone="${AWS_AZ}" \
+    -var business_unit="${BUSINESS_UNIT}" \
+    -var resource_owner="${RESOURCE_OWNER}" \
+    -var "availability_zone"="${AWS_AZ}" \
     -var subnet_id="${AWS_SUBNET_ID}" \
     -var aws_region="${AWS_REGION}" \
     -var aws_linux_version="${AWS_LINUX_VERSION}" \
