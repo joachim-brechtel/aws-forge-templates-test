@@ -3,21 +3,6 @@
 
 set -e
 
-## LOCAL ANSIBLE - for more details and an example ansible playbook: https://bit.ly/2OcPSl9
-## set your ansible repo details here and uncomment the below two lines
-# git archive --remote=ssh://your-repo-hosting/your-repo-name.git HEAD bin/your-ansible-filename.cmd -o scripts/local-ansible-run.tar
-# tar -zxf scripts/local-ansible-run.tar
-
-## then add this to the provisioners section of each <product>.json
-#{
-#    "type": "file",
-#    "source": "bin/your-ansible-filename.cmd",
-#    "destination": "/tmp/local-ansible-run"
-#  }, {
-#    "type": "shell",
-#    "inline": "sudo mv /tmp/local-ansible-run /usr/local/bin/local-ansible-run && sudo chown root:root /usr/local/bin/local-ansible-run && sudo chmod u+x /usr/local/bin/local-ansible-run"
-#  }
-
 TMP_DIR=$(mktemp -d -t atlaws)
 echo "TMP_DIR = ${TMP_DIR}"
 PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"

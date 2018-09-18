@@ -1,4 +1,7 @@
 ---
+# Bring up diffs between this file and the BitbucketDataCenter.template.yaml, ConfluenceDataCenter.template.yaml, and JiraDataCenter.template.yaml
+# As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
+# Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
 Description: Atlassian Crowd Data Center
 Metadata:
@@ -48,6 +51,8 @@ Metadata:
           default: Advanced (Optional)
         Parameters:
           - CrowdDownloadUrl
+          - LocalAnsibleGitRepo
+          - LocalAnsibleGitKey
           - StartCollectd
       - Label:
           default: Application Tuning (Optional)
@@ -93,6 +98,10 @@ Metadata:
         default: Cluster node instance type
       ClusterNodeVolumeSize:
         default: Cluster node instance volume size
+      CrowdVersion:
+        default: Version *
+      CrowdDownloadUrl:
+        default: Crowd Download URL
       CustomDnsName:
         default: Existing DNS name (optional)
       DBInstanceClass:
@@ -139,14 +148,14 @@ Metadata:
         default: Route 53 Hosted Zone (optional)
       InternalSubnets:
         default: Internal subnets *
-      CrowdVersion:
-        default: Version *
-      CrowdDownloadUrl:
-        default: Crowd Download URL
       JvmHeapOverride:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
+      LocalAnsibleGitRepo:
+        default: Git repo for local-ansible
+      LocalAnsibleGitKey:
+        default: Git key for local-ansible
       MailEnabled:
         default: Enable App to Process Email
       SSLCertificateARN:
@@ -179,7 +188,7 @@ Metadata:
         default: VPC *
 Parameters:
   AssociatePublicIpAddress:
-    Default: true
+    Default: false
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
@@ -247,6 +256,7 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
+      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -260,6 +270,17 @@ Parameters:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
+  CrowdDownloadUrl:
+    Default: ''
+    Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
+    Type: String
+    ConstraintDescription: Must be a valid Crowd download url
+  CrowdVersion:
+    Default: 3.2.1
+    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
+    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
+    Description: The version of Crowd to install
+    Type: String
   CustomDnsName:
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
@@ -393,26 +414,23 @@ Parameters:
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
-  CrowdDownloadUrl:
-    Default: ''
-    Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
-    Type: String
-    ConstraintDescription: Must be a valid Crowd download url
-  CrowdVersion:
-    Default: 3.2.1
-    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
-    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
-    Description: The version of Crowd to install
-    Type: String
   JvmHeapOverride:
     Default: ''
-    Description: Override the default amount of Memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
     Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LocalAnsibleGitRepo:
+    Default: ''
+    Description: For additional node customization, provide repo location to git clone (ie git@bitbucket.org:atlassian/atlassian-local-ansible-example.git)
+    Type: String
+  LocalAnsibleGitKey:
+    Default: ''
+    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
   MailEnabled:
     AllowedValues:
       - true
@@ -532,7 +550,7 @@ Mappings:
       Jvmheap: 12288m
     c5.large:
       Arch: HVM64
-      Jvmheap: 3072m
+      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
       Jvmheap: 4608m
@@ -659,51 +677,54 @@ Mappings:
     x1.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    x1.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-072519af4c78ed7d9
+      HVM64: ami-053c40644e5996f21
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-06b19ec86d834ec98
+      HVM64: ami-05bd8e9ac469d4067
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-0968d47b662cffe66
+      HVM64: ami-04377cb6419764e84
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-041bd42c3c7552cc2
+      HVM64: ami-0fda084a3fc2989a7
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-79c7641b
+      HVM64: ami-0d38fc2b6dcb51b52
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-4d068b29
+      HVM64: ami-00b6f551dde6c8133
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-02c0b477a7de99121
+      HVM64: ami-0fe525d17aa2b4240
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-029cac9ccbe6ebaf4
+      HVM64: ami-0eae26e5b4163668e
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-533bce34
+      HVM64: ami-09d9e73160b5b4f9f
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-03e5e4a8ba031078d
+      HVM64: ami-0e4105c6abe06bf2c
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0eafc05d8d908277f
+      HVM64: ami-00b41a26dd15e1728
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0bf2a584c8c76d1ac
+      HVM64: ami-06dc14307f2e65df6
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-094232273c77cfe0b
+      HVM64: ami-0ca1a64ed71c08e98
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-8ea24ced
+      HVM64: ami-0921f36cdcecdee8f
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-41d0f639
+      HVM64: ami-02fe3257d2db1d71c
       HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
@@ -750,9 +771,6 @@ Resources:
         - Key: Cluster
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
-        - Key: service_name
-          Value: !Ref AWS::StackName
-          PropagateAtLaunch: true
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn:
@@ -761,7 +779,7 @@ Resources:
       - DB
     Metadata:
       Comment: ''
-      'AWS::CloudFormation::Init':
+      AWS::CloudFormation::Init:
         config:
           packages:
             !If
@@ -785,6 +803,9 @@ Resources:
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', ''] }]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
+                    - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
                     - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
                     - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
@@ -800,11 +821,12 @@ Resources:
                     - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
                     - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
+                    - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
-                    - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
-                    - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
+                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
@@ -856,6 +878,27 @@ Resources:
                       - StackName: !Ref "AWS::StackName"
                         Region: !Ref "AWS::Region"
                     - runas=root
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
@@ -881,8 +924,14 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/crowd/shared
               ignoreErrors: false
-            050_ensure_ssm:
+            050_ssm_group:
+              command: groupadd ssm-user --gid 400
+            051_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
+            052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               cfn-hup:
@@ -920,7 +969,7 @@ Resources:
       InstanceType: !Ref ClusterNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
-        'Fn::Base64':
+        Fn::Base64:
           !Join
             - ""
             -
@@ -930,6 +979,7 @@ Resources:
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
+# Elastic file system
   ElasticFileSystem:
     Type: AWS::EFS::FileSystem
     Properties:
@@ -938,8 +988,6 @@ Resources:
           Value: !Join [' ', [!Ref 'AWS::StackName', 'cluster shared-files']]
         - Key: Application
           Value: !Ref AWS::StackId
-        - Key: service_name
-          Value: !Ref AWS::StackName
   EFSMountAz1:
     Type: AWS::EFS::MountTarget
     Properties:
@@ -958,11 +1006,12 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the efs
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']]
+      Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
       Type: CNAME
-      TTL: '900'
+      TTL: 900
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
+# Database
   DB:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -980,9 +1029,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} CROWD PostgreSQL Database", StackName: !Ref 'AWS::StackName']
-        - Key: service_name
-          Value: !Ref AWS::StackName
+          Value: !Sub ["${StackName} Crowd PostgreSQL Database", StackName: !Ref 'AWS::StackName']
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -1043,8 +1090,6 @@ Resources:
         - Key: Name
           Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
         - Key: Cluster
-          Value: !Ref AWS::StackName
-        - Key: service_name
           Value: !Ref AWS::StackName
   LoadBalancerCname:
     Condition: UseHostedZone

@@ -1,5 +1,9 @@
+---
+# Bring up diffs between this file and the ConfluenceDataCenterClone.template.yaml, CrowdDataCenterClone.template.yaml, and ConfluenceDataCenter.template.yaml
+# As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
+# Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: Atlassian Jira Data Center STAGING or DR stack
+Description: Atlassian Jira Data Center Clone Stack
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -53,6 +57,8 @@ Metadata:
           default: Advanced (Optional)
         Parameters:
           - JiraDownloadUrl
+          - LocalAnsibleGitRepo
+          - LocalAnsibleGitKey
           - StartCollectd
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
@@ -158,6 +164,10 @@ Metadata:
         default: JVM Heap Size Override
       KeyName:
         default: Key Name *
+      LocalAnsibleGitRepo:
+        default: Git repo for local-ansible
+      LocalAnsibleGitKey:
+        default: Git key for local-ansible
       MailEnabled:
         default: Enable App to Process Email
       SSLCertificateARN:
@@ -258,6 +268,7 @@ Parameters:
       - t2.xlarge
       - t2.2xlarge
       - x1.16xlarge
+      - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -272,7 +283,6 @@ Parameters:
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
   CustomDnsName:
-    Default: 'CHANGEME.stg.internal.atlassian.com'
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
@@ -300,10 +310,9 @@ Parameters:
     ConstraintDescription: 'Must be in the range 1000 - 30000'
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
     MinValue: 1000
-    MaxValue: 3000
+    MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
-    Default: 'password1234'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -328,7 +337,7 @@ Parameters:
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBMultiAZ:
-    Default: false
+    Default: true
     AllowedValues:
       - true
       - false
@@ -364,7 +373,7 @@ Parameters:
     Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
     Type: String
   DBStorage:
-    Default: 10
+    Default: 200
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
   DBStorageType:
@@ -403,7 +412,7 @@ Parameters:
     Type: String
   ExternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
@@ -413,7 +422,7 @@ Parameters:
     Type: String
   InternalSubnets:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   JiraDownloadUrl:
@@ -446,6 +455,14 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LocalAnsibleGitRepo:
+    Default: ''
+    Description: For additional node customization, provide repo location to git clone (ie git@bitbucket.org:atlassian/atlassian-local-ansible-example.git)
+    Type: String
+  LocalAnsibleGitKey:
+    Default: ''
+    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
   MailEnabled:
     AllowedValues:
       - true
@@ -697,49 +714,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-f260061f
+      HVM64: ami-0fa3be45ef63c4ad3
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-59833737
+      HVM64: ami-03d0078c616d6a928
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-4d3d0b22
+      HVM64: ami-0d8038ba6dda7b777
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-8893ec62
+      HVM64: ami-0695a11f9566acde1
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-05c51f67
+      HVM64: ami-03d2fc6a6a571ddd0
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-560c8e32
+      HVM64: ami-096fab983be083a48
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-3e99a3d5
+      HVM64: ami-0aeafe063799305da
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-747b6d9e
+      HVM64: ami-00b85d6a821ba362e
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-1f32da78
+      HVM64: ami-0ef006631f04c6de5
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-a9cc7cd4
+      HVM64: ami-04925df6a7021132e
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-3a694e56
+      HVM64: ami-0a222d57785be11f1
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-be4a63c1
+      HVM64: ami-0ccbbf2ca088d666c
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-b984bcdc
+      HVM64: ami-0ca8d2a4508ec090d
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-840dede7
+      HVM64: ami-0d0f791c754bf917a
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-d98ed8a1
+      HVM64: ami-08cf61bd9a4498812
       HVMG2: NOT_SUPPORTED
   JIRAProduct2NameAndVersion:
     All:
@@ -769,6 +786,8 @@ Resources:
             Principal:
               Service: [ec2.amazonaws.com]
             Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
         - PolicyName: JiraClusterNodePolicy
@@ -808,7 +827,7 @@ Resources:
       - DB
     Metadata:
       Comment: ''
-      'AWS::CloudFormation::Init':
+      AWS::CloudFormation::Init:
         config:
           files:
             /etc/atl:
@@ -837,6 +856,7 @@ Resources:
                     - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
                     - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
+                    - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/jira", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JIRA_FULL_DISPLAY_NAME=${JiraFullDisplayName}", JiraFullDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "fulldisplayname"]]
@@ -845,6 +865,8 @@ Resources:
                     - !Sub ["ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}", JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]]
                     - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
+                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
@@ -894,6 +916,27 @@ Resources:
                       - StackName: !Ref "AWS::StackName"
                         Region: !Ref "AWS::Region"
                     - runas=root
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
@@ -913,6 +956,14 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/jira/shared
               ignoreErrors: false
+            050_ssm_group:
+              command: groupadd ssm-user --gid 400
+            051_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
+            052_ensure_ssm:
+              command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               cfn-hup:

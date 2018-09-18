@@ -42,6 +42,7 @@ function start {
   configureCrowdHome
   exportCatalinaOpts
   configureCrowdEnvironmentVariables
+  atl_configureThreadHeapScripts
   if [[ -n "${ATL_DB_NAME}" ]]; then
     configureRemoteDb
   fi
@@ -50,12 +51,11 @@ function start {
   runLocalAnsible
   atl_log "=== END:   service atl-init-crowd runLocalAnsible ==="
 
-    if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
-        local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
-        if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
-        if updateDBConfig; then echo "DB Config updated in crowd.cfg.xml";fi
-    fi
-
+  if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
+    local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
+    if updateBaseUrl ${baseURL} ${ATL_DB_HOST} ${ATL_DB_PORT} ${ATL_DB_NAME}; then echo "baseUrl updated";fi
+    if updateDBConfig; then echo "DB Config updated in crowd.cfg.xml";fi
+  fi
 
   goCrowd
 

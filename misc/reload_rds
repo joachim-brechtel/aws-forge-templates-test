@@ -1,0 +1,26 @@
+#!/bin/env bash
+# This script should be run from an app node on a clean Atlassian Product CFN stack
+#  to populate the product RDS with a dumpfile taken from an existing (source) service
+
+# reload the DB cleanly from a pg_dump taken like :- 
+# pg_dump -c -f /opt/j2ee/domains/atlassian.com/migration.sql -h localhost -U extranet_jira_db_user -O -W extranet_jira_db
+# -c=clean (ie drop db items before recreating them
+# -O means remove ownership, we will import all with the default owner of the new db
+
+# get input values from /etc/atl
+source /etc/atl
+
+# load the postgres user password into the appropriate env var
+export PGPASSWORD=${ATL_DB_PASSWORD}
+
+# drop the DB
+/usr/bin/psql -h ${ATL_DB_HOST} -p ${ATL_DB_PORT} -U postgres -c "drop database ${ATL_DB_NAME}"
+
+# create the DB
+/usr/bin/psql -h ${ATL_DB_HOST} -p ${ATL_DB_PORT} -U postgres -c "CREATE DATABASE ${ATL_DB_NAME} WITH ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0"
+
+# load the application user password into the appropriate env var
+export PGPASSWORD=${ATL_JDBC_PASSWORD}
+
+# reload the db from sql dump filename passed in $1
+/usr/bin/psql -h ${ATL_DB_HOST} -p ${ATL_DB_PORT} -U ${ATL_JDBC_USER} ${ATL_DB_NAME} < $1
