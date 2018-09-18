@@ -1021,9 +1021,9 @@ Resources:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
             050_ssm_group:
-              command: groupadd ssm-user --gid 1501
+              command: groupadd ssm-user --gid 400
             051_ssm_user:
-              command: useradd ssm-user --uid 1501 -g ssm-user
+              command: useradd ssm-user --uid 400 -g ssm-user
             052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
@@ -1266,9 +1266,9 @@ Resources:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
             050_ssm_group:
-              command: groupadd ssm-user --gid 1501
+              command: groupadd ssm-user --gid 400
             051_ssm_user:
-              command: useradd ssm-user --uid 1501 -g ssm-user
+              command: useradd ssm-user --uid 400 -g ssm-user
             052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
