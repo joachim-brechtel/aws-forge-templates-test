@@ -58,7 +58,7 @@ pipelines:
               # test to determine MASTERSTACK
               #- aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName'
               - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
-              #- if [ -z "$MASTERSTACK" ]; then export MASTERSTACK="ATL";fi
+              - if [ -z "$MASTERSTACK" ]; then export MASTERSTACK="ATL";fi
               - echo $MASTERSTACK
               - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep "\"${MASTERSTACK}\""; then touch vpcExists; fi
               - ls
