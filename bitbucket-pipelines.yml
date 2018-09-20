@@ -29,11 +29,12 @@ pipelines:
               - (umask  077 ; echo $CI_BB_PRIVKEY | base64 -d > ~/.ssh/id_rsa)
               # Todo:
               # Work out what has changed in this branch using `git diff --name-only $(git merge-base master HEAD)`
+              - git fetch origin master:master
               - git fetch origin "+refs/heads/*:refs/remotes/origin/*"
               - git branch
               - git config user.email "itops-ci@atlassian.com"
               - git config user.name "Itops CI"
-              - git diff --name-only master > changelog
+              - git diff --name-only origin/master > changelog
               #- git stash
               #- git checkout origin/master
               #- git checkout $BITBUCKET_BRANCH
