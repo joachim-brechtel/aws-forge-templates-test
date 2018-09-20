@@ -10,6 +10,7 @@ Metadata:
       - Label:
           default: Confluence setup
         Parameters:
+          - CollaborativeEditingMode
           - ConfluenceVersion
       - Label:
           default: Deployment information
@@ -103,6 +104,8 @@ Metadata:
         default: Cluster node instance type
       ClusterNodeVolumeSize:
         default: Cluster node instance volume size
+      CollaborativeEditingMode:
+        default: Collaborative editing mode
       ConfluenceDownloadUrl:
         default: Confluence download URL
       ConfluenceVersion:
@@ -271,7 +274,7 @@ Parameters:
       - x1.16xlarge
       - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
-    Description: Instance type for the cluster application nodes.
+    Description: Instance type for the cluster application nodes (note.. for "synchrony-local" collaborative editing you must chose an instance size with over 5gb ram).
     Type: String
   ClusterNodeMax:
     Default: 1
@@ -283,6 +286,14 @@ Parameters:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
+  CollaborativeEditingMode:
+    Default: synchrony-separate-nodes
+    AllowedValues:
+      - none
+      - synchrony-local
+      - synchrony-separate-nodes
+    Description: Collaborative Editing can be off, run locallly on the confluence nodes (leave 1gb heap free for syncrony), or run on a separately autoscaled group of nodes.
+    Type: String
   ConfluenceDownloadUrl:
     Default: ''
     Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
@@ -601,6 +612,8 @@ Conditions:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
+  UseSynchronyASG:
+    !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
   UseSubDomainName:
     !Not [!Equals [!Ref SubDomainName, '']]
   GovCloudCondition:
@@ -891,6 +904,7 @@ Resources:
                   - "\n"
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
+                    - !If [UseSynchronyASG, !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]]}], !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_AUTOLOGIN_COOKIE_AGE=${AutologinCookieAge}", AutologinCookieAge: !Ref AutologinCookieAge]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
@@ -919,7 +933,6 @@ Resources:
                     - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
-                    - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]]}]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
@@ -1016,11 +1029,7 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
-            050_ssm_group:
-              command: groupadd ssm-user --gid 400
-            051_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-            052_ensure_ssm:
+            050_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
@@ -1118,6 +1127,7 @@ Resources:
 # Synchrony node config
   SynchronyClusterNodeGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
+    Condition: UseSynchronyASG
     Properties:
       DesiredCapacity: !Ref SynchronyClusterNodeMin
       LaunchConfigurationName: !Ref SynchronyClusterNodeLaunchConfig
@@ -1137,6 +1147,7 @@ Resources:
           PropagateAtLaunch: true
   SynchronyClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
+    Condition: UseSynchronyASG
     DependsOn:
       - EFSMountAz1
       - EFSMountAz2
@@ -1268,11 +1279,7 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
-            050_ssm_group:
-              command: groupadd ssm-user --gid 400
-            051_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-            052_ensure_ssm:
+            050_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
@@ -1323,6 +1330,7 @@ Resources:
               - !Sub [" --resource SynchronyClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
   SynchronyClusterNodeScaleUpPolicy:
     Type: "AWS::AutoScaling::ScalingPolicy"
+    Condition: UseSynchronyASG
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref SynchronyClusterNodeGroup
@@ -1330,6 +1338,7 @@ Resources:
       ScalingAdjustment: 1
   SynchronyClusterNodeScaleDownPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
+    Condition: UseSynchronyASG
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref SynchronyClusterNodeGroup
@@ -1337,6 +1346,7 @@ Resources:
       ScalingAdjustment: -1
   SynchronyCPUAlarmHigh:
     Type: AWS::CloudWatch::Alarm
+    Condition: UseSynchronyASG
     Properties:
       AlarmDescription: Scale up if CPU > 60% for 5 minutes
       MetricName: CPUUtilization
@@ -1352,6 +1362,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
   SynchronyCPUAlarmLow:
     Type: AWS::CloudWatch::Alarm
+    Condition: UseSynchronyASG
     Properties:
       AlarmDescription: Scale down if CPU < 40% for 30 minutes
       MetricName: CPUUtilization
@@ -1479,6 +1490,7 @@ Resources:
         - !GetAtt LoadBalancer.DNSName
   SynchronyListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Condition: UseSynchronyASG
     Properties:
       Actions:
         - Type: forward
@@ -1517,6 +1529,7 @@ Resources:
       - LoadBalancer
   SynchronyTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: UseSynchronyASG
     Properties:
       Port: 8091
       Protocol: HTTP
@@ -1615,7 +1628,7 @@ Outputs:
     Value: !Ref SecurityGroup
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
-    }
+      }
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
@@ -1627,7 +1640,7 @@ Outputs:
       - !Ref ElasticFileSystem
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
-    }
+      }
   ConfluenceTargetGroupARN:
     Description: The name of the load balancer of Confluence cluster nodes
     Value: !Ref MainTargetGroup
@@ -1636,4 +1649,7 @@ Outputs:
     Value: !Ref ClusterNodeGroup
   SynchronyClusterNodeGroup:
     Description: The name of the auto scaling group of Synchrony cluster nodes
-    Value: !Ref SynchronyClusterNodeGroup
+    Value: !If
+      - UseCustomDnsName
+      - !Ref SynchronyClusterNodeGroup
+      - 'local'
