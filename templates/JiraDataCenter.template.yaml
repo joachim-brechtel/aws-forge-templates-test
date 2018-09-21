@@ -32,6 +32,7 @@ Metadata:
           - DBMultiAZ
           - DBPassword
           - DBStorage
+          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
@@ -128,6 +129,8 @@ Metadata:
         default: DB Remove Abandoned Timeout
       DBStorage:
         default: Database storage
+      DBStorageEncrypted:
+        default: Database encryption
       DBStorageType:
         default: Database storage type
       DBTestOnBorrow:
@@ -359,6 +362,13 @@ Parameters:
     Default: 200
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
+  DBStorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database
+    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -527,6 +537,8 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
+  UseDatabaseEncryption:
+    !Equals [!Ref DBStorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
@@ -1029,9 +1041,11 @@ Resources:
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1137,6 +1151,30 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
+  EncryptionKey:
+    Condition: UseDatabaseEncryption
+    DeletionPolicy: Retain
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Sub "${AWS::StackName}"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+  EncryptionKeyAlias:
+    Condition: UseDatabaseEncryption
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}"
+      TargetKeyId: !Ref EncryptionKey
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -1174,6 +1212,10 @@ Outputs:
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
+  DBEncryptionKey:
+    Condition: UseDatabaseEncryption
+    Description: The alias of the encryption key created for RDS
+    Value: !Ref EncryptionKeyAlias
   EFSCname:
     Description: The cname of the EFS
     Value: !If
