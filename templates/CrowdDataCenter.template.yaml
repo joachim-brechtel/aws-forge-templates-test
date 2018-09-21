@@ -71,6 +71,7 @@ Metadata:
             - DBTestOnBorrow
             - DBTestWhileIdle
             - DBTimeBetweenEvictionRunsMillis
+            - MailEnabled
             - TomcatAcceptCount
             - TomcatConnectionTimeout
             - TomcatDefaultConnectorPort
@@ -155,6 +156,8 @@ Metadata:
         default: Git repo for local-ansible
       LocalAnsibleGitKey:
         default: Git key for local-ansible
+      MailEnabled:
+        default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
       TomcatAcceptCount:
@@ -191,7 +194,6 @@ Parameters:
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -428,6 +430,14 @@ Parameters:
     Default: ''
     Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
     Type: String
+  MailEnabled:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Default: true
+    Description: Enable mail processing and sending
+    Type: String
   SSLCertificateARN:
     Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
@@ -500,6 +510,8 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
+  DisableMail:
+    !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
   DoSetDBMasterUserPassword:
@@ -789,7 +801,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true', ''] }]
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
                     - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
