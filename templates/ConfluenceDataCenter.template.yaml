@@ -612,10 +612,10 @@ Conditions:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
-  UseSynchronyASG:
-    !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
   UseSubDomainName:
     !Not [!Equals [!Ref SubDomainName, '']]
+  UseSynchronyAutoScalingGroup:
+    !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
   GovCloudCondition:
     !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
 Mappings:
@@ -904,7 +904,7 @@ Resources:
                   - "\n"
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
-                    - !If [UseSynchronyASG, !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]]}], !Ref "AWS::NoValue"]
+                    - !If [UseSynchronyAutoScalingGroup, !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony/v1", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]]}], !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_AUTOLOGIN_COOKIE_AGE=${AutologinCookieAge}", AutologinCookieAge: !Ref AutologinCookieAge]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
@@ -1127,7 +1127,7 @@ Resources:
 # Synchrony node config
   SynchronyClusterNodeGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       DesiredCapacity: !Ref SynchronyClusterNodeMin
       LaunchConfigurationName: !Ref SynchronyClusterNodeLaunchConfig
@@ -1147,7 +1147,7 @@ Resources:
           PropagateAtLaunch: true
   SynchronyClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     DependsOn:
       - EFSMountAz1
       - EFSMountAz2
@@ -1330,7 +1330,7 @@ Resources:
               - !Sub [" --resource SynchronyClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
   SynchronyClusterNodeScaleUpPolicy:
     Type: "AWS::AutoScaling::ScalingPolicy"
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref SynchronyClusterNodeGroup
@@ -1338,7 +1338,7 @@ Resources:
       ScalingAdjustment: 1
   SynchronyClusterNodeScaleDownPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref SynchronyClusterNodeGroup
@@ -1346,7 +1346,7 @@ Resources:
       ScalingAdjustment: -1
   SynchronyCPUAlarmHigh:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       AlarmDescription: Scale up if CPU > 60% for 5 minutes
       MetricName: CPUUtilization
@@ -1362,7 +1362,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
   SynchronyCPUAlarmLow:
     Type: AWS::CloudWatch::Alarm
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       AlarmDescription: Scale down if CPU < 40% for 30 minutes
       MetricName: CPUUtilization
@@ -1490,7 +1490,7 @@ Resources:
         - !GetAtt LoadBalancer.DNSName
   SynchronyListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       Actions:
         - Type: forward
@@ -1529,7 +1529,7 @@ Resources:
       - LoadBalancer
   SynchronyTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Condition: UseSynchronyASG
+    Condition: UseSynchronyAutoScalingGroup
     Properties:
       Port: 8091
       Protocol: HTTP
