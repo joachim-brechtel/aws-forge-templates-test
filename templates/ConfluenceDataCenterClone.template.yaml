@@ -215,7 +215,6 @@ Parameters:
     Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:

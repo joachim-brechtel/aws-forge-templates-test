@@ -197,7 +197,6 @@ Parameters:
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -826,7 +825,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', ''] }]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true', ''] }]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
                     - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
                     - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
