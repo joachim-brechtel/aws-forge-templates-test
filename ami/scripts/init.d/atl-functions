@@ -304,7 +304,8 @@ EOT
         set +C
     fi
 
-    if $secure ; then
+    # See ITOPS-601: this is a legacy way of configuring SSL. Removing for all products except Bitbucket, in case they rely on it. Conf/Crowd/Jira do not.
+    if [[ $secure && "bitbucket" == "$(atl_toLowerCase ${ATL_ENABLED_PRODUCTS})" ]]; then
         atl_transformWebXml "${USER}" "${WEB_XML}"
     fi
 
