@@ -798,6 +798,16 @@ Resources:
       Comment: ''
       AWS::CloudFormation::Init:
         config:
+          packages:
+            !If
+              - DoCollectd
+              - yum:
+                  collectd: []
+                  collectd-java: []
+                  collectd-generic-jmx: []
+                  collectd-rrdtool: []
+                  collectd-disk: []
+              - !Ref "AWS::NoValue"
           files:
             /etc/atl:
               mode: "000640"
