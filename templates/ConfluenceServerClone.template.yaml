@@ -866,11 +866,15 @@ Resources:
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
-          default: [epel, env]
-        epel:
+          default: [preflight, env]
+        preflight:
           commands:
-            enable_epel:
+            010_enable_epel:
               command: yum-config-manager --enable epel
+            020_ssm_group:
+              command: groupadd ssm-user --gid 400
+            030_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
         env:
           packages:
             yum:
