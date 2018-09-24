@@ -10,7 +10,6 @@
     "business_unit": null,
     "resource_owner": null,
 
-    "availability_zone":        "us-east-1a",
     "config_location":          "/etc/sysconfig/atl",
     "log_location":             "/var/log/atl.log",
     "name":                     "crowd",
@@ -30,7 +29,6 @@
     "type": "amazon-ebs",
     "communicator": "ssh",
     "ssh_pty": "true",
-    "availability_zone": "us-east-1a",
 
     "ami_name": "{{user `full_display_name`}} {{isotime \"2006.01.02_1504\"}} (HVM)",
     "ami_description": "The {{user `full_display_name`}} AMI is an EBS-backed image based off Amazon Linux AMI (HVM). On first boot it downloads and installs the latest version of {{user `short_display_name`}} ready for you to use.",
