@@ -31,6 +31,7 @@ Metadata:
           - DBMultiAZ
           - DBPassword
           - DBStorage
+          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
@@ -71,6 +72,7 @@ Metadata:
             - DBTestOnBorrow
             - DBTestWhileIdle
             - DBTimeBetweenEvictionRunsMillis
+            - MailEnabled
             - TomcatAcceptCount
             - TomcatConnectionTimeout
             - TomcatDefaultConnectorPort
@@ -131,6 +133,8 @@ Metadata:
         default: DB Remove Abandoned Timeout
       DBStorage:
         default: Database storage
+      DBStorageEncrypted:
+        default: Database encryption
       DBStorageType:
         default: Database storage type
       DBTestOnBorrow:
@@ -155,6 +159,8 @@ Metadata:
         default: Git repo for local-ansible
       LocalAnsibleGitKey:
         default: Git key for local-ansible
+      MailEnabled:
+        default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
       TomcatAcceptCount:
@@ -191,7 +197,6 @@ Parameters:
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -367,6 +372,13 @@ Parameters:
     Default: 20
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
+  DBStorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database
+    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -427,6 +439,14 @@ Parameters:
   LocalAnsibleGitKey:
     Default: ''
     Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
+  MailEnabled:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Default: true
+    Description: Enable mail processing and sending
     Type: String
   SSLCertificateARN:
     Default: ''
@@ -500,6 +520,8 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
+  DisableMail:
+    !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
   DoSetDBMasterUserPassword:
@@ -514,6 +536,8 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
+  UseDatabaseEncryption:
+    !Equals [!Ref DBStorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
@@ -789,7 +813,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true', ''] }]
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
                     - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
@@ -910,7 +934,11 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/crowd/shared
               ignoreErrors: false
-            050_ensure_ssm:
+            050_ssm_group:
+              command: groupadd ssm-user --gid 400
+            051_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
+            052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
@@ -1005,9 +1033,11 @@ Resources:
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1038,7 +1068,7 @@ Resources:
           PolicyName: JSessionIdStickiness
       ConnectionDrainingPolicy:
         Enabled: true
-        Timeout: 300
+        Timeout: 30
       ConnectionSettings:
         IdleTimeout: 3600
       CrossZone: true
@@ -1113,6 +1143,30 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
+  EncryptionKey:
+    Condition: UseDatabaseEncryption
+    DeletionPolicy: Retain
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Sub "${AWS::StackName}"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+  EncryptionKeyAlias:
+    Condition: UseDatabaseEncryption
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}"
+      TargetKeyId: !Ref EncryptionKey
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -1150,6 +1204,10 @@ Outputs:
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
+  DBEncryptionKey:
+    Condition: UseDatabaseEncryption
+    Description: The alias of the encryption key created for RDS
+    Value: !Ref EncryptionKeyAlias
   EFSCname:
     Description: The cname of the EFS
     Value: !If

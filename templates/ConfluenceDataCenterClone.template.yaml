@@ -78,6 +78,7 @@ Metadata:
           - DBValidate
           - DBPreferredTestQuery
           - DBAcquireIncrement
+          - MailEnabled
           - TomcatAcceptCount
           - TomcatConnectionTimeout
           - TomcatDefaultConnectorPort
@@ -140,8 +141,6 @@ Metadata:
         default: DB Preferred Test Query
       DBAcquireIncrement:
         default: DB Acquire Increment
-      DBSnapshotId:
-        default: Database snapshot ID to restore
       DBStorageType:
         default: Database storage type
       EBSSnapshotId:
@@ -164,6 +163,8 @@ Metadata:
         default: Git repo for local-ansible
       LocalAnsibleGitKey:
         default: Git key for local-ansible
+      MailEnabled:
+        default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
       SubDomainName:
@@ -212,7 +213,6 @@ Parameters:
     Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -389,12 +389,6 @@ Parameters:
     Default: 3
     Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
-  DBSnapshotId:
-    Default: ''
-    Description: RDS snapshot ID of an existing backup to restore. If you use this parameter you will also need to manually restore your shared home directory.  Leave blank for a new instance.
-    Type: String
-    ConstraintDescription:
-        Must be a valid RDS snapshot ID, or blank.
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -452,6 +446,14 @@ Parameters:
   LocalAnsibleGitKey:
     Default: ''
     Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
+  MailEnabled:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Default: false
+    Description: Enable mail processing and sending
     Type: String
   SubDomainName:
     Description: Leave this field blank to use your stack name as the sub-domain.
@@ -590,10 +592,10 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
+  DisableMail:
+    !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
-  DoRestoreFromRDSSnapshot:
-    !Not [!Equals [!Ref DBSnapshotId, '']]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
@@ -903,7 +905,7 @@ Resources:
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub ["ATL_AUTOLOGIN_COOKIE_AGE=${AutologinCookieAge}", AutologinCookieAge: !Ref AutologinCookieAge]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', ''] }]
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
                     - !Sub ["ATL_CONFLUENCE_VERSION=${ConfluenceVersion}", ConfluenceVersion: !Ref ConfluenceVersion]
                     - !Sub ["ATL_DB_ACQUIREINCREMENT=${DBAcquireIncrement}", DBAcquireIncrement: !Ref DBAcquireIncrement]
@@ -1020,7 +1022,11 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
-            050_ensure_ssm:
+            050_ssm_group:
+              command: groupadd ssm-user --gid 400
+            051_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
+            052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
@@ -1164,7 +1170,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', ''] }]
                     - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
                     - !Sub ["ATL_CONFLUENCE_VERSION=${ConfluenceVersion}", ConfluenceVersion: !Ref ConfluenceVersion]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
@@ -1261,7 +1267,11 @@ Resources:
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
               ignoreErrors: false
-            050_ensure_ssm:
+            050_ssm_group:
+              command: groupadd ssm-user --gid 400
+            051_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
+            052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
