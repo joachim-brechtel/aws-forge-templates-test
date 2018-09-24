@@ -35,6 +35,7 @@ Metadata:
           - DBMultiAZ
           - DBPassword
           - DBStorage
+          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
@@ -140,6 +141,8 @@ Metadata:
         default: DB Acquire Increment
       DBStorage:
         default: Database storage
+      DBStorageEncrypted:
+        default: Database encryption
       DBStorageType:
         default: Database storage type
       DeployEnvironment:
@@ -362,15 +365,15 @@ Parameters:
     Description: The maximum number of database connections that can be opened at any time
     Type: String
   DBPoolMinSize:
-    Default: 10
+    Default: 20
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBTimeout:
-    Default: 0
+    Default: 30
     Description: Number of seconds that Connections in excess of minPoolSize should be permitted to remain idle in the pool before being culled
     Type: String
   DBIdleTestPeriod:
-    Default: 0
+    Default: 100
     Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
     Type: String
   DBMaxStatements:
@@ -382,17 +385,24 @@ Parameters:
     Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
     Type: String
   DBPreferredTestQuery:
-    Default: ''
+    Default: 'select 1'
     Description: The query that will be executed for all connection tests
     Type: String
   DBAcquireIncrement:
-    Default: 3
+    Default: 1
     Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
   DBStorage:
     Default: 10
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
+  DBStorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database
+    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -609,6 +619,8 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
+  UseDatabaseEncryption:
+    !Equals [!Ref DBStorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
@@ -1428,9 +1440,11 @@ Resources:
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1603,6 +1617,30 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
+  EncryptionKey:
+    Condition: UseDatabaseEncryption
+    DeletionPolicy: Retain
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Sub "${AWS::StackName}"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+  EncryptionKeyAlias:
+    Condition: UseDatabaseEncryption
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}"
+      TargetKeyId: !Ref EncryptionKey
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -1640,6 +1678,10 @@ Outputs:
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
+  DBEncryptionKey:
+    Condition: UseDatabaseEncryption
+    Description: The alias of the encryption key created for RDS
+    Value: !Ref EncryptionKeyAlias
   EFSCname:
     Description: The cname of the EFS
     Value: !If
@@ -1658,6 +1700,6 @@ Outputs:
   SynchronyClusterNodeGroup:
     Description: The name of the auto scaling group of Synchrony cluster nodes
     Value: !If
-      - UseCustomDnsName
+      - UseSynchronyAutoScalingGroup
       - !Ref SynchronyClusterNodeGroup
       - 'local'
