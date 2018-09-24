@@ -51,7 +51,6 @@ Metadata:
         Parameters:
           - AutologinCookieAge
           - ConfluenceDownloadUrl
-          - DBSnapshotName
           - LocalAnsibleGitRepo
           - LocalAnsibleGitKey
           - StartCollectd
@@ -120,8 +119,6 @@ Metadata:
         default: DB Preferred Test Query
       DBAcquireIncrement:
         default: DB Acquire Increment
-      DBSnapshotName:
-        default: Database snapshot name to restore
       DBStorage:
         default: Database storage
       DBStorageType:
@@ -298,11 +295,6 @@ Parameters:
     Default: 3
     Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
-  DBSnapshotName:
-    Default: ''
-    Description: RDS snapshot name of an existing backup to restore. If you use this parameter you will also need to manually restore your shared home directory.  Leave blank for a new instance.
-    Type: String
-    ConstraintDescription: Must be a valid RDS snapshot name, or blank.
   DBStorage:
     Default: 10
     Description: Database allocated storage size, in gigabytes (GB)
@@ -520,8 +512,6 @@ Conditions:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
-  DoRestoreFromRDSSnapshot:
-    !Not [!Equals [!Ref DBSnapshotName, '']]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
@@ -1073,7 +1063,6 @@ Resources:
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
-      DBSnapshotIdentifier: !If [DoRestoreFromRDSSnapshot, !Ref DBSnapshotName, !Ref 'AWS::NoValue']
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
