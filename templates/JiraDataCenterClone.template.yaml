@@ -967,10 +967,13 @@ Resources:
               ignoreErrors: false
             050_ssm_group:
               command: groupadd ssm-user --gid 400
+              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
             051_ssm_user:
               command: useradd ssm-user --uid 400 -g ssm-user
+              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
             052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+              ignoreErrors: true
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
