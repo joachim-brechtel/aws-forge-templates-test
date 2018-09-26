@@ -49,12 +49,13 @@ function atl_enabled_products {
     done
 }
 
-function recursiveChown {
+function atl_recursiveChown {
+
   local CH_USER=$1
   local CH_GROUP=$2
   local CH_OBJECT=$3
 
-  sudo chown -R -H ${CH_USER}:${CH_GROUP} ${CH_OBJECT} >> ${ATL_LOG} 2>&1
+  sudo chown -R -H "${CH_USER}:${CH_GROUP}" "${CH_OBJECT}" >> "${ATL_LOG}" 2>&1
 }
 
 function atl_enabled_shared_homes {
