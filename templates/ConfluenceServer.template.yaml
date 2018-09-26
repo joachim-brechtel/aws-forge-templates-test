@@ -274,15 +274,15 @@ Parameters:
     Description: The maximum number of database connections that can be opened at any time
     Type: String
   DBPoolMinSize:
-    Default: 10
+    Default: 20
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBTimeout:
-    Default: 0
+    Default: 30
     Description: Number of seconds that Connections in excess of minPoolSize should be permitted to remain idle in the pool before being culled
     Type: String
   DBIdleTestPeriod:
-    Default: 0
+    Default: 100
     Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
     Type: String
   DBMaxStatements:
@@ -294,11 +294,11 @@ Parameters:
     Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
     Type: String
   DBPreferredTestQuery:
-    Default: ''
+    Default: 'select 1'
     Description: The query that will be executed for all connection tests
     Type: String
   DBAcquireIncrement:
-    Default: 3
+    Default: 1
     Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
   DBStorage:
