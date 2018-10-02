@@ -208,7 +208,7 @@ Parameters:
     MinLength: 9
     MaxLength: 18
   ClusterNodeInstanceType:
-    Default: t2.medium
+    Default: t3.medium
     AllowedValues:
       - c4.large
       - c4.xlarge
@@ -221,20 +221,27 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
       - d2.xlarge
       - d2.2xlarge
       - d2.4xlarge
       - d2.8xlarge
-      - i2.xlarge
-      - i2.2xlarge
-      - i2.4xlarge
-      - i2.8xlarge
+      - h1.2xlarge
+      - h1.4xlarge
+      - h1.8xlarge
+      - h1.16xlarge
       - i3.large
       - i3.xlarge
       - i3.2xlarge
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
+      - i3.metal
       - m4.large
       - m4.xlarge
       - m4.2xlarge
@@ -245,20 +252,54 @@ Parameters:
       - m5.xlarge
       - m5.2xlarge
       - m5.4xlarge
-      - m5.10xlarge
-      - m5.16xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - m5d.large
+      - m5d.xlarge
+      - m5d.2xlarge
+      - m5d.4xlarge
+      - m5d.12xlarge
+      - m5d.24xlarge
       - r4.large
       - r4.xlarge
       - r4.2xlarge
       - r4.4xlarge
       - r4.8xlarge
       - r4.16xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5.12xlarge
+      - r5.24xlarge
+      - r5d.large
+      - r5d.xlarge
+      - r5d.2xlarge
+      - r5d.4xlarge
+      - r5d.12xlarge
+      - r5d.24xlarge
       - t2.medium
       - t2.large
       - t2.xlarge
       - t2.2xlarge
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - x1.16xlarge
       - x1.32xlarge
+      - x1e.xlarge
+      - x1e.2xlarge
+      - x1e.4xlarge
+      - x1e.8xlarge
+      - x1e.16xlarge
+      - x1e.32xlarge
+      - z1d.large
+      - z1d.xlarge
+      - z1d.2xlarge
+      - z1d.3xlarge
+      - z1d.6xlarge
+      - z1d.12xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the cluster application nodes.
     Type: String
@@ -303,6 +344,8 @@ Parameters:
       - db.r4.16xlarge
       - db.t2.medium
       - db.t2.large
+      - db.t2.xlarge
+      - db.t2.2xlarge
     ConstraintDescription: Must be a valid RDS instance class, from the selection list
     Description: RDS instance type
     Type: String
@@ -544,12 +587,9 @@ Conditions:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
 Mappings:
   AWSInstanceType2Arch:
-    c4.large:
-      Arch: HVM64
-      Jvmheap: 2048m
     c4.xlarge:
       Arch: HVM64
-      Jvmheap: 6144m
+      Jvmheap: 4608m
     c4.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -564,10 +604,10 @@ Mappings:
       Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 5120m
     c5.2xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     c5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -575,6 +615,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     c5.18xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5d.large:
+      Arch: HVM64
+      Jvmheap: 2048m
+    c5d.xlarge:
+      Arch: HVM64
+      Jvmheap: 5120m
+    c5d.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5d.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5d.9xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5d.18xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     d2.xlarge:
@@ -589,16 +647,16 @@ Mappings:
     d2.8xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    i2.xlarge:
+    h1.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    i2.2xlarge:
+    h1.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    i2.4xlarge:
+    h1.8xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    i2.8xlarge:
+    h1.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     i3.large:
@@ -619,9 +677,12 @@ Mappings:
     i3.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    i3.metal:
+      Arch: HVM64
+      Jvmheap: 12288m
     m4.large:
       Arch: HVM64
-      Jvmheap: 6144m
+      Jvmheap: 5120m
     m4.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -649,10 +710,28 @@ Mappings:
     m5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    m5.10xlarge:
+    m5.12xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    m5.16xlarge:
+    m5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5d.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    m5d.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5d.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5d.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5d.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5d.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r4.large:
@@ -673,22 +752,106 @@ Mappings:
     r4.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    r5.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     t2.medium:
       Arch: HVM64
       Jvmheap: 2048m
     t2.large:
       Arch: HVM64
-      Jvmheap: 6144m
+      Jvmheap: 5120m
     t2.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     t2.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    t3.medium:
+      Arch: HVM64
+      Jvmheap: 2048m
+    t3.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    t3.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    t3.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     x1.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     x1.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    x1e.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    x1e.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    x1e.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    x1e.8xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    x1e.16xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    x1e.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.3xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.6xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.12xlarge:
       Arch: HVM64
       Jvmheap: 12288m
   AWSRegionArch2AMI:

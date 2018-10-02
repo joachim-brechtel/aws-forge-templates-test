@@ -340,7 +340,7 @@ Parameters:
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InstanceType:
-    Default: t2.large
+    Default: t3.large
     AllowedValues:
       - c4.xlarge
       - c4.2xlarge
@@ -395,9 +395,24 @@ Parameters:
       - r4.4xlarge
       - r4.8xlarge
       - r4.16xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5.12xlarge
+      - r5.24xlarge
+      - r5d.large
+      - r5d.xlarge
+      - r5d.2xlarge
+      - r5d.4xlarge
+      - r5d.12xlarge
+      - r5d.24xlarge
       - t2.large
       - t2.xlarge
       - t2.2xlarge
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - x1.16xlarge
       - x1.32xlarge
       - x1e.xlarge
@@ -406,6 +421,12 @@ Parameters:
       - x1e.8xlarge
       - x1e.16xlarge
       - x1e.32xlarge
+      - z1d.large
+      - z1d.xlarge
+      - z1d.2xlarge
+      - z1d.3xlarge
+      - z1d.6xlarge
+      - z1d.12xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the application server.
     Type: String
@@ -561,10 +582,10 @@ Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
       Arch: HVM64
-      Jvmheap: 4096m
+      Jvmheap: 3584m
     c4.2xlarge:
       Arch: HVM64
-      Jvmheap: 9728m
+      Jvmheap: 11264m
     c4.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -573,10 +594,10 @@ Mappings:
       Jvmheap: 12288m
     c5.xlarge:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     c5.2xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     c5.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -588,10 +609,10 @@ Mappings:
       Jvmheap: 12288m
     c5d.xlarge:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     c5d.2xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     c5d.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -627,7 +648,7 @@ Mappings:
       Jvmheap: 12288m
     i3.large:
       Arch: HVM64
-      Jvmheap: 9728m
+      Jvmheap: 11264m
     i3.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -648,10 +669,10 @@ Mappings:
       Jvmheap: 12288m
     m4.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     m4.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     m4.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -666,10 +687,10 @@ Mappings:
       Jvmheap: 12288m
     m5.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     m5.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     m5.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -684,10 +705,10 @@ Mappings:
       Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     m5d.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     m5d.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -702,7 +723,7 @@ Mappings:
       Jvmheap: 12288m
     r4.large:
       Arch: HVM64
-      Jvmheap: 9728m
+      Jvmheap: 11264m
     r4.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -718,13 +739,58 @@ Mappings:
     r4.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    r5.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5d.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     t2.large:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 4096m
     t2.xlarge:
       Arch: HVM64
-      Jvmheap: 10240m
+      Jvmheap: 12288m
     t2.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    t3.large:
+      Arch: HVM64
+      Jvmheap: 4096m
+    t3.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    t3.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     x1.16xlarge:
@@ -749,6 +815,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     x1e.32xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.3xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.6xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    z1d.12xlarge:
       Arch: HVM64
       Jvmheap: 12288m
   AWSRegionArch2AMI:
