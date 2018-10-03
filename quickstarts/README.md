@@ -23,14 +23,16 @@ This directory contains the following AWS CloudFormation Quickstart templates:
 
 ### Use
 
-Note: You must create either quickstart-for-atlassian-services or quickstart-vpc-for-atlassian-services first as they create the network structure required by the other Quickstarts 
+Note: You must create either `quickstart-for-atlassian-services` or `quickstart-vpc-for-atlassian-services` first as they create the network structure required by the other Quickstarts 
 
 To use, go to [the AWS EC2 console - Key Pairs](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#KeyPairs:sort=keyName) 
-* Switch to the region you want your quickstart in
-* Create your AWS Key Pair
+
+* Switch to the region in which you will deploy your quickstart(s)
+* Create your AWS Key Pair.
 
 Go to [the AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1)
-* Click "Create New Stack" 
-* Click "Choose file" and select the Quickstart you want to deploy 
+
+* Click "Create New Stack".
+* Click "Choose file" and select the Quickstart you want to deploy.
 * Follow the prompts.
 
