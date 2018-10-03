@@ -4,22 +4,23 @@ This directory contains the following AWS CloudFormation Quickstart templates:
 
 | Template Name | Purpose |
 |---------------|-------------|
+| `quickstart-vpc-for-atlassian-services.yaml` | This quickstart spins up an Atlassian Services VPC + bastion only
+| `quickstart-for-atlassian-services.yaml` | This quickstart spins up Atlassian Services Vpc + bastion with an optional forge and backmac. From there you can use the product VPC's or the forge UI to spin up Atlassian product instances
 | `quickstart-backmac-for-atlassian-services.yaml` | This quickstart spins up the Backmac in a pre-existing Atlassian Service VPC only
 | `quickstart-bastion-for-atlassian-services.yaml` | This quickstart spins up a ssh bastion host in a pre-existing Atlassian Service VPC only
 | `quickstart-confluence-master.template.yaml` | This quickstart spins up a Confluence instance in a pre-existing Atlassian Service VPC only
 | `quickstart-crowd-master.template.yaml` | This quickstart spins up a Crowd instance in a pre-existing Atlassian Service VPC only
-| `quickstart-for-atlassian-services.yaml` | This quickstart spins up Atlassian Services Vpc + bastion with an optional forge and backmac. From there you can use the product VPC's or the forge UI to spin up Atlassian product instances
 | `quickstart-forge-for-atlassian-services.yaml` | This quickstart spins up Forge in a pre-existing Atlassian Service VPC only
 | `quickstart-jira-master.template.yaml` | This quickstart spins up a Jira instance in a pre-existing Atlassian Service VPC only
-| `quickstart-vpc-for-atlassian-services.yaml` | This quickstart spins up an Atlassian Services VPC + bastion only
+
 
 **Key Terms:**
 
 | Term | Definition |
 |------|------------|
-| `backmac` | Backmac is the backup machine toolset for automating the backup of atlassian product Cloudformation stacks and is required for stack replication and DR to alternate regions |
+| `backmac` | [Backmac](https://community.atlassian.com/t5/Data-Center-articles/Introducing-Atlassian-CloudFormation-Backup-Machine/ba-p/881556#M25) is the backup machine toolset for automating the backup of atlassian product Cloudformation stacks and is required for stack replication and DR to alternate regions |
 | `bastion` | An ec2 node with sshd and a public IP that allows you to connect to other resources inside the Atlassian Services VPC. |
-| `forge` | Forge is a Cloudformation automation tool, which consolidates and simplifies most of the tasks you would need to do on atlassian products in AWS in a single webUI  |
+| `forge` | [Forge](https://community.atlassian.com/t5/Data-Center-articles/Introducing-Atlassian-CloudFormation-Forge/ba-p/881551) is a Cloudformation automation tool, which consolidates and simplifies most of the tasks you would need to do on atlassian products in AWS in a single webUI  |
 
 ### Use
 
