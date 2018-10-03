@@ -1,4 +1,4 @@
-## Atlassian AWS CloudFormation templates
+## Atlassian AWS CloudFormation Quickstart templates
 
 This directory contains the following AWS CloudFormation Quickstart templates:
 
@@ -6,7 +6,7 @@ This directory contains the following AWS CloudFormation Quickstart templates:
 |---------------|-------------|
 | `quickstart-vpc-for-atlassian-services.yaml` | This quickstart spins up an Atlassian Services VPC + bastion only
 | `quickstart-for-atlassian-services.yaml` | This quickstart spins up Atlassian Services Vpc + bastion with an optional forge and backmac. From there you can use the product VPC's or the forge UI to spin up Atlassian product instances
-| `quickstart-backmac-for-atlassian-services.yaml` | This quickstart spins up the Backmac in a pre-existing Atlassian Service VPC only
+| `quickstart-backmac-for-atlassian-services.yaml` | This quickstart spins up Backmac in a pre-existing Atlassian Service VPC only
 | `quickstart-bastion-for-atlassian-services.yaml` | This quickstart spins up a ssh bastion host in a pre-existing Atlassian Service VPC only
 | `quickstart-confluence-master.template.yaml` | This quickstart spins up a Confluence instance in a pre-existing Atlassian Service VPC only
 | `quickstart-crowd-master.template.yaml` | This quickstart spins up a Crowd instance in a pre-existing Atlassian Service VPC only
