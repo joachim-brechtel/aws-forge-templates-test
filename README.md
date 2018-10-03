@@ -3,6 +3,10 @@
 This repository contains scripts and templates for deploying Atlassian products into the Amazon
 Web Services (AWS) cloud. 
 
+## For the fastest way to get Atlassian Products up and running in your AWS account
+
+See the [`quickstarts`](quickstarts) directory.
+
 ## Atlassian AMI
 
 See the [`ami`](ami) directory.
