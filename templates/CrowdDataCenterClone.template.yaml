@@ -1106,6 +1106,12 @@ Resources:
             052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
               ignoreErrors: true
+            060_update_db_endpoint:
+              command: !Sub ["sed -i 's_jdbc:postgres.*?_jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd?_' /media/atl/crowd/shared/crowd.cfg.xml", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
+            070_update_db_user:
+              command: sed -i 's_<property name=\"hibernate.connection.username\">.*</property>_<property name=\"hibernate.connection.username\">atlcrowd</property>_' /media/atl/crowd/shared/crowd.cfg.xml
+            080_update_db_password:
+              command: !Sub ["sed -i 's_<property name=\"hibernate.connection.password\">.*</property>_<property name=\"hibernate.connection.password\">${DBPassword}</property>_' /media/atl/crowd/shared/crowd.cfg.xml", { DBPassword: !Ref DBPassword }]
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
