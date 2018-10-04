@@ -293,18 +293,23 @@ Resources:
         InternalSubnet: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
         VPC: !GetAtt VPCStack.Outputs.VPCID
 Outputs:
-  VPCID:
-    Description: Atlassian Services VPC ID
-    Value: !GetAtt VPCStack.Outputs.VPCID
+  DefaultKey:
+    Description: Default Ec2 keypair name
+    Value: !Ref 'KeyPairName'
     Export:
-      Name: !Join ['', [!Ref 'AWS::StackName', '-VPCID']]
-  PublicSubnets:
-    Description: A list of 2 Public subnets
-    Value: !Join [ ',', [ !GetAtt VPCStack.Outputs.PublicSubnet1ID, !GetAtt VPCStack.Outputs.PublicSubnet2ID ]]
-    Export:
-      Name: !Join ['', [!Ref 'AWS::StackName', '-PubNets']]
+      Name: !Join ['', [!Ref 'AWS::StackName', '-defaultkey']]
   PrivateSubnets:
     Description: A list of 2 Private subnets
     Value: !Join [ ',', [ !GetAtt VPCStack.Outputs.PrivateSubnet1AID, !GetAtt VPCStack.Outputs.PrivateSubnet2AID ]]
     Export:
       Name: !Join ['', [!Ref 'AWS::StackName', '-PriNets']]
+  PublicSubnets:
+    Description: A list of 2 Public subnets
+    Value: !Join [ ',', [ !GetAtt VPCStack.Outputs.PublicSubnet1ID, !GetAtt VPCStack.Outputs.PublicSubnet2ID ]]
+    Export:
+      Name: !Join ['', [!Ref 'AWS::StackName', '-PubNets']]
+  VPCID:
+    Description: Atlassian Services VPC ID
+    Value: !GetAtt VPCStack.Outputs.VPCID
+    Export:
+      Name: !Join ['', [!Ref 'AWS::StackName', '-VPCID']]
