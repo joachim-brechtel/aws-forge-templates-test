@@ -7,7 +7,9 @@ set -e
 
 trap 'atl_error ${LINENO}' ERR
 
-ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
+if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
+    ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
+fi
 
 # We are using ALB so Confluence will startup without Synchrony-Proxy and using Synchrony at port 8091 of LB
 function start {
@@ -37,7 +39,7 @@ function start {
     runLocalAnsible
     atl_log "=== END:   service atl-init-confluence runLocalAnsible ==="
 
-    recursiveChown "root" "confluence" "/etc/atl"
+    atl_recursiveChown "root" "confluence" "/etc/atl"
 
     if [ "${ATL_ENVIRONMENT}" != "prod" ]; then
         local baseURL="${ATL_TOMCAT_SCHEME}://${ATL_PROXY_NAME}${ATL_TOMCAT_CONTEXTPATH}"
@@ -127,9 +129,16 @@ function configureSharedHome {
         mkdir -p "${CONFLUENCE_SHARED}"
         chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${CONFLUENCE_SHARED}" >> "${ATL_LOG}" 2>&1
         if ! chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1; then
-            atl_log "Chown on contents of shared home failed most likley because this is a new cluster and no contents yet exist, moving on"
+            atl_log "Chown on contents of shared home failed most likley because this is a new cluster or instance and no contents yet exist, moving on"
         fi
-        su "${ATL_CONFLUENCE_USER}" -c "ln -s \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
+        su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
+        if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]]; then
+            mkdir -p "${CONFLUENCE_SHARED}"/{backups,attachments,imgEffects,thumbnails}
+            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/backups\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/attachments\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/imgEffects\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/thumbnails\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+        fi
     else
         atl_log "No mountpoint for shared home exists."
     fi
@@ -139,23 +148,50 @@ function configureSharedHome {
 function configureConfluenceHome {
     atl_log "Configuring ${ATL_CONFLUENCE_HOME}"
     mkdir -p "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
-
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
-        configureSharedHome
-    fi
-
+    configureSharedHome
     atl_log "Setting ownership of ${ATL_CONFLUENCE_HOME} to '${ATL_CONFLUENCE_USER}' user"
     chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring ${ATL_CONFLUENCE_HOME}"
 }
 
 function configureDbProperties {
-    atl_log "Configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB settings"
-    local PRODUCT_CONFIG_NAME="confluence"
-    local CONFLUENCE_SETUP_STEP="setupstart"
-    local CONFLUENCE_SETUP_TYPE="custom"
-    local CONFLUENCE_BUILD_NUMBER="0"
-    cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
+
+    local LOCAL_CFG_XML="${ATL_CONFLUENCE_HOME}/confluence.cfg.xml"
+    local SHARED_CFG_XML="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home/confluence.cfg.xml"
+
+    declare -A SERVER_PROPS=(
+        ["hibernate.connection.driver_class"]="${ATL_JDBC_DRIVER}"
+        ["hibernate.connection.url"]="${ATL_JDBC_URL}"
+        ["hibernate.connection.password"]="${ATL_JDBC_PASSWORD}"
+        ["hibernate.connection.username"]="${ATL_JDBC_USER}"
+        ["hibernate.c3p0.max_size"]="${ATL_DB_POOLMAXSIZE}"
+        ["hibernate.c3p0.min_size"]="${ATL_DB_POOLMINSIZE}"
+        ["hibernate.c3p0.timeout"]="${ATL_DB_TIMEOUT}"
+        ["hibernate.c3p0.idle_test_period"]="${ATL_DB_IDLETESTPERIOD}"
+        ["hibernate.c3p0.max_statements"]="${ATL_DB_MAXSTATEMENTS}"
+        ["hibernate.c3p0.validate"]="${ATL_DB_VALIDATE}"
+        ["hibernate.c3p0.preferredTestQuery"]="${ATL_DB_PREFERREDTESTQUERY}"
+        ["hibernate.c3p0.acquire_increment"]="${ATL_DB_ACQUIREINCREMENT}"
+        ["shared-home"]="${ATL_CONFLUENCE_SHARED_HOME}"
+    )
+
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]] && [[ -f "${SHARED_CFG_XML}" ]] && grep "setupStep>complete" "${SHARED_CFG_XML}" >> "${ATL_LOG}" 2>&1; then
+        # Confluence Server doesn't really use the shared-home config at all, but we want it to for resiliency/recovery in a cloud environment
+        # Hence, if this run isn't for Data Center and we find a completed config in the shared-home, we'll grab it and update it with any new/updated values
+        atl_log "Found complete Confluence Server config in shared-home; restoring configuration"
+        su "${ATL_CONFLUENCE_USER}" -c "cp -fpv \"${SHARED_CFG_XML}\" \"${LOCAL_CFG_XML}\"" >> "${ATL_LOG}" 2>&1
+        atl_log "Editing restored confluence.cfg.xml with updated configuration options"
+        for PROP in "${!SERVER_PROPS[@]}"; do
+            xmlstarlet edit --inplace --update "/confluence-configuration/properties/property[@name='${PROP}']" --value "${SERVER_PROPS[${PROP}]}" "${LOCAL_CFG_XML}"
+        done
+    else
+        # Otherwise, consider this a "new install" and we'll create the configuration from scratch
+        atl_log "Configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB settings"
+        local PRODUCT_CONFIG_NAME="confluence"
+        local CONFLUENCE_SETUP_STEP="setupstart"
+        local CONFLUENCE_SETUP_TYPE="custom"
+        local CONFLUENCE_BUILD_NUMBER="0"
+        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee \"${LOCAL_CFG_XML}\"" > /dev/null
 <?xml version="1.0" encoding="UTF-8"?>
 
 <${PRODUCT_CONFIG_NAME}-configuration>
@@ -165,26 +201,17 @@ function configureDbProperties {
   <properties>
     <property name="confluence.database.choice">postgresql</property>
     <property name="confluence.database.connection.type">database-type-standard</property>
-    <property name="hibernate.connection.driver_class">${ATL_JDBC_DRIVER}</property>
-    <property name="hibernate.connection.url">${ATL_JDBC_URL}</property>
-    <property name="hibernate.connection.password">${ATL_JDBC_PASSWORD}</property>
-    <property name="hibernate.connection.username">${ATL_JDBC_USER}</property>
-    <property name="hibernate.c3p0.max_size">${ATL_DB_POOLMAXSIZE}</property>
-    <property name="hibernate.c3p0.min_size">${ATL_DB_POOLMINSIZE}</property>
-    <property name="hibernate.c3p0.timeout">${ATL_DB_TIMEOUT}</property>
-    <property name="hibernate.c3p0.idle_test_period">${ATL_DB_IDLETESTPERIOD}</property>
-    <property name="hibernate.c3p0.max_statements">${ATL_DB_MAXSTATEMENTS}</property>
-    <property name="hibernate.c3p0.validate">${ATL_DB_VALIDATE}</property>
-    <property name="hibernate.c3p0.preferredTestQuery">${ATL_DB_PREFERREDTESTQUERY}</property>
-    <property name="hibernate.c3p0.acquire_increment">${ATL_DB_ACQUIREINCREMENT}</property>
     <property name="hibernate.dialect">com.atlassian.confluence.impl.hibernate.dialect.PostgreSQLDialect</property>
     <property name="webwork.multipart.saveDir">\${localHome}/temp</property>
     <property name="attachments.dir">\${confluenceHome}/attachments</property>
 EOT
 
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
-        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
-    <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
+        for PROP in "${!SERVER_PROPS[@]}"; do
+            echo "    <property name=\"${PROP}\">${SERVER_PROPS[${PROP}]}</property>" | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
+        done
+
+        if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
+            cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
     <property name="confluence.cluster">true</property>
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
     <property name="confluence.cluster.aws.iam.role">${ATL_HAZELCAST_NETWORK_AWS_IAM_ROLE}</property>
@@ -196,24 +223,24 @@ EOT
     <property name="confluence.cluster.name">${ATL_AWS_STACK_NAME}</property>
     <property name="confluence.cluster.ttl">1</property>
 EOT
-    fi
-    appendExternalConfigs
-     cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" > /dev/null
+        fi
+        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
   </properties>
 </${PRODUCT_CONFIG_NAME}-configuration>
 EOT
 
-    su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\"" >> "${ATL_LOG}" 2>&1
-    atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
-}
+        su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${LOCAL_CFG_XML}\"" >> "${ATL_LOG}" 2>&1
+        atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
+    fi
 
-function appendExternalConfigs {
-    if [[ -n "${ATL_CONFLUENCE_PROPERTIES}" ]]; then
-        declare -a PROP_ARR
-        readarray -t PROP_ARR <<<"${ATL_CONFLUENCE_PROPERTIES}"
-        for prop in PROP_ARR; do
-            su "${ATL_CONFLUENCE_USER}" -c "echo \"${prop}\" >> "${ATL_CONFLUENCE_HOME}/confluence.cfg.xml\" >> "${ATL_LOG}" 2>&1
-        done
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]]; then
+        local WATCHER_SCRIPT="/opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh"
+        if [[ -x ${WATCHER_SCRIPT} ]]; then
+            atl_log "Starting filewatcher to copy Confluence Server config to shared-home on-edit"
+            WATCHED_FILE=${LOCAL_CFG_XML} FILE_DEST=${SHARED_CFG_XML} LOG_FILE=${ATL_LOG} ${WATCHER_SCRIPT} >> "${ATL_LOG}" 2>&1 &
+        else
+            atl_log "Script for monitoring Confluence Server configuration changes is not available; config will not persist"
+        fi
     fi
 }
 
@@ -260,7 +287,7 @@ function installConfluence {
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf"
         echo /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/lib/amd64/server/ > /etc/ld.so.conf.d/confluence.conf
         sudo ldconfig
-        if [ -n $ATL_STARTCOLLECTD == "true" ]; then
+        if [[ $ATL_STARTCOLLECTD == "true" ]]; then
             service collectd restart
         fi
         atl_log "Creating file /etc/ld.so.conf.d/confluence.conf ==> done"

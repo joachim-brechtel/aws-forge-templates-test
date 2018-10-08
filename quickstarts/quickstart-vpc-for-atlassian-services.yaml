@@ -23,10 +23,6 @@ Metadata:
       - Label:
           default: AWS Quick Start Configuration
         Parameters:
-          - DRRegion
-          - EnableBackmac
-          - EnableForge
-          - FlaskSecretKey
           - QSS3BucketName
           - QSS3KeyPrefix
     ParameterLabels:
@@ -34,14 +30,6 @@ Metadata:
         default: Access CIDR
       AvailabilityZones:
         default: Availability Zones
-      DRRegion:
-        default: DR Region
-      EnableBackmac:
-        default: Enable Backup Machine
-      EnableForge:
-        default: Enable Forge
-      FlaskSecretKey:
-        default: Flask Secret Key
       KeyPairName:
         default: Key Name
       NATInstanceType:
@@ -70,44 +58,6 @@ Parameters:
     Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
       The logical order is preserved and only 2 AZs are used for this deployment.'
     Type: List<AWS::EC2::AvailabilityZone::Name>
-  DRRegion:
-    AllowedValues:
-      - ap-south-1
-      - eu-west-3
-      - eu-west-2
-      - eu-west-1
-      - ap-northeast-2
-      - ap-northeast-1
-      - sa-east-1
-      - ca-central-1
-      - ap-southeast-1
-      - ap-southeast-2
-      - eu-central-1
-      - us-east-1
-      - us-east-2
-      - us-west-1
-      - us-west-2
-    Type: String
-    Description: Must be a valid AWS region.
-  EnableBackmac:
-    Default: true
-    AllowedValues:
-      - true
-      - false
-    ConstraintDescription: Must be 'true' or 'false'.
-    Description: Should we setup Backup Machine
-    Type: String
-  EnableForge:
-    Default: true
-    AllowedValues:
-      - true
-      - false
-    ConstraintDescription: Must be 'true' or 'false'.
-    Description: Should we setup Forge
-    Type: String
-  FlaskSecretKey:
-    Description: 'Secret key passed to Flask app to enable sessions, which are required to run. For more info: https://bit.ly/2PRfJRk'
-    Type: String
   KeyPairName:
     Description: Public/private key pairs allow you to securely connect to your instance
       after it launches
@@ -174,10 +124,6 @@ Conditions:
   GovCloudCondition: !Equals
     - !Ref 'AWS::Region'
     - us-gov-west-1
-  EnableBackmac:
-    !Equals [!Ref EnableBackmac, true]
-  EnableForge:
-    !Equals [!Ref EnableForge, true]
 Mappings:
   AWSInfoRegionMap:
     ap-northeast-1:
@@ -239,24 +185,6 @@ Resources:
         PublicSubnet1CIDR: !Ref 'PublicSubnet1CIDR'
         PublicSubnet2CIDR: !Ref 'PublicSubnet2CIDR'
         VPCCIDR: !Ref 'VPCCIDR'
-  BackmacStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: EnableBackmac
-    DependsOn:
-      - VPCStack
-    Properties:
-      TemplateURL: !Sub
-        - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}quickstarts/quickstart-backmac-for-atlassian-services.yaml
-        - QSS3Region: !If
-            - GovCloudCondition
-            - s3-us-gov-west-1
-            - s3
-      Parameters:
-        AccessCIDR: !Ref AccessCIDR
-        BackmacDRRegion: !Ref DRRegion
-        KeyName: !Ref 'KeyPairName'
-        InternalSubnets: !Join [ ',', [ !GetAtt VPCStack.Outputs.PrivateSubnet1AID, !GetAtt VPCStack.Outputs.PrivateSubnet2AID ]]
-        VPC: !GetAtt VPCStack.Outputs.VPCID
   BastionStack:
     Type: AWS::CloudFormation::Stack
     DependsOn:
@@ -272,25 +200,6 @@ Resources:
         AccessCIDR: !Ref AccessCIDR
         KeyName: !Ref 'KeyPairName'
         Subnet: !GetAtt VPCStack.Outputs.PublicSubnet1ID
-        VPC: !GetAtt VPCStack.Outputs.VPCID
-  ForgeStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: EnableForge
-    DependsOn:
-      - VPCStack
-    Properties:
-      TemplateURL: !Sub
-        - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}quickstarts/quickstart-forge-for-atlassian-services.yaml
-        - QSS3Region: !If
-            - GovCloudCondition
-            - s3-us-gov-west-1
-            - s3
-      Parameters:
-        AccessCIDR: !Ref AccessCIDR
-        FlaskSecretKey: !Ref FlaskSecretKey
-        KeyName: !Ref 'KeyPairName'
-        ExternalSubnet: !GetAtt VPCStack.Outputs.PublicSubnet1ID
-        InternalSubnet: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
         VPC: !GetAtt VPCStack.Outputs.VPCID
 Outputs:
   DefaultKey:

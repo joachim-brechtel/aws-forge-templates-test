@@ -1,16 +1,17 @@
 ---
-# Bring up diffs between this file and the ConfluenceDataCenterClone.template.yaml, JiraDataCenterClone.template.yaml, and CrowdDataCenter.template.yaml
+# Bring up diffs between this file and the BitbucketDataCenter.template.yaml, ConfluenceDataCenter.template.yaml, and JiraDataCenter.template.yaml
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: Atlassian Crowd Data Center Clone Stack
+Description: Atlassian JIRA Data Center
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Crowd setup
+          default: Jira setup
         Parameters:
-          - CrowdVersion
+          - JiraProduct
+          - JiraVersion
       - Label:
           default: Deployment information
         Parameters:
@@ -31,22 +32,15 @@ Metadata:
           - DBMultiAZ
           - DBPassword
           - DBStorage
+          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
         Parameters:
           - AssociatePublicIpAddress
           - CidrBlock
-          - ExternalSubnets
-          - InternalSubnets
           - KeyName
           - SSLCertificateARN
-          - VPC
-      - Label:
-          default: Disaster Recovery Snapshot IDs
-        Parameters:
-          - DBSnapshotName
-          - EBSSnapshotId
       - Label:
           default: DNS (Optional)
         Parameters:
@@ -55,12 +49,12 @@ Metadata:
       - Label:
           default: Advanced (Optional)
         Parameters:
-          - CrowdDownloadUrl
+          - JiraDownloadUrl
           - LocalAnsibleGitRepo
           - LocalAnsibleGitKey
           - StartCollectd
       - Label:
-          default: Application Tuning (Optional)
+          default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
         Parameters:
             - TomcatContextPath
             - CatalinaOpts
@@ -103,10 +97,6 @@ Metadata:
         default: Cluster node instance type
       ClusterNodeVolumeSize:
         default: Cluster node instance volume size
-      CrowdVersion:
-        default: Version *
-      CrowdDownloadUrl:
-        default: Crowd Download URL
       CustomDnsName:
         default: Existing DNS name (optional)
       DBInstanceClass:
@@ -127,8 +117,6 @@ Metadata:
         default: Enable RDS Multi-AZ deployment
       DBPassword:
         default: Application user database password *
-      DBSnapshotName:
-        default: Database snapshot Name to restore from
       DBPoolMaxSize:
         default: DB Pool Maximum Size
       DBPoolMinSize:
@@ -139,6 +127,8 @@ Metadata:
         default: DB Remove Abandoned Timeout
       DBStorage:
         default: Database storage
+      DBStorageEncrypted:
+        default: Database encryption
       DBStorageType:
         default: Database storage type
       DBTestOnBorrow:
@@ -147,16 +137,16 @@ Metadata:
         default: DB Test While Idle?
       DBTimeBetweenEvictionRunsMillis:
         default: DB Time Between Eviction Runs
-      EBSSnapshotId:
-        default: EBS (shared filesystem) snapshot ID to restore from
       DeployEnvironment:
         default: Deployment Environment
-      ExternalSubnets:
-        default: External subnets *
       HostedZone:
         default: Route 53 Hosted Zone (optional)
-      InternalSubnets:
-        default: Internal subnets *
+      JiraProduct:
+        default: Jira Product *
+      JiraVersion:
+        default: Version *
+      JiraDownloadUrl:
+        default: Jira Download URL
       JvmHeapOverride:
         default: JVM Heap Size Override
       KeyName:
@@ -193,23 +183,22 @@ Metadata:
         default: Tomcat protocol Scheme
       TomcatSecure:
         default: Tomcat Secure?
-      VPC:
-        default: VPC *
 Parameters:
   AssociatePublicIpAddress:
-    Default: false
+    Default: true
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   CatalinaOpts:
+    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-    Description: The CIDR IP range that is permitted to access the Crowd URL. Use 0.0.0.0/0 if you want public access from the internet.
+    Description: The CIDR IP range that is permitted to access the Confluence URL. Use 0.0.0.0/0 if you want public access from the internet.
     Type: String
     MinLength: 9
     MaxLength: 18
@@ -319,18 +308,8 @@ Parameters:
     Default: 50
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
-  CrowdDownloadUrl:
-    Default: ''
-    Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
-    Type: String
-    ConstraintDescription: Must be a valid Crowd download url
-  CrowdVersion:
-    Default: 3.2.1
-    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
-    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
-    Description: The version of Crowd to install
-    Type: String
   CustomDnsName:
+    Default: ""
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
@@ -376,7 +355,7 @@ Parameters:
     Type: String
   DBMaxWaitMillis:
     Default: 10000
-    Description: The length of time (in milliseconds) that Crowd is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
+    Description: The length of time (in milliseconds) that Jira is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
     Type: String
   DBMinEvictableIdleTimeMillis:
     Default: 180000
@@ -417,15 +396,17 @@ Parameters:
     Default: 60
     Description: The length of time (in seconds) that a database connection can be idle before it is considered abandoned
     Type: String
-  DBSnapshotName:
-    ConstraintDescription: Must be a valid RDS snapshot Name
-    Default: "look this up in RDS at DR region"
-    Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
-    Type: String
   DBStorage:
-    Default: 20
+    Default: 200
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
+  DBStorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database
+    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -436,7 +417,7 @@ Parameters:
     Type: String
   DBTestOnBorrow:
     Default: false
-    Description: Tests if the database connection is valid when it is borrowed from the database connection pool by Crowd
+    Description: Tests if the database connection is valid when it is borrowed from the database connection pool by Jira
     Type: String
   DBTestWhileIdle:
     Default: true
@@ -446,13 +427,8 @@ Parameters:
     Default: 60000
     Description: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
     Type: String
-  EBSSnapshotId:
-    Default: "look this up in ec2 snapshots at DR region"
-    ConstraintDescription: Must be a valid EBS snapshot ID
-    Description: EBS snapshot ID of an existing backup to restore of the form "snap-065c60da27161cb43".
-    Type: String
   DeployEnvironment:
-    Default: stg
+    Default: prod
     AllowedValues:
       - prod
       - stg
@@ -460,21 +436,32 @@ Parameters:
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
-  ExternalSubnets:
-    Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
-    Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
-    Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
     Default: ''
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
-  InternalSubnets:
+  JiraDownloadUrl:
     Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
-    Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
-    Type: List<AWS::EC2::Subnet::Id>
+    Description: This parameter is used to download a custom Jira version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
+    Type: String
+    ConstraintDescription: Must be a valid Jira download url from version 7 or higher
+  JiraProduct:
+    Default: All
+    Description: The Jira Product to install. Installs latest available version of the selected product
+    Type: String
+    ConstraintDescription: 'Must be "Core", "Software", "ServiceDesk", or "All"'
+    AllowedValues:
+      - All
+      - Core
+      - ServiceDesk
+      - Software
+  JiraVersion:
+    Default: latest
+    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))|(latest)'
+    ConstraintDescription: Must be a valid Jira version number, for example 7.2.3. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes
+    Description: The version of Jira to install
+    Type: String
   JvmHeapOverride:
     Default: ''
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
@@ -483,7 +470,7 @@ Parameters:
     Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
-    Type: AWS::EC2::KeyPair::KeyName
+    Type: String
   LocalAnsibleGitRepo:
     Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
@@ -497,8 +484,12 @@ Parameters:
       - true
       - false
     ConstraintDescription: Must be 'true' or 'false'.
-    Default: false
+    Default: true
     Description: Enable mail processing and sending
+    Type: String
+  SubDomainName:
+    Description: Leave this field blank to use your stack name as the sub-domain.
+    Default: ''
     Type: String
   SSLCertificateARN:
     Default: ''
@@ -564,11 +555,6 @@ Parameters:
     Default: false
     Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
     Type: String
-  VPC:
-    Default: ''
-    ConstraintDescription: Must be the ID of a VPC.
-    Description: Virtual Private Cloud
-    Type: AWS::EC2::VPC::Id
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
@@ -580,6 +566,8 @@ Conditions:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
     !Not [!Equals [!Ref SSLCertificateARN, '']]
+  KeyProvided:
+    !Not [!Equals [!Ref KeyName, '']]
   SSLScheme:
     !Equals [!Ref TomcatScheme, 'https']
   OverrideHeap:
@@ -588,6 +576,8 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
+  UseDatabaseEncryption:
+    !Equals [!Ref DBStorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
@@ -863,52 +853,69 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-0e4ffb21579e0f8e7
+      HVM64: ami-0fa3be45ef63c4ad3
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-09b353c5bb6892ca0
+      HVM64: ami-03d0078c616d6a928
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-0d62eec698c45a1a5
+      HVM64: ami-0d8038ba6dda7b777
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-0fa74ae5bd024d9c0
+      HVM64: ami-0695a11f9566acde1
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0de98683e800e5478
+      HVM64: ami-03d2fc6a6a571ddd0
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-07315078f837726ce
+      HVM64: ami-096fab983be083a48
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-01ac4305ccd5cbf74
+      HVM64: ami-0aeafe063799305da
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-0ff491e6524404eea
+      HVM64: ami-00b85d6a821ba362e
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-00d2b19a53bc9e4e4
+      HVM64: ami-0ef006631f04c6de5
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0b6aed7fda7f5a245
+      HVM64: ami-04925df6a7021132e
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0f4bb6b53fca4d6ce
+      HVM64: ami-0a222d57785be11f1
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0bb76e233c7ca54ce
+      HVM64: ami-0ccbbf2ca088d666c
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-047839895568a4a5a
+      HVM64: ami-0ca8d2a4508ec090d
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0158534fc928deb7f
+      HVM64: ami-0d0f791c754bf917a
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0ef6363d22ffc35fd
+      HVM64: ami-08cf61bd9a4498812
       HVMG2: NOT_SUPPORTED
+  JIRAProduct2NameAndVersion:
+    All:
+      name: jira-all
+      shortdisplayname: '"Jira All"'
+      fulldisplayname: '"Atlassian Jira All"'
+    Core:
+      name: jira-core
+      shortdisplayname: '"Jira Core"'
+      fulldisplayname: '"Atlassian Jira Core"'
+    ServiceDesk:
+      name: servicedesk
+      shortdisplayname: '"Jira SD"'
+      fulldisplayname: '"Atlassian Jira Service Desk"'
+    Software:
+      name: jira-software
+      shortdisplayname: '"Jira SW"'
+      fulldisplayname: '"Atlassian Jira Software"'
 Resources:
-  CrowdClusterNodeRole:
+  JiraClusterNodeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -922,19 +929,19 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
-        - PolicyName: CrowdClusterNodePolicy
+        - PolicyName: JiraClusterNodePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Action: ['ec2:DescribeInstances']
                 Effect: Allow
                 Resource: ['*']
-  CrowdClusterNodeInstanceProfile:
+  JiraClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
-      Roles: [!Ref CrowdClusterNodeRole]
-# Crowd node config
+      Roles: [!Ref JiraClusterNodeRole]
+# Jira node config
   ClusterNodeGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -944,10 +951,10 @@ Resources:
       MinSize: !Ref ClusterNodeMin
       LoadBalancerNames:
         - !Ref LoadBalancer
-      VPCZoneIdentifier: !Ref InternalSubnets
+      VPCZoneIdentifier: !Split [ ",", !ImportValue ATL-PriNets]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub ["${StackName} Jira Node", StackName: !Ref 'AWS::StackName']
           PropagateAtLaunch: true
         - Key: Cluster
           Value: !Ref AWS::StackName
@@ -955,7 +962,8 @@ Resources:
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn:
-      - NFSServer
+      - EFSMountAz1
+      - EFSMountAz2
       - DB
     Metadata:
       Comment: ''
@@ -982,8 +990,6 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
-                    - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true', ''] }]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
                     - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
@@ -1002,7 +1008,12 @@ Resources:
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
                     - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
-                    - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
+                    - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/jira", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
+                    - !Sub ["ATL_JIRA_FULL_DISPLAY_NAME=${JiraFullDisplayName}", JiraFullDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "fulldisplayname"]]
+                    - !Sub ["ATL_JIRA_INSTALLER_DOWNLOAD_URL=${JiraDownloadUrl}", JiraDownloadUrl: !Ref JiraDownloadUrl]
+                    - !Sub ["ATL_JIRA_NAME=${JiraProductName}", JiraProductName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "name"]]
+                    - !Sub ["ATL_JIRA_SHORT_DISPLAY_NAME=${JiraShortDisplayName}", JiraShortDisplayName: !FindInMap [ "JIRAProduct2NameAndVersion", !Ref JiraProduct, "shortdisplayname"]]
+                    - !Sub ["ATL_JIRA_VERSION=${JiraVersion}", JiraVersion: !Ref JiraVersion]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
                     - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
                     - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
@@ -1019,15 +1030,13 @@ Resources:
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
                     - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
                     - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
-                    - "ATL_CROWD_FULL_DISPLAY_NAME=\"Atlassian Crowd\""
-                    - "ATL_CROWD_NAME=crowd"
-                    - "ATL_CROWD_SHORT_DISPLAY_NAME=Crowd"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
-                    - "ATL_DB_NAME=crowd"
-                    - "ATL_ENABLED_PRODUCTS=Crowd"
+                    - "ATL_DB_NAME=jira"
+                    - "ATL_DB_USER=jira"
+                    - "ATL_ENABLED_PRODUCTS=Jira"
                     - "ATL_ENABLED_SHARED_HOMES="
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
-                    - "ATL_JDBC_USER=atlcrowd"
+                    - "ATL_JDBC_USER=atljira"
                     - "ATL_NGINX_ENABLED=false"
                     - "ATL_POSTGRES_ENABLED=false"
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
@@ -1088,14 +1097,20 @@ Resources:
                   - ""
                   -
                     - "echo "
-                    - !GetAtt NFSServer.PrivateIp
-                    - ":/nfs /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
+                    - !If
+                      - UseHostedZone
+                      - !Ref EFSCname
+                      - !Sub
+                          - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
+                          - ElasticFileSystem: !Ref ElasticFileSystem
+                            Region: !Ref "AWS::Region"
+                    - ":/ /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
               command: mount -a
               ignoreErrors: true
             040_make_shared_home_dir:
-              command: mkdir -p /media/atl/crowd/shared
+              command: mkdir -p /media/atl/jira/shared
               ignoreErrors: false
             050_ssm_group:
               command: groupadd ssm-user --gid 400
@@ -1132,8 +1147,8 @@ Resources:
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
-      KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref CrowdClusterNodeInstanceProfile
+      KeyName: !If [ KeyProvided, !Ref KeyName, !ImportValue ATL-DefaultKey ]
+      IamInstanceProfile: !Ref JiraClusterNodeInstanceProfile
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
@@ -1155,149 +1170,64 @@ Resources:
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
-  EBSRestoreVol:
-    Type: AWS::EC2::Volume
+# Elastic file system
+  ElasticFileSystem:
+    Type: AWS::EFS::FileSystem
     Properties:
-      AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
-      SnapshotId: !Ref EBSSnapshotId
-      Tags:
+      FileSystemTags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd DR volume", StackName: !Ref 'AWS::StackName']
-        - Key: Cluster
-          Value: !Ref AWS::StackName
+          Value: !Join [' ', [!Ref 'AWS::StackName', 'cluster shared-files']]
         - Key: Application
           Value: !Ref AWS::StackId
-      VolumeType: gp2
-  NFSServer:
-    Type: 'AWS::EC2::Instance'
-    Metadata:
-      'AWS::CloudFormation::Init':
-        config:
-          files:
-            /tmp/nfs:
-              content: >-
-                IwojIERlZmluZSB3aGljaCBwcm90b2NvbCB2ZXJzaW9ucyBtb3VudGQgCiMgd2lsbCBhZHZlcnRpc2UuIFRoZSB2YWx1ZXMgYXJlICJubyIgb3IgInllcyIKIyB3aXRoIHllcyBiZWluZyB0aGUgZGVmYXVsdAojTU9VTlREX05GU19WMj0ibm8iCiNNT1VOVERfTkZTX1YzPSJubyIKIwojCiMgUGF0aCB0byByZW1vdGUgcXVvdGEgc2VydmVyLiBTZWUgcnF1b3RhZCg4KQojUlFVT1RBRD0iL3Vzci9zYmluL3JwYy5ycXVvdGFkIgojIFBvcnQgcnF1b3RhZCBzaG91bGQgbGlzdGVuIG9uLgojUlFVT1RBRF9QT1JUPTg3NQojIE9wdGluYWwgb3B0aW9ucyBwYXNzZWQgdG8gcnF1b3RhZAojUlBDUlFVT1RBRE9QVFM9IiIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBpbi1rZXJuZWwgbG9ja2QKI0xPQ0tEQVJHPQojIFRDUCBwb3J0IHJwYy5sb2NrZCBzaG91bGQgbGlzdGVuIG9uLgpMT0NLRF9UQ1BQT1JUPTMyODAzCiMgVURQIHBvcnQgcnBjLmxvY2tkIHNob3VsZCBsaXN0ZW4gb24uCkxPQ0tEX1VEUFBPUlQ9MzI3NjkKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMubmZzZC4gU2VlIHJwYy5uZnNkKDgpCiMgVHVybiBvZmYgdjIgYW5kIHYzIHByb3RvY29sIHN1cHBvcnQKI1JQQ05GU0RBUkdTPSItTiAyIC1OIDMiCiMgVHVybiBvZmYgdjQgcHJvdG9jb2wgc3VwcG9ydAojUlBDTkZTREFSR1M9Ii1OIDQiCiMgTnVtYmVyIG9mIG5mcyBzZXJ2ZXIgcHJvY2Vzc2VzIHRvIGJlIHN0YXJ0ZWQuCiMgVGhlIGRlZmF1bHQgaXMgOC4gCiNSUENORlNEQ09VTlQ9OAojIFN0b3AgdGhlIG5mc2QgbW9kdWxlIGZyb20gYmVpbmcgcHJlLWxvYWRlZAojTkZTRF9NT0RVTEU9Im5vbG9hZCIKIyBTZXQgVjQgZ3JhY2UgcGVyaW9kIGluIHNlY29uZHMKI05GU0RfVjRfR1JBQ0U9OTAKIwojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5tb3VudGQuIFNlZSBycGMubW91bnRkKDgpCiNSUENNT1VOVERPUFRTPSIiCiMgUG9ydCBycGMubW91bnRkIHNob3VsZCBsaXN0ZW4gb24uCk1PVU5URF9QT1JUPTg5MgojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdGF0ZC4gU2VlIHJwYy5zdGF0ZCg4KQojU1RBVERBUkc9IiIKIyBQb3J0IHJwYy5zdGF0ZCBzaG91bGQgbGlzdGVuIG9uLgojU1RBVERfUE9SVD02NjIKIyBPdXRnb2luZyBwb3J0IHN0YXRkIHNob3VsZCB1c2VkLiBUaGUgZGVmYXVsdCBpcyBwb3J0CiMgaXMgcmFuZG9tCiNTVEFURF9PVVRHT0lOR19QT1JUPTIwMjAKIyBTcGVjaWZ5IGNhbGxvdXQgcHJvZ3JhbSAKI1NUQVREX0hBX0NBTExPVVQ9Ii91c3IvbG9jYWwvYmluL2ZvbyIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMuaWRtYXBkLiBTZWUgcnBjLmlkbWFwZCg4KQojUlBDSURNQVBEQVJHUz0iIgojCiMgU2V0IHRvIHR1cm4gb24gU2VjdXJlIE5GUyBtb3VudHMuIAojU0VDVVJFX05GUz0ieWVzIgojIE9wdGlvbmFsIGFyZ3VtZW50cyBwYXNzZWQgdG8gcnBjLmdzc2QuIFNlZSBycGMuZ3NzZCg4KQojUlBDR1NTREFSR1M9IiIKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdmNnc3NkLiBTZWUgcnBjLnN2Y2dzc2QoOCkKI1JQQ1NWQ0dTU0RBUkdTPSIiCiMKIyBUbyBlbmFibGUgUkRNQSBzdXBwb3J0IG9uIHRoZSBzZXJ2ZXIgYnkgc2V0dGluZyB0aGlzIHRvCiMgdGhlIHBvcnQgdGhlIHNlcnZlciBzaG91bGQgbGlzdGVuIG9uCiNSRE1BX1BPUlQ9MjAwNDkgCg==
-          commands:
-            010_make_mount_point:
-              command: mkdir /nfs
-              ignoreErrors: false
-            020_add_nfs_mount:
-              command:
-                echo "/dev/xvdk   /nfs        ext4    defaults        0   2" >>/etc/fstab
-              ignoreErrors: false
-            030_mount_nfs:
-              command: mount /nfs
-            040_fix_exports:
-              command: echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            045_check_exports:
-              command: cat /etc/exports
-            050_restart_nfs:
-              command: service nfs restart
-          services:
-            sysvinit:
-              nfs:
-                enabled: true
-                ensureRunning: true
-          packages:
-            yum:
-              nfs-utils: []
+  EFSMountAz1:
+    Type: AWS::EFS::MountTarget
     Properties:
-      AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
-      ImageId:
-        !FindInMap
-          - AWSRegionArch2AMI
-          - !Ref "AWS::Region"
-          - !FindInMap
-              - AWSInstanceType2Arch
-              - !Ref ClusterNodeInstanceType
-              - Arch
-      InstanceType: !Ref ClusterNodeInstanceType
-      KeyName: !Ref KeyName
-      NetworkInterfaces:
-        - GroupSet:
-            - !Ref SecurityGroup
-          AssociatePublicIpAddress: false
-          DeviceIndex: 0
-          DeleteOnTermination: true
-          SubnetId: !Select [0, !Ref InternalSubnets]
-      UserData: !Base64
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash -v
-            - |
-              yum update -y
-            - |
-              yum install aws-cfn-bootstrap -y
-            - |
-              # download data and install file
-            - '/opt/aws/bin/cfn-init --stack '
-            - !Ref 'AWS::StackName'
-            - ' --resource NFSServer '
-            - ' --region '
-            - !Ref 'AWS::Region'
-            - |2
-               || error_exit 'Failed to run cfn-init'
-            - |
-              echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            - |
-              base64 -d /tmp/nfs > /etc/sysconfig/nfs
-            - |
-              exportfs -av
-            - |
-              /sbin/service rpcbind restart
-            - |
-              /sbin/service nfs restart
-            - |
-            - '/opt/aws/bin/cfn-signal -e $? '
-            - ' --stack '
-            - !Ref 'AWS::StackName'
-            - " --resource NFSServer "
-            - ' --region '
-            - !Ref 'AWS::Region'
-      Tags:
-        - Key: Name
-          Value: !Sub ["${StackName} DR NFS Node", StackName: !Ref 'AWS::StackName']
-      Volumes:
-        - VolumeId: !Ref EBSRestoreVol
-          Device: /dev/xvdk
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT20M
-  NFSR53name:
+      FileSystemId: !Ref ElasticFileSystem
+      SecurityGroups: [!Ref SecurityGroup]
+      SubnetId: !Select [0, !Split [ ",", !ImportValue ATL-PriNets]]
+  EFSMountAz2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref ElasticFileSystem
+      SecurityGroups: [!Ref SecurityGroup]
+      SubnetId: !Select [1, !Split [ ",", !ImportValue ATL-PriNets]]
+  EFSCname:
     Type: AWS::Route53::RecordSet
     Condition: UseHostedZone
     Properties:
       HostedZoneName: !Ref HostedZone
-      Comment: Route53 A rec for the nfs
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']]
-      Type: A
+      Comment: Route53 cname for the efs
+      Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
+      Type: CNAME
       TTL: 900
       ResourceRecords:
-        - !GetAtt NFSServer.PrivateIp
+        - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
+# Database
   DB:
     Type: AWS::RDS::DBInstance
     Properties:
+      AllocatedStorage: !Ref DBStorage
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
-      DBSnapshotIdentifier: !Ref DBSnapshotName
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+          Value: !Sub ["${StackName} Jira PostgreSQL Database", StackName: !Ref 'AWS::StackName']
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: DBSubnetGroup
-      SubnetIds: !Ref InternalSubnets
+      SubnetIds: !Split [ ",", !ImportValue ATL-PriNets]
   DBCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
@@ -1347,7 +1277,7 @@ Resources:
         HealthyThreshold: 2
       Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
       SecurityGroups: [!Ref SecurityGroup]
-      Subnets: !Ref ExternalSubnets
+      Subnets: !Split [ ",", !ImportValue ATL-PubNets]
       Tags:
         - Key: Name
           Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
@@ -1384,7 +1314,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
-      VpcId: !Ref VPC
+      VpcId: !ImportValue ATL-VPCID
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -1393,6 +1323,30 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
+  EncryptionKey:
+    Condition: UseDatabaseEncryption
+    DeletionPolicy: Retain
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Sub "${AWS::StackName}"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+  EncryptionKeyAlias:
+    Condition: UseDatabaseEncryption
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}"
+      TargetKeyId: !Ref EncryptionKey
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -1430,6 +1384,16 @@ Outputs:
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
-  NFSR53name:
-      Description: The DR NFS name
-      Value: NFSR53name
+  DBEncryptionKey:
+    Condition: UseDatabaseEncryption
+    Description: The alias of the encryption key created for RDS
+    Value: !Ref EncryptionKeyAlias
+  EFSCname:
+    Description: The cname of the EFS
+    Value: !If
+      - UseHostedZone
+      - !Ref EFSCname
+      - !Ref ElasticFileSystem
+    Export: {
+      Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
+    }

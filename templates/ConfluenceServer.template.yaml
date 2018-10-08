@@ -1,27 +1,25 @@
 ---
-# Bring up diffs between this file and the ConfluenceDataCenterClone.template.yaml, JiraDataCenterClone.template.yaml, and CrowdDataCenter.template.yaml
+# Bring up diffs between this file and the BitBucketServer.template, and JiraServer.template (NOTE: these do not yet exist).
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: Atlassian Crowd Data Center Clone Stack
+Description: Atlassian Confluence Server
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Crowd setup
+          default: Confluence setup
         Parameters:
-          - CrowdVersion
+          - ConfluenceVersion
       - Label:
           default: Deployment information
         Parameters:
           - DeployEnvironment
       - Label:
-          default: Cluster nodes
+          default: Instance parameters
         Parameters:
-          - ClusterNodeInstanceType
-          - ClusterNodeMax
-          - ClusterNodeMin
-          - ClusterNodeVolumeSize
+          - InstanceType
+          - InstanceVolumeSize
       - Label:
           default: Database
         Parameters:
@@ -31,11 +29,12 @@ Metadata:
           - DBMultiAZ
           - DBPassword
           - DBStorage
+          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
         Parameters:
-          - AssociatePublicIpAddress
+          - LoadBalancerScheme
           - CidrBlock
           - ExternalSubnets
           - InternalSubnets
@@ -43,70 +42,57 @@ Metadata:
           - SSLCertificateARN
           - VPC
       - Label:
-          default: Disaster Recovery Snapshot IDs
-        Parameters:
-          - DBSnapshotName
-          - EBSSnapshotId
-      - Label:
           default: DNS (Optional)
         Parameters:
           - CustomDnsName
           - HostedZone
+          - SubDomainName
       - Label:
           default: Advanced (Optional)
         Parameters:
-          - CrowdDownloadUrl
+          - AutologinCookieAge
+          - ConfluenceDownloadUrl
           - LocalAnsibleGitRepo
           - LocalAnsibleGitKey
           - StartCollectd
       - Label:
-          default: Application Tuning (Optional)
+          default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
-            - TomcatContextPath
-            - CatalinaOpts
-            - JvmHeapOverride
-            - DBPoolMaxSize
-            - DBPoolMinSize
-            - DBMaxIdle
-            - DBMaxWaitMillis
-            - DBMinEvictableIdleTimeMillis
-            - DBMinIdle
-            - DBRemoveAbandoned
-            - DBRemoveAbandonedTimeout
-            - DBTestOnBorrow
-            - DBTestWhileIdle
-            - DBTimeBetweenEvictionRunsMillis
-            - MailEnabled
-            - TomcatAcceptCount
-            - TomcatConnectionTimeout
-            - TomcatDefaultConnectorPort
-            - TomcatEnableLookups
-            - TomcatMaxThreads
-            - TomcatMinSpareThreads
-            - TomcatProtocol
-            - TomcatProxyPort
-            - TomcatRedirectPort
-            - TomcatScheme
-            - TomcatSecure
+          - TomcatContextPath
+          - CatalinaOpts
+          - DBPoolMaxSize
+          - DBPoolMinSize
+          - DBTimeout
+          - DBIdleTestPeriod
+          - DBMaxStatements
+          - DBValidate
+          - DBPreferredTestQuery
+          - DBAcquireIncrement
+          - JvmHeapOverrideConfluence
+          - JvmHeapOverrideSynchrony
+          - MailEnabled
+          - TomcatAcceptCount
+          - TomcatConnectionTimeout
+          - TomcatDefaultConnectorPort
+          - TomcatEnableLookups
+          - TomcatMaxThreads
+          - TomcatMinSpareThreads
+          - TomcatProtocol
+          - TomcatProxyPort
+          - TomcatRedirectPort
+          - TomcatScheme
+          - TomcatSecure
     ParameterLabels:
-      AssociatePublicIpAddress:
-        default: Assign public IP
+      AutologinCookieAge:
+        default: Rememberme cookie age
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
         default: Permitted IP range
-      ClusterNodeMax:
-        default: Maximum number of cluster nodes
-      ClusterNodeMin:
-        default: Minimum number of cluster nodes
-      ClusterNodeInstanceType:
-        default: Cluster node instance type
-      ClusterNodeVolumeSize:
-        default: Cluster node instance volume size
-      CrowdVersion:
+      ConfluenceDownloadUrl:
+        default: Confluence download URL
+      ConfluenceVersion:
         default: Version *
-      CrowdDownloadUrl:
-        default: Crowd Download URL
       CustomDnsName:
         default: Existing DNS name (optional)
       DBInstanceClass:
@@ -115,52 +101,52 @@ Metadata:
         default: RDS Provisioned IOPS
       DBMasterUserPassword:
         default: Master (admin) password *
-      DBMaxIdle:
-        default: DB Maximum Idle
-      DBMaxWaitMillis:
-        default: DB Maximum Wait
-      DBMinEvictableIdleTimeMillis:
-        default: DB Minimum Evictable Idle Time
-      DBMinIdle:
-        default: DB Minimum Idle Connections
       DBMultiAZ:
         default: Enable RDS Multi-AZ deployment
       DBPassword:
         default: Application user database password *
-      DBSnapshotName:
-        default: Database snapshot Name to restore from
       DBPoolMaxSize:
         default: DB Pool Maximum Size
       DBPoolMinSize:
         default: DB Pool Minimum Size
-      DBRemoveAbandoned:
-        default: DB Remove Abandoned?
-      DBRemoveAbandonedTimeout:
-        default: DB Remove Abandoned Timeout
+      DBTimeout:
+        default: DB Timeout
+      DBIdleTestPeriod:
+        default: DB Idle Test Period
+      DBMaxStatements:
+        default: DB Max Statements
+      DBValidate:
+        default: DB Validate
+      DBPreferredTestQuery:
+        default: DB Preferred Test Query
+      DBAcquireIncrement:
+        default: DB Acquire Increment
       DBStorage:
         default: Database storage
+      DBStorageEncrypted:
+        default: Database encryption
       DBStorageType:
         default: Database storage type
-      DBTestOnBorrow:
-        default: DB Test On Borrow?
-      DBTestWhileIdle:
-        default: DB Test While Idle?
-      DBTimeBetweenEvictionRunsMillis:
-        default: DB Time Between Eviction Runs
-      EBSSnapshotId:
-        default: EBS (shared filesystem) snapshot ID to restore from
       DeployEnvironment:
         default: Deployment Environment
       ExternalSubnets:
         default: External subnets *
       HostedZone:
         default: Route 53 Hosted Zone (optional)
+      InstanceType:
+        default: EC2 instance type
+      InstanceVolumeSize:
+        default: EC2 volume size
       InternalSubnets:
         default: Internal subnets *
-      JvmHeapOverride:
-        default: JVM Heap Size Override
+      JvmHeapOverrideConfluence:
+        default: JVM Heap Size Override for Confluence
+      JvmHeapOverrideSynchrony:
+        default: JVM Heap Size Override for Synchrony
       KeyName:
         default: Key Name *
+      LoadBalancerScheme:
+        default: Load Balancer Scheme
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
       LocalAnsibleGitKey:
@@ -169,6 +155,8 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      SubDomainName:
+        default: Sub-domain for Hosted Zone (optional)
       TomcatAcceptCount:
         default: Tomcat Accept Count
       TomcatConnectionTimeout:
@@ -196,38 +184,173 @@ Metadata:
       VPC:
         default: VPC *
 Parameters:
-  AssociatePublicIpAddress:
-    Default: false
-    AllowedValues: [true, false]
-    ConstraintDescription: Must be 'true' or 'false'.
-    Description: Controls if the EC2 instances are assigned a public IP address
+  AutologinCookieAge:
+    Default: ''
+    Description: Sets the Rememberme (autologin) cookie age length in seconds
     Type: String
   CatalinaOpts:
+    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-    Description: The CIDR IP range that is permitted to access the Crowd URL. Use 0.0.0.0/0 if you want public access from the internet.
+    Description: The CIDR IP range that is permitted to access the Confluence URL. Use 0.0.0.0/0 if you want public access from the internet.
     Type: String
     MinLength: 9
     MaxLength: 18
-  ClusterNodeInstanceType:
-    Default: t3.medium
+  ConfluenceDownloadUrl:
+    Default: ''
+    Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
+    Type: String
+    ConstraintDescription: "Must be a valid Confluence download url from version 6.1.x or higher. Find valid versions at https://confluence.atlassian.com/display/DOC/Confluence+Release+Notes"
+  ConfluenceVersion:
+    Default: '6.11.0'
+    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
+    ConstraintDescription: "Must be a valid Confluence version number, for example 6.1.0. Find valid versions at https://confluence.atlassian.com/display/DOC/Confluence+Release+Notes"
+    Description: The version of Confluence to install
+    Type: String
+  CustomDnsName:
+    Default: ''
+    Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the public IP address.'
+    Type: String
+  DBInstanceClass:
+    Default: db.t2.medium
     AllowedValues:
-      - c4.large
+      - db.m4.large
+      - db.m4.xlarge
+      - db.m4.2xlarge
+      - db.m4.4xlarge
+      - db.m4.10xlarge
+      - db.m4.16xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.t2.medium
+      - db.t2.large
+      - db.t2.xlarge
+      - db.t2.2xlarge
+    ConstraintDescription: Must be a valid RDS instance class, from the selection list
+    Description: RDS instance type
+    Type: String
+  DBIops:
+    Default: 1000
+    ConstraintDescription: 'Must be in the range 1000 - 30000'
+    Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
+    MinValue: 1000
+    MaxValue: 30000
+    Type: Number
+  DBMasterUserPassword:
+    Default: 'ChangeME'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Must be at least 8 alphanumeric characters.
+    Description: Database admin account password.
+    NoEcho: True
+    MinLength: 8
+    MaxLength: 128
+    Type: String
+  DBMultiAZ:
+    Default: true
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Type: String
+  DBPassword:
+    Default: 'chaNGEmE'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Must be at least 8 alphanumeric characters.
+    Description: Database user account password.
+    MinLength: 8
+    MaxLength: 128
+    NoEcho: true
+    Type: String
+  DBPoolMaxSize:
+    Default: 60
+    Description: The maximum number of database connections that can be opened at any time
+    Type: String
+  DBPoolMinSize:
+    Default: 20
+    Description: The minimum number of idle database connections that are kept open at any time
+    Type: String
+  DBTimeout:
+    Default: 30
+    Description: Number of seconds that Connections in excess of minPoolSize should be permitted to remain idle in the pool before being culled
+    Type: String
+  DBIdleTestPeriod:
+    Default: 100
+    Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
+    Type: String
+  DBMaxStatements:
+    Default: 0
+    Description: The size of c3p0's global PreparedStatement cache. It controls the total number of Statements cached, for all Connections. If set, it should be a fairly large number, as each pooled Connection requires its own, distinct flock of cached statements.
+    Type: String
+  DBValidate:
+    Default: false
+    Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
+    Type: String
+  DBPreferredTestQuery:
+    Default: 'select 1'
+    Description: The query that will be executed for all connection tests
+    Type: String
+  DBAcquireIncrement:
+    Default: 1
+    Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
+    Type: String
+  DBStorage:
+    Default: 10
+    Description: Database allocated storage size, in gigabytes (GB)
+    Type: Number
+  DBStorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database
+    Type: String
+  DBStorageType:
+    Default: General Purpose (SSD)
+    AllowedValues:
+      - General Purpose (SSD)
+      - Provisioned IOPS
+    ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
+    Description: Database storage type
+    Type: String
+  DeployEnvironment:
+    Default: prod
+    AllowedValues:
+      - prod
+      - stg
+      - dr
+    ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
+    Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
+    Type: String
+  ExternalSubnets:
+    Default: ''
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
+    Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
+    Type: List<AWS::EC2::Subnet::Id>
+  HostedZone:
+    Default: ''
+    ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
+    Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
+    Type: String
+  InstanceType:
+    Default: t3.large
+    AllowedValues:
       - c4.xlarge
       - c4.2xlarge
       - c4.4xlarge
       - c4.8xlarge
-      - c5.large
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
-      - c5d.large
       - c5d.xlarge
       - c5d.2xlarge
       - c5d.4xlarge
@@ -284,11 +407,9 @@ Parameters:
       - r5d.4xlarge
       - r5d.12xlarge
       - r5d.24xlarge
-      - t2.medium
       - t2.large
       - t2.xlarge
       - t2.2xlarge
-      - t3.medium
       - t3.large
       - t3.xlarge
       - t3.2xlarge
@@ -307,183 +428,38 @@ Parameters:
       - z1d.6xlarge
       - z1d.12xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
-    Description: Instance type for the cluster application nodes.
+    Description: Instance type for the application server.
     Type: String
-  ClusterNodeMax:
-    Default: 1
+  InstanceVolumeSize:
+    Default: 200
+    Description: Size of root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
-  ClusterNodeMin:
-    Default: 1
-    Type: Number
-  ClusterNodeVolumeSize:
-    Default: 50
-    Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
-    Type: Number
-  CrowdDownloadUrl:
-    Default: ''
-    Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
-    Type: String
-    ConstraintDescription: Must be a valid Crowd download url
-  CrowdVersion:
-    Default: 3.2.1
-    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
-    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
-    Description: The version of Crowd to install
-    Type: String
-  CustomDnsName:
-    Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
-    Type: String
-  DBInstanceClass:
-    Default: db.t2.medium
-    AllowedValues:
-      - db.m4.large
-      - db.m4.xlarge
-      - db.m4.2xlarge
-      - db.m4.4xlarge
-      - db.m4.10xlarge
-      - db.m4.16xlarge
-      - db.r4.large
-      - db.r4.xlarge
-      - db.r4.2xlarge
-      - db.r4.4xlarge
-      - db.r4.8xlarge
-      - db.r4.16xlarge
-      - db.t2.medium
-      - db.t2.large
-      - db.t2.xlarge
-      - db.t2.2xlarge
-    ConstraintDescription: Must be a valid RDS instance class, from the selection list
-    Description: RDS instance type
-    Type: String
-  DBIops:
-    Default: 1000
-    ConstraintDescription: 'Must be in the range 1000 - 30000'
-    Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
-    MinValue: 1000
-    MaxValue: 30000
-    Type: Number
-  DBMasterUserPassword:
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Description: Database admin account password.
-    NoEcho: True
-    MinLength: 8
-    MaxLength: 128
-    Type: String
-  DBMaxIdle:
-    Default: 20
-    Description: The maximum number of database connections that are allowed to remain idle in the pool
-    Type: String
-  DBMaxWaitMillis:
-    Default: 10000
-    Description: The length of time (in milliseconds) that Crowd is allowed to wait for a database connection to become available (while there are no free ones available in the pool), before returning an error
-    Type: String
-  DBMinEvictableIdleTimeMillis:
-    Default: 180000
-    Description: The minimum amount of time an object may sit idle in the database connection pool before it is eligible for eviction by the idle object eviction
-    Type: String
-  DBMinIdle:
-    Default: 10
-    Description: The minimum number of idle database connections that are kept open at any time
-    Type: String
-  DBMultiAZ:
-    Default: true
-    AllowedValues:
-      - true
-      - false
-    ConstraintDescription: Must be 'true' or 'false'.
-    Type: String
-  DBPassword:
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Description: Database user account password.
-    MinLength: 8
-    MaxLength: 128
-    NoEcho: true
-    Type: String
-  DBPoolMaxSize:
-    Default: 20
-    Description: The maximum number of database connections that can be opened at any time
-    Type: String
-  DBPoolMinSize:
-    Default: 20
-    Description: The minimum number of idle database connections that are kept open at any time
-    Type: String
-  DBRemoveAbandoned:
-    Default: true
-    Description: Flag to remove abandoned database connections if they exceed the Removed Abandoned Timeout
-    Type: String
-  DBRemoveAbandonedTimeout:
-    Default: 60
-    Description: The length of time (in seconds) that a database connection can be idle before it is considered abandoned
-    Type: String
-  DBSnapshotName:
-    ConstraintDescription: Must be a valid RDS snapshot Name
-    Default: "look this up in RDS at DR region"
-    Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
-    Type: String
-  DBStorage:
-    Default: 20
-    Description: Database allocated storage size, in gigabytes (GB)
-    Type: Number
-  DBStorageType:
-    Default: General Purpose (SSD)
-    AllowedValues:
-      - General Purpose (SSD)
-      - Provisioned IOPS
-    ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
-    Description: Database storage type
-    Type: String
-  DBTestOnBorrow:
-    Default: false
-    Description: Tests if the database connection is valid when it is borrowed from the database connection pool by Crowd
-    Type: String
-  DBTestWhileIdle:
-    Default: true
-    Description: Periodically tests if the database connection is valid when it is idle
-    Type: String
-  DBTimeBetweenEvictionRunsMillis:
-    Default: 60000
-    Description: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
-    Type: String
-  EBSSnapshotId:
-    Default: "look this up in ec2 snapshots at DR region"
-    ConstraintDescription: Must be a valid EBS snapshot ID
-    Description: EBS snapshot ID of an existing backup to restore of the form "snap-065c60da27161cb43".
-    Type: String
-  DeployEnvironment:
-    Default: stg
-    AllowedValues:
-      - prod
-      - stg
-      - dr
-    ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
-    Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
-    Type: String
-  ExternalSubnets:
-    Default: ''
-    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
-    Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
-    Type: List<AWS::EC2::Subnet::Id>
-  HostedZone:
-    Default: ''
-    ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
-    Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
-    Type: String
   InternalSubnets:
     Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
-    Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
+    Description: Subnets (two or more) where your EC2 instance and other internal infrastructure will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
-  JvmHeapOverride:
+  JvmHeapOverrideConfluence:
     Default: ''
-    Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Description: Override the default amount of memory to allocate to the Confluence JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
+    Type: String
+  JvmHeapOverrideSynchrony:
+    Default: ''
+    Description: Override the default amount of memory to allocate to the Synchrony JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
     Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LoadBalancerScheme:
+    Default: internet-facing
+    AllowedValues:
+      - internet-facing
+      - internal
+    ConstraintDescription: Must be 'internet-facing' or 'internal'.
+    Description: Controls if the load balancer is assigned a public IP address
+    Type: String
   LocalAnsibleGitRepo:
     Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
@@ -497,8 +473,12 @@ Parameters:
       - true
       - false
     ConstraintDescription: Must be 'true' or 'false'.
-    Default: false
+    Default: true
     Description: Enable mail processing and sending
+    Type: String
+  SubDomainName:
+    Default: ''
+    Description: Leave this field blank to use your stack name as the sub-domain.
     Type: String
   SSLCertificateARN:
     Default: ''
@@ -536,7 +516,7 @@ Parameters:
     Description: Set to true if you want calls to request.getRemoteHost() to perform DNS lookups in order to return the actual host name of the remote client
     Type: String
   TomcatMaxThreads:
-    Default: 200
+    Default: 48
     Description: The maximum number of request processing threads to be created by this Connector, which therefore determines the maximum number of simultaneous requests that can be handled
     Type: String
   TomcatMinSpareThreads:
@@ -582,36 +562,39 @@ Conditions:
     !Not [!Equals [!Ref SSLCertificateARN, '']]
   SSLScheme:
     !Equals [!Ref TomcatScheme, 'https']
-  OverrideHeap:
-    !Not [!Equals [!Ref JvmHeapOverride, '']]
+  OverrideConfluenceHeap:
+    !Not [!Equals [!Ref JvmHeapOverrideConfluence, '']]
+  OverrideSynchronyHeap:
+    !Not [!Equals [!Ref JvmHeapOverrideSynchrony, '']]
   UseContextPath:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
+  UseDatabaseEncryption:
+    !Equals [!Ref DBStorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
-  UsePublicIp:
-    !Equals [!Ref AssociatePublicIpAddress, 'true']
+  UseSubDomainName:
+    !Not [!Equals [!Ref SubDomainName, '']]
+  GovCloudCondition:
+    !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
 Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
       Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 3584m
     c4.2xlarge:
       Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 11264m
     c4.4xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     c4.8xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    c5.large:
-      Arch: HVM64
-      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     c5.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -624,12 +607,9 @@ Mappings:
     c5.18xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    c5d.large:
-      Arch: HVM64
-      Jvmheap: 2048m
     c5d.xlarge:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     c5d.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -668,7 +648,7 @@ Mappings:
       Jvmheap: 12288m
     i3.large:
       Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 11264m
     i3.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -689,7 +669,7 @@ Mappings:
       Jvmheap: 12288m
     m4.large:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m4.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -707,7 +687,7 @@ Mappings:
       Jvmheap: 12288m
     m5.large:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m5.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -725,7 +705,7 @@ Mappings:
       Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m5d.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -743,7 +723,7 @@ Mappings:
       Jvmheap: 12288m
     r4.large:
       Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 11264m
     r4.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -795,24 +775,18 @@ Mappings:
     r5d.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    t2.medium:
-      Arch: HVM64
-      Jvmheap: 2048m
     t2.large:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     t2.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     t2.2xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    t3.medium:
-      Arch: HVM64
-      Jvmheap: 2048m
     t3.large:
       Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     t3.xlarge:
       Arch: HVM64
       Jvmheap: 12288m
@@ -863,52 +837,52 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-0e4ffb21579e0f8e7
+      HVM64: ami-0996bdb7781dfaa5e
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-09b353c5bb6892ca0
+      HVM64: ami-0f5af274ce9e0b219
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-0d62eec698c45a1a5
+      HVM64: ami-05ab84bb741b4f215
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-0fa74ae5bd024d9c0
+      HVM64: ami-08473f8445d7b7f66
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0de98683e800e5478
+      HVM64: ami-01915b2a796392639
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-07315078f837726ce
+      HVM64: ami-0ed4434104d003c61
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-01ac4305ccd5cbf74
+      HVM64: ami-0f7e8017f8330db8d
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-0ff491e6524404eea
+      HVM64: ami-006fbf5d9f9c8fd6b
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-00d2b19a53bc9e4e4
+      HVM64: ami-001f3bc1009a514f3
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0b6aed7fda7f5a245
+      HVM64: ami-07ad7572209bf12d7
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0f4bb6b53fca4d6ce
+      HVM64: ami-0a37d13b24dcebc2f
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0bb76e233c7ca54ce
+      HVM64: ami-008a2733aab2ef791
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-047839895568a4a5a
+      HVM64: ami-09b2af703c22fae5e
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0158534fc928deb7f
+      HVM64: ami-02dfbf38453fd23f1
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0ef6363d22ffc35fd
+      HVM64: ami-009adf3b923daa98e
       HVMG2: NOT_SUPPORTED
 Resources:
-  CrowdClusterNodeRole:
+  ConfluenceServerRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -922,91 +896,118 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
-        - PolicyName: CrowdClusterNodePolicy
+        - PolicyName: ConfluenceServerPolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Action: ['ec2:DescribeInstances']
                 Effect: Allow
                 Resource: ['*']
-  CrowdClusterNodeInstanceProfile:
+              - Action: ['s3:ListBucket']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::/aws-deployment-test/releases/confluence']
+              - Action: ['s3:Get*']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::/aws-deployment-test/releases/confluence/*']
+              - Action: ['s3:ListBucket']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::/atlassian-software/releases/confluence']
+              - Action: ['s3:Get*']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::/atlassian-software/releases/confluence/*']
+              - Action: ['s3:ListBucket']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::/atlassian-software/snapshots/confluence']
+              - Action: ['s3:Get*']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::/atlassian-software/snapshots/confluence/*']
+  ConfluenceServerInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
-      Roles: [!Ref CrowdClusterNodeRole]
-# Crowd node config
-  ClusterNodeGroup:
+      Roles: [!Ref ConfluenceServerRole]
+# Confluence instance config
+  ConfluenceServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: !Ref ClusterNodeMin
-      LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
-      MaxSize: !Ref ClusterNodeMax
-      MinSize: !Ref ClusterNodeMin
-      LoadBalancerNames:
-        - !Ref LoadBalancer
+      DesiredCapacity: 1
+      LaunchConfigurationName: !Ref ConfluenceServerLaunchConfig
+      MaxSize: 1
+      MinSize: 1
+      TargetGroupARNs: [!Ref ConfluenceServerTargetGroup]
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Confluence Server"
           PropagateAtLaunch: true
-        - Key: Cluster
-          Value: !Ref AWS::StackName
-          PropagateAtLaunch: true
-  ClusterNodeLaunchConfig:
+  ConfluenceServerLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn:
-      - NFSServer
+      - EFSMountAz1
+      - EFSMountAz2
       - DB
     Metadata:
-      Comment: ''
       AWS::CloudFormation::Init:
-        config:
+        configSets:
+          default: [preflight, env]
+        preflight:
+          commands:
+            010_enable_epel:
+              command: yum-config-manager --enable epel
+            020_ssm_group:
+              command: groupadd ssm-user --gid 400
+              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
+            030_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user
+              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
+        env:
           packages:
-            !If
-              - DoCollectd
-              - yum:
-                  collectd: []
+            yum:
+              !If
+                - DoCollectd
+                - collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-              - !Ref "AWS::NoValue"
+                  inotify-tools: []
+                  amazon-ssm-agent: []
+                  xmlstarlet: []
+                - inotify-tools: []
+                  amazon-ssm-agent: []
+                  xmlstarlet: []
           files:
             /etc/atl:
-              mode: "000640"
-              owner: root
-              group: root
               content:
-                'Fn::Join':
+                !Join
                   - "\n"
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
-                    - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true', ''] }]
+                    - !Sub ["ATL_AUTOLOGIN_COOKIE_AGE=${AutologinCookieAge}", AutologinCookieAge: !Ref AutologinCookieAge]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${SynchronyOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, SynchronyOpts: !If [OverrideSynchronyHeap, !Sub ["-Dsynchrony.memory.max=${JvmHeapOverrideSynchrony}", JvmHeapOverrideSynchrony: !Ref JvmHeapOverrideSynchrony ], ''], MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', '']}]
+                    - !Sub ["ATL_CONFLUENCE_INSTALLER_DOWNLOAD_URL=${ConfluenceDownloadUrl}", ConfluenceDownloadUrl: !Ref ConfluenceDownloadUrl]
+                    - !Sub ["ATL_CONFLUENCE_VERSION=${ConfluenceVersion}", ConfluenceVersion: !Ref ConfluenceVersion]
+                    - !Sub ["ATL_DB_ACQUIREINCREMENT=${DBAcquireIncrement}", DBAcquireIncrement: !Ref DBAcquireIncrement]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
-                    - !Sub ["ATL_DB_MAXIDLE=${DBMaxIdle}", DBMaxIdle: !Ref DBMaxIdle]
-                    - !Sub ["ATL_DB_MAXWAITMILLIS=${DBMaxWaitMillis}", DBMaxWaitMillis: !Ref DBMaxWaitMillis]
-                    - !Sub ["ATL_DB_MINEVICTABLEIDLETIMEMILLIS=${DBMinEvictableIdleTimeMillis}", DBMinEvictableIdleTimeMillis: !Ref DBMinEvictableIdleTimeMillis]
-                    - !Sub ["ATL_DB_MINIDLE=${DBMinIdle}", DBMinIdle: !Ref DBMinIdle]
+                    - !Sub ["ATL_DB_IDLETESTPERIOD=${DBIdleTestPeriod}", DBIdleTestPeriod: !Ref DBIdleTestPeriod]
+                    - !Sub ["ATL_DB_MAXSTATEMENTS=${DBMaxStatements}", DBMaxStatements: !Ref DBMaxStatements]
                     - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
                     - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
                     - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
-                    - !Sub ["ATL_DB_REMOVEABANDONED=${DBRemoveAbandoned}", DBRemoveAbandoned: !Ref DBRemoveAbandoned]
-                    - !Sub ["ATL_DB_REMOVEABANDONEDTIMEOUT=${DBRemoveAbandonedTimeout}", DBRemoveAbandonedTimeout: !Ref DBRemoveAbandonedTimeout]
-                    - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
-                    - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
-                    - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
+                    - !Sub ["ATL_DB_PREFERREDTESTQUERY=\"${DBPreferredTestQuery}\"", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
+                    - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
+                    - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
                     - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
-                    - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
-                    - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
+                    - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
+                    - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideConfluenceHeap, !Ref 'JvmHeapOverrideConfluence', !FindInMap [AWSInstanceType2Arch, !Ref InstanceType, Jvmheap]]]
                     - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
                     - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
+                    - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
@@ -1019,44 +1020,40 @@ Resources:
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
                     - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
                     - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
-                    - "ATL_CROWD_FULL_DISPLAY_NAME=\"Atlassian Crowd\""
-                    - "ATL_CROWD_NAME=crowd"
-                    - "ATL_CROWD_SHORT_DISPLAY_NAME=Crowd"
+                    - "ATL_SYNCHRONY_SERVICE_URL=http://127.0.0.1/synchrony/v1"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
-                    - "ATL_DB_NAME=crowd"
-                    - "ATL_ENABLED_PRODUCTS=Crowd"
+                    - "ATL_CONFLUENCE_DATA_CENTER=false"
+                    - "ATL_DB_NAME=confluence"
+                    - "ATL_ENABLED_PRODUCTS=Confluence"
                     - "ATL_ENABLED_SHARED_HOMES="
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
-                    - "ATL_JDBC_USER=atlcrowd"
+                    - "ATL_JDBC_USER=atlconfluence"
                     - "ATL_NGINX_ENABLED=false"
                     - "ATL_POSTGRES_ENABLED=false"
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
-                    - "ATL_RELEASE_S3_PATH=releases"
+                    - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
+              mode: "000640"
+              owner: root
+              group: root
             /etc/cfn/cfn-hup.conf:
-              content:
-                !Join
-                  - "\n"
-                  -
-                    - "[main]"
-                    - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
-                    - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
+              content: !Sub |
+                [main]
+                region=${AWS::Region}
+                stack=${AWS::StackName}
               mode: "000400"
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content:
-                !Join
-                  - "\n"
-                  -
-                    - "[cfn-auto-reloader-hook]"
-                    - triggers=post.update
-                    - "path=Resources.ClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init"
-                    - !Sub
-                      - "action=/opt/aws/bin/cfn-init -v --stack ${StackName} --resource ClusterNodeLaunchConfig --region ${Region}"
-                      - StackName: !Ref "AWS::StackName"
-                        Region: !Ref "AWS::Region"
-                    - runas=root
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.ConfluenceServerLaunchConfig.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
+                runas=root
+              mode: "000400"
+              owner: root
+              group: root
             /tmp/bootstrap_local_ansible:
               content: !Sub |
                 #!/usr/bin/env bash
@@ -1081,31 +1078,25 @@ Resources:
           commands:
             010_make_mount_point:
               command: mkdir -p /media/atl
-              ignoreErrors: false
             020_add_nfs_mount:
               command:
                 !Join
                   - ""
                   -
                     - "echo "
-                    - !GetAtt NFSServer.PrivateIp
-                    - ":/nfs /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
-              ignoreErrors: false
+                    - !If
+                      - UseHostedZone
+                      - !Ref EFSCname
+                      - !Sub
+                          - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
+                          - ElasticFileSystem: !Ref ElasticFileSystem
+                            Region: !Ref "AWS::Region"
+                    - ":/ /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
             030_mount_all:
               command: mount -a
               ignoreErrors: true
             040_make_shared_home_dir:
-              command: mkdir -p /media/atl/crowd/shared
-              ignoreErrors: false
-            050_ssm_group:
-              command: groupadd ssm-user --gid 400
-              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
-            051_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
-            052_ensure_ssm:
-              command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-              ignoreErrors: true
+              command: mkdir -p /media/atl/confluence/shared-home
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
@@ -1113,9 +1104,7 @@ Resources:
               cfn-hup:
                 enabled: true
                 ensureRunning: true
-                files:
-                  - /etc/cfn/cfn-hup.conf
-                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
               collectd:
                 !If [DoCollectd, {enabled: true, ensureRunning: true}, !Ref 'AWS::NoValue']
               rpcbind:
@@ -1124,174 +1113,83 @@ Resources:
                 packages:
                   yum: [nfs-utils]
     Properties:
-      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref ClusterNodeVolumeSize
+            VolumeSize: !Ref InstanceVolumeSize
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
       KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref CrowdClusterNodeInstanceProfile
+      IamInstanceProfile: !Ref ConfluenceServerInstanceProfile
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
           - !Ref AWS::Region
           - !FindInMap
               - AWSInstanceType2Arch
-              - !Ref ClusterNodeInstanceType
+              - !Ref InstanceType
               - Arch
-      InstanceType: !Ref ClusterNodeInstanceType
+      InstanceType: !Ref InstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
-        Fn::Base64:
-          !Join
-            - ""
-            -
-              - "#!/bin/bash -xe\n"
-              - "yum update -y aws-cfn-bootstrap\n"
-              - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
-              - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
-  EBSRestoreVol:
-    Type: AWS::EC2::Volume
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y aws-cfn-bootstrap
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ConfluenceServerGroup --region ${AWS::Region}
+# Elastic file system
+  ElasticFileSystem:
+    Type: AWS::EFS::FileSystem
     Properties:
-      AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
-      SnapshotId: !Ref EBSSnapshotId
-      Tags:
+      FileSystemTags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd DR volume", StackName: !Ref 'AWS::StackName']
-        - Key: Cluster
-          Value: !Ref AWS::StackName
+          Value: !Sub "${AWS::StackName}/shared-files"
         - Key: Application
           Value: !Ref AWS::StackId
-      VolumeType: gp2
-  NFSServer:
-    Type: 'AWS::EC2::Instance'
-    Metadata:
-      'AWS::CloudFormation::Init':
-        config:
-          files:
-            /tmp/nfs:
-              content: >-
-                IwojIERlZmluZSB3aGljaCBwcm90b2NvbCB2ZXJzaW9ucyBtb3VudGQgCiMgd2lsbCBhZHZlcnRpc2UuIFRoZSB2YWx1ZXMgYXJlICJubyIgb3IgInllcyIKIyB3aXRoIHllcyBiZWluZyB0aGUgZGVmYXVsdAojTU9VTlREX05GU19WMj0ibm8iCiNNT1VOVERfTkZTX1YzPSJubyIKIwojCiMgUGF0aCB0byByZW1vdGUgcXVvdGEgc2VydmVyLiBTZWUgcnF1b3RhZCg4KQojUlFVT1RBRD0iL3Vzci9zYmluL3JwYy5ycXVvdGFkIgojIFBvcnQgcnF1b3RhZCBzaG91bGQgbGlzdGVuIG9uLgojUlFVT1RBRF9QT1JUPTg3NQojIE9wdGluYWwgb3B0aW9ucyBwYXNzZWQgdG8gcnF1b3RhZAojUlBDUlFVT1RBRE9QVFM9IiIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBpbi1rZXJuZWwgbG9ja2QKI0xPQ0tEQVJHPQojIFRDUCBwb3J0IHJwYy5sb2NrZCBzaG91bGQgbGlzdGVuIG9uLgpMT0NLRF9UQ1BQT1JUPTMyODAzCiMgVURQIHBvcnQgcnBjLmxvY2tkIHNob3VsZCBsaXN0ZW4gb24uCkxPQ0tEX1VEUFBPUlQ9MzI3NjkKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMubmZzZC4gU2VlIHJwYy5uZnNkKDgpCiMgVHVybiBvZmYgdjIgYW5kIHYzIHByb3RvY29sIHN1cHBvcnQKI1JQQ05GU0RBUkdTPSItTiAyIC1OIDMiCiMgVHVybiBvZmYgdjQgcHJvdG9jb2wgc3VwcG9ydAojUlBDTkZTREFSR1M9Ii1OIDQiCiMgTnVtYmVyIG9mIG5mcyBzZXJ2ZXIgcHJvY2Vzc2VzIHRvIGJlIHN0YXJ0ZWQuCiMgVGhlIGRlZmF1bHQgaXMgOC4gCiNSUENORlNEQ09VTlQ9OAojIFN0b3AgdGhlIG5mc2QgbW9kdWxlIGZyb20gYmVpbmcgcHJlLWxvYWRlZAojTkZTRF9NT0RVTEU9Im5vbG9hZCIKIyBTZXQgVjQgZ3JhY2UgcGVyaW9kIGluIHNlY29uZHMKI05GU0RfVjRfR1JBQ0U9OTAKIwojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5tb3VudGQuIFNlZSBycGMubW91bnRkKDgpCiNSUENNT1VOVERPUFRTPSIiCiMgUG9ydCBycGMubW91bnRkIHNob3VsZCBsaXN0ZW4gb24uCk1PVU5URF9QT1JUPTg5MgojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdGF0ZC4gU2VlIHJwYy5zdGF0ZCg4KQojU1RBVERBUkc9IiIKIyBQb3J0IHJwYy5zdGF0ZCBzaG91bGQgbGlzdGVuIG9uLgojU1RBVERfUE9SVD02NjIKIyBPdXRnb2luZyBwb3J0IHN0YXRkIHNob3VsZCB1c2VkLiBUaGUgZGVmYXVsdCBpcyBwb3J0CiMgaXMgcmFuZG9tCiNTVEFURF9PVVRHT0lOR19QT1JUPTIwMjAKIyBTcGVjaWZ5IGNhbGxvdXQgcHJvZ3JhbSAKI1NUQVREX0hBX0NBTExPVVQ9Ii91c3IvbG9jYWwvYmluL2ZvbyIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMuaWRtYXBkLiBTZWUgcnBjLmlkbWFwZCg4KQojUlBDSURNQVBEQVJHUz0iIgojCiMgU2V0IHRvIHR1cm4gb24gU2VjdXJlIE5GUyBtb3VudHMuIAojU0VDVVJFX05GUz0ieWVzIgojIE9wdGlvbmFsIGFyZ3VtZW50cyBwYXNzZWQgdG8gcnBjLmdzc2QuIFNlZSBycGMuZ3NzZCg4KQojUlBDR1NTREFSR1M9IiIKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdmNnc3NkLiBTZWUgcnBjLnN2Y2dzc2QoOCkKI1JQQ1NWQ0dTU0RBUkdTPSIiCiMKIyBUbyBlbmFibGUgUkRNQSBzdXBwb3J0IG9uIHRoZSBzZXJ2ZXIgYnkgc2V0dGluZyB0aGlzIHRvCiMgdGhlIHBvcnQgdGhlIHNlcnZlciBzaG91bGQgbGlzdGVuIG9uCiNSRE1BX1BPUlQ9MjAwNDkgCg==
-          commands:
-            010_make_mount_point:
-              command: mkdir /nfs
-              ignoreErrors: false
-            020_add_nfs_mount:
-              command:
-                echo "/dev/xvdk   /nfs        ext4    defaults        0   2" >>/etc/fstab
-              ignoreErrors: false
-            030_mount_nfs:
-              command: mount /nfs
-            040_fix_exports:
-              command: echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            045_check_exports:
-              command: cat /etc/exports
-            050_restart_nfs:
-              command: service nfs restart
-          services:
-            sysvinit:
-              nfs:
-                enabled: true
-                ensureRunning: true
-          packages:
-            yum:
-              nfs-utils: []
+  EFSMountAz1:
+    Type: AWS::EFS::MountTarget
     Properties:
-      AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
-      ImageId:
-        !FindInMap
-          - AWSRegionArch2AMI
-          - !Ref "AWS::Region"
-          - !FindInMap
-              - AWSInstanceType2Arch
-              - !Ref ClusterNodeInstanceType
-              - Arch
-      InstanceType: !Ref ClusterNodeInstanceType
-      KeyName: !Ref KeyName
-      NetworkInterfaces:
-        - GroupSet:
-            - !Ref SecurityGroup
-          AssociatePublicIpAddress: false
-          DeviceIndex: 0
-          DeleteOnTermination: true
-          SubnetId: !Select [0, !Ref InternalSubnets]
-      UserData: !Base64
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash -v
-            - |
-              yum update -y
-            - |
-              yum install aws-cfn-bootstrap -y
-            - |
-              # download data and install file
-            - '/opt/aws/bin/cfn-init --stack '
-            - !Ref 'AWS::StackName'
-            - ' --resource NFSServer '
-            - ' --region '
-            - !Ref 'AWS::Region'
-            - |2
-               || error_exit 'Failed to run cfn-init'
-            - |
-              echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            - |
-              base64 -d /tmp/nfs > /etc/sysconfig/nfs
-            - |
-              exportfs -av
-            - |
-              /sbin/service rpcbind restart
-            - |
-              /sbin/service nfs restart
-            - |
-            - '/opt/aws/bin/cfn-signal -e $? '
-            - ' --stack '
-            - !Ref 'AWS::StackName'
-            - " --resource NFSServer "
-            - ' --region '
-            - !Ref 'AWS::Region'
-      Tags:
-        - Key: Name
-          Value: !Sub ["${StackName} DR NFS Node", StackName: !Ref 'AWS::StackName']
-      Volumes:
-        - VolumeId: !Ref EBSRestoreVol
-          Device: /dev/xvdk
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT20M
-  NFSR53name:
+      FileSystemId: !Ref ElasticFileSystem
+      SecurityGroups: [!Ref SecurityGroup]
+      SubnetId: !Select [0, !Ref InternalSubnets]
+  EFSMountAz2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref ElasticFileSystem
+      SecurityGroups: [!Ref SecurityGroup]
+      SubnetId: !Select [1, !Ref InternalSubnets]
+  EFSCname:
     Type: AWS::Route53::RecordSet
     Condition: UseHostedZone
     Properties:
       HostedZoneName: !Ref HostedZone
-      Comment: Route53 A rec for the nfs
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']]
-      Type: A
-      TTL: 900
+      Comment: Route53 cname for the efs
+      Name: !Sub "${AWS::StackName}.efs.${HostedZone}"
+      Type: CNAME
+      TTL: '900'
       ResourceRecords:
-        - !GetAtt NFSServer.PrivateIp
+        - !Sub "${ElasticFileSystem}.efs.${AWS::Region}.amazonaws.com."
+# Database
   DB:
     Type: AWS::RDS::DBInstance
     Properties:
+      AllocatedStorage: !Ref DBStorage
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
-      DBSnapshotIdentifier: !Ref DBSnapshotName
       Engine: postgres
       EngineVersion: 9.6
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Confluence PostgreSQL Database"
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -1304,66 +1202,78 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the RDS
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
+      Name: !Sub "${AWS::StackName}.db.${HostedZone}"
       Type: CNAME
       TTL: 900
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
   LoadBalancer:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      AppCookieStickinessPolicy:
-        - CookieName: JSESSIONID
-          PolicyName: JSessionIdStickiness
-      ConnectionDrainingPolicy:
-        Enabled: true
-        Timeout: 30
-      ConnectionSettings:
-        IdleTimeout: 3600
-      CrossZone: true
-      Listeners:
-        - LoadBalancerPort: 80
-          Protocol: HTTP
-          InstancePort: !Ref TomcatDefaultConnectorPort
-          InstanceProtocol: HTTP
-          PolicyNames:
-            - JSessionIdStickiness
-        - !If
-          - DoSSL
-          - LoadBalancerPort: '443'
-            Protocol: HTTPS
-            InstancePort: !Ref TomcatDefaultConnectorPort
-            InstanceProtocol: HTTP
-            PolicyNames:
-              - JSessionIdStickiness
-            SSLCertificateId: !Ref SSLCertificateARN
-          - !Ref AWS::NoValue
-      HealthCheck:
-        Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
-        Timeout: 29
-        Interval: 30
-        UnhealthyThreshold: 2
-        HealthyThreshold: 2
-      Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: 300
+      Scheme: !Ref LoadBalancerScheme
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
-        - Key: Cluster
-          Value: !Ref AWS::StackName
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+        - CertificateArn:
+            !If
+              - DoSSL
+              - !Ref SSLCertificateARN
+              - !Ref AWS::NoValue
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ConfluenceServerTargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: !If [DoSSL, 443, 80]
+      Protocol: !If [DoSSL, HTTPS, HTTP]
   LoadBalancerCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the ALB
-      Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
+      Name: !Sub
+        - "${SubDomainName}.${HostedZone}"
+        - SubDomainName: !If [UseSubDomainName, !Ref 'SubDomainName', !Ref 'AWS::StackName']
+          HostedZone: !Ref 'HostedZone'
       Type: CNAME
       TTL: 900
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
+  ConfluenceServerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
+      Port: !Ref TomcatDefaultConnectorPort
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      HealthCheckIntervalSeconds: 20
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: 200
+      HealthCheckPath: !If [UseContextPath, !Sub "${TomcatContextPath}/status", '/status']
+      HealthCheckPort: !Ref TomcatDefaultConnectorPort
+      HealthCheckProtocol: HTTP
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: true
+        - Key: stickiness.type
+          Value: lb_cookie
+      Tags:
+        - Key: Name
+          Value: ConfluenceServerTargetGroup
+    DependsOn:
+      - LoadBalancer
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -1383,7 +1293,7 @@ Resources:
           CidrIp: !Ref CidrBlock
       Tags:
         - Key: Name
-          Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
+          Value: !Sub "${AWS::StackName} sg"
       VpcId: !Ref VPC
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -1393,6 +1303,30 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
+  EncryptionKey:
+    Condition: UseDatabaseEncryption
+    DeletionPolicy: Retain
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Sub "${AWS::StackName}"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+  EncryptionKeyAlias:
+    Condition: UseDatabaseEncryption
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}"
+      TargetKeyId: !Ref EncryptionKey
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -1424,12 +1358,23 @@ Outputs:
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
-    }
+    Export:
+      Name: !Sub "${AWS::StackName}-SGname"
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
-  NFSR53name:
-      Description: The DR NFS name
-      Value: NFSR53name
+  DBEncryptionKey:
+    Condition: UseDatabaseEncryption
+    Description: The alias of the encryption key created for RDS
+    Value: !Ref EncryptionKeyAlias
+  EFSCname:
+    Description: The cname of the EFS
+    Value: !If
+      - UseHostedZone
+      - !Ref EFSCname
+      - !Ref ElasticFileSystem
+    Export:
+      Name: !Sub "${AWS::StackName}-EFSCname"
+  ConfluenceTargetGroupARN:
+    Description: The name of the load balancer for Confluence Server
+    Value: !Ref ConfluenceServerTargetGroup
