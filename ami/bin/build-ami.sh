@@ -152,7 +152,7 @@ packer -machine-readable build \
     -var base_ami="${BASE_AMI}" \
     -var business_unit="${BUSINESS_UNIT}" \
     -var resource_owner="${RESOURCE_OWNER}" \
-    -var "availability_zone"="${AWS_AZ}" \
+    -var availability_zone="${AWS_AZ}" \
     -var subnet_id="${AWS_SUBNET_ID}" \
     -var aws_region="${AWS_REGION}" \
     -var aws_linux_version="${AWS_LINUX_VERSION}" \
