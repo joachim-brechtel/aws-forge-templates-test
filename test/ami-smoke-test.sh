@@ -33,7 +33,7 @@ RETRIES=${RETRIES:-"60"}
 # In case we are running from Bamboo deployment project we need to include log files directly in output
 PRINT_LOGS=${PRINT_LOGS:-true}
 
-TEMPLATE_LOCATION="../templates/BitbucketServer.template"
+TEMPLATE_LOCATION="../templates/BitbucketServer.template.yaml"
 AWS_KEY_PAIR="build-temp-"`date +%s`
 
 # Helper method - Tearing down the instance - pass instanceID
@@ -110,7 +110,7 @@ if [[ -z "${AWS_AMI_ID}" ]]; then
         log "ERROR: AMI ID was not specified and ${TEMPLATE_LOCATION} file cannot be found" 1>&2
         exit 1
     fi
-    log Using ${AWS_AMI_ID} from BitbucketServer.template
+    log Using ${AWS_AMI_ID} from BitbucketServer.template.yaml
 fi
 
 # VPC and subnet need to be defined
