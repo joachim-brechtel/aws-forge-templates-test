@@ -14,6 +14,7 @@ DEBUG_MODE=
 source "${BASEDIR}/atl-aws-functions.sh"
 
 function usage {
+# -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
     cat << EOF
 usage: $0 options
 
@@ -25,8 +26,6 @@ OPTIONS:
    -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
    -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
    -c Whether to copy the AMI to other AWS regions. Defaults to false
-   -b The business unit to bill to, required
-   -o The resource owner, required
    -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
    -P make AMI public
    -d debug mode
@@ -45,7 +44,7 @@ COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
 
-while getopts "dhPr:cv:s:p:ub:o:" OPTION
+while getopts ":dhPr:cv:s:p:ub:o:" OPTION
 do
     case $OPTION in
         h)
@@ -82,7 +81,7 @@ do
         o)
             RESOURCE_OWNER="${OPTARG}"
             ;;
-        ?)
+        \?)
             usage
             exit
             ;;

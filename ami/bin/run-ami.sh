@@ -8,6 +8,7 @@ BASEDIR=$(dirname $0)
 source ${BASEDIR}/atl-aws-functions.sh
 
 function usage {
+# -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
 cat << EOF
 usage: $0 options
 
@@ -22,8 +23,6 @@ OPTIONS:
    -i The AWS instance type to use. If not supplied, the AWS_INSTANCE_TYPE environment variable must be set or else \"m4.large\" is assumed
    -l The location of the installer that should be downloaded when the AWS instance boots
    -d Enable debug logging in product (if it is supported) and install tools to enable debugging on the box
-   -b The business unit to bill to
-   -o The resource owner, required
    -u Append the following entries to /etc/sysconfig/atl  
 EOF
 }
@@ -39,7 +38,7 @@ INSTALLER_DOWNLOAD_URL=
 ATL_ENTRIES=
 ATL_PRODUCT="Bitbucket"
 
-while getopts "hr:a:k:s:i:l:du:p:" OPTION
+while getopts ":hr:a:k:s:i:l:du:p:" OPTION
 do
      case $OPTION in
          h)
@@ -73,7 +72,7 @@ do
          u)
              ATL_ENTRIES="${OPTARG}"
              ;;
-         ?)
+         \?)
              usage
              exit
              ;;
