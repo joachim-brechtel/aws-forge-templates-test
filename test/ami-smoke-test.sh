@@ -105,12 +105,15 @@ log "Start of the test"
 
 # Check prerequisites
 if [[ -z "${AWS_AMI_ID}" ]]; then
-    AWS_AMI_ID=`jq -r ".Mappings.AWSRegionArch2AMI[\"${AWS_REGION}\"].HVM64" < ${TEMPLATE_LOCATION}`
-    if [ $? != 0 ]; then
-        log "ERROR: AMI ID was not specified and ${TEMPLATE_LOCATION} file cannot be found" 1>&2
+    if [ ! -f "${TEMPLATE_LOCATION}" ]; then
+        log "ERROR: AMI ID was not specified and could not find template file: ${TEMPLATE_LOCATION}" 1>&2
         exit 1
     fi
-    log Using ${AWS_AMI_ID} from BitbucketServer.template.yaml
+    if ! AWS_AMI_ID="$(perl -0777 -ne "print \"\$1\" if /\b${AWS_REGION}:\s+HVM64:\s*(ami-\w+)/" < "${TEMPLATE_LOCATION}")" || [ -z "${AWS_AMI_ID}" ]; then
+        log "ERROR: AMI ID was not specified and ${TEMPLATE_LOCATION} could not be parsed" 1>&2
+        exit 1
+    fi
+    log "Using ${AWS_AMI_ID} from $(basename "${TEMPLATE_LOCATION}")"
 fi
 
 # VPC and subnet need to be defined
