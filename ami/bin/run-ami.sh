@@ -38,7 +38,7 @@ INSTALLER_DOWNLOAD_URL=
 ATL_ENTRIES=
 ATL_PRODUCT="Bitbucket"
 
-while getopts ":hr:a:k:s:i:l:du:p:" OPTION
+while getopts ":hr:a:k:s:i:l:du:p:b:o:" OPTION
 do
      case $OPTION in
          h)
@@ -72,6 +72,12 @@ do
          u)
              ATL_ENTRIES="${OPTARG}"
              ;;
+        b)
+            BUSINESS_UNIT="${OPTARG}"
+            ;;
+        o)
+            RESOURCE_OWNER="${OPTARG}"
+            ;;
          \?)
              usage
              exit
