@@ -108,6 +108,7 @@ function configureJiraEnvironmentVariables (){
    fi
    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
+CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8"
 CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
 export CATALINA_OPTS
 EOT
