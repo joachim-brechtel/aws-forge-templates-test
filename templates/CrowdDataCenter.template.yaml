@@ -1173,9 +1173,9 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the efs
-      Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
+      Name: !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
 # Database
