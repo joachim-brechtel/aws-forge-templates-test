@@ -58,32 +58,32 @@ Metadata:
       - Label:
           default: Application Tuning (Optional)
         Parameters:
-            - TomcatContextPath
-            - CatalinaOpts
-            - JvmHeapOverride
-            - DBPoolMaxSize
-            - DBPoolMinSize
-            - DBMaxIdle
-            - DBMaxWaitMillis
-            - DBMinEvictableIdleTimeMillis
-            - DBMinIdle
-            - DBRemoveAbandoned
-            - DBRemoveAbandonedTimeout
-            - DBTestOnBorrow
-            - DBTestWhileIdle
-            - DBTimeBetweenEvictionRunsMillis
-            - MailEnabled
-            - TomcatAcceptCount
-            - TomcatConnectionTimeout
-            - TomcatDefaultConnectorPort
-            - TomcatEnableLookups
-            - TomcatMaxThreads
-            - TomcatMinSpareThreads
-            - TomcatProtocol
-            - TomcatProxyPort
-            - TomcatRedirectPort
-            - TomcatScheme
-            - TomcatSecure
+          - TomcatContextPath
+          - CatalinaOpts
+          - JvmHeapOverride
+          - DBPoolMaxSize
+          - DBPoolMinSize
+          - DBMaxIdle
+          - DBMaxWaitMillis
+          - DBMinEvictableIdleTimeMillis
+          - DBMinIdle
+          - DBRemoveAbandoned
+          - DBRemoveAbandonedTimeout
+          - DBTestOnBorrow
+          - DBTestWhileIdle
+          - DBTimeBetweenEvictionRunsMillis
+          - MailEnabled
+          - TomcatAcceptCount
+          - TomcatConnectionTimeout
+          - TomcatDefaultConnectorPort
+          - TomcatEnableLookups
+          - TomcatMaxThreads
+          - TomcatMinSpareThreads
+          - TomcatProtocol
+          - TomcatProxyPort
+          - TomcatRedirectPort
+          - TomcatScheme
+          - TomcatSecure
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP

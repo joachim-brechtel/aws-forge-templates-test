@@ -64,30 +64,30 @@ Metadata:
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
-            - TomcatContextPath
-            - CatalinaOpts
-            - JvmHeapOverride
-            - JvmHeapOverrideSynchrony
-            - DBPoolMaxSize
-            - DBPoolMinSize
-            - DBTimeout
-            - DBIdleTestPeriod
-            - DBMaxStatements
-            - DBValidate
-            - DBPreferredTestQuery
-            - DBAcquireIncrement
-            - MailEnabled
-            - TomcatAcceptCount
-            - TomcatConnectionTimeout
-            - TomcatDefaultConnectorPort
-            - TomcatEnableLookups
-            - TomcatMaxThreads
-            - TomcatMinSpareThreads
-            - TomcatProtocol
-            - TomcatProxyPort
-            - TomcatRedirectPort
-            - TomcatScheme
-            - TomcatSecure
+          - TomcatContextPath
+          - CatalinaOpts
+          - JvmHeapOverride
+          - JvmHeapOverrideSynchrony
+          - DBPoolMaxSize
+          - DBPoolMinSize
+          - DBTimeout
+          - DBIdleTestPeriod
+          - DBMaxStatements
+          - DBValidate
+          - DBPreferredTestQuery
+          - DBAcquireIncrement
+          - MailEnabled
+          - TomcatAcceptCount
+          - TomcatConnectionTimeout
+          - TomcatDefaultConnectorPort
+          - TomcatEnableLookups
+          - TomcatMaxThreads
+          - TomcatMinSpareThreads
+          - TomcatProtocol
+          - TomcatProxyPort
+          - TomcatRedirectPort
+          - TomcatScheme
+          - TomcatSecure
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
