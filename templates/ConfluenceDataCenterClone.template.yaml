@@ -709,10 +709,10 @@ Conditions:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
-  UseSynchronyAutoScalingGroup:
-    !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
   UseSubDomainName:
     !Not [!Equals [!Ref SubDomainName, '']]
+  UseSynchronyAutoScalingGroup:
+    !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
   GovCloudCondition:
     !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
 Mappings:
