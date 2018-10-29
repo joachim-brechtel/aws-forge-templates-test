@@ -1086,7 +1086,7 @@ Resources:
               ignoreErrors: true
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
-            090_bootstrap_local_ansible:
+            050_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
