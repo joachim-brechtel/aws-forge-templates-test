@@ -95,7 +95,7 @@ fi
 if [ ! -z "$UPSTART_FOUND" ] ; then
   SERVICE_NAME=${UPSTART_FOUND}
 else
-  SERVICE_NAME="{{ run_user }}"
+  SERVICE_NAME="$(grep ATL_DB_NAME /etc/atl | cut -d= -f2)"
 fi
 
 # Make sure this PID exists and is sane - otherwise, bail out.
