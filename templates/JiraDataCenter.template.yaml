@@ -1117,7 +1117,7 @@ Resources:
             021_add_efs_mount:
               command: !Sub "echo \"${ElasticFileSystem}:/ /media/atl efs defaults,_netdev 0 0\" >>/etc/fstab"
               ignoreErrors: false
-            030_mount_all:q
+            030_mount_all:
               command: mount -a
               ignoreErrors: true
             040_make_shared_home_dir:
