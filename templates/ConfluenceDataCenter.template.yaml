@@ -1225,20 +1225,11 @@ Resources:
             010_make_mount_point:
               command: mkdir -p /media/atl
               ignoreErrors: false
-            020_add_nfs_mount:
-              command:
-                !Join
-                  - ""
-                  -
-                    - "echo "
-                    - !If
-                      - UseHostedZone
-                      - !Ref EFSCname
-                      - !Sub
-                          - $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone).${ElasticFileSystem}".efs."${Region}".amazonaws.com"
-                          - ElasticFileSystem: !Ref ElasticFileSystem
-                            Region: !Ref "AWS::Region"
-                    - ":/ /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
+            020_ensure_efs_utils:
+              command: yum install -y amazon-efs-utils
+              ignoreErrors: false
+            021_add_efs_mount:
+              command: !Sub "echo \"${ElasticFileSystem}:/ /media/atl efs defaults,_netdev 0 0\" >>/etc/fstab"
               ignoreErrors: false
             030_mount_all:
               command: mount -a
