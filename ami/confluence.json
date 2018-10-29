@@ -93,6 +93,9 @@
     "inline": "sudo yum -y -q update"
   }, {
     "type": "shell",
+    "inline": "sudo localedef -i en_US -f UTF-8 en_US.UTF-8"
+  }, {
+    "type": "shell",
     "inline": "sudo yum -y -q remove java-1.7.0-openjdk.x86_64"
   }, {
     "type": "shell",
