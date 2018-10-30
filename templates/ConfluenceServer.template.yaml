@@ -53,7 +53,7 @@ Metadata:
           - AutologinCookieAge
           - ConfluenceDownloadUrl
           - LocalAnsibleGitRepo
-          - LocalAnsibleGitKey
+          - LocalAnsibleGitSshKeyName
           - StartCollectd
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
@@ -149,8 +149,8 @@ Metadata:
         default: Load Balancer Scheme
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
-      LocalAnsibleGitKey:
-        default: Git key for local-ansible
+      LocalAnsibleGitSshKeyName:
+        default: Git SSH key name for local-ansible
       MailEnabled:
         default: Enable App to Process Email
       SSLCertificateARN:
@@ -464,9 +464,9 @@ Parameters:
     Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String
-  LocalAnsibleGitKey:
+  LocalAnsibleGitSshKeyName:
     Default: ''
-    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
   MailEnabled:
     AllowedValues:
@@ -1005,7 +1005,7 @@ Resources:
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/confluence", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideConfluenceHeap, !Ref 'JvmHeapOverrideConfluence', !FindInMap [AWSInstanceType2Arch, !Ref InstanceType, Jvmheap]]]
                     - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
-                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
+                    - !Sub ["ATL_LOCALANSIBLE_SSHKEYNAME=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitSshKeyName]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_STARTCOLLECTD=${StartCollectd}", StartCollectd: !Ref StartCollectd]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
@@ -1062,7 +1062,7 @@ Resources:
                 localansiblerepopath=/home/localansible
                 gitkeylocation=/root/.ssh/gitkey
 
-                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitSshKeyName}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
                 echo -e $gitkey > $gitkeylocation
                 chmod 600 $gitkeylocation
                 export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
@@ -1089,7 +1089,7 @@ Resources:
               ignoreErrors: true
             040_make_shared_home_dir:
               command: mkdir -p /media/atl/confluence/shared-home
-            090_bootstrap_local_ansible:
+            050_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
