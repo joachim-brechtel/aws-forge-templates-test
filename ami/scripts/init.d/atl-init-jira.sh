@@ -430,10 +430,10 @@ function installOBR {
         MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep $JIRA_VERSION |  awk '{print $NF}')
         MPLACE_REDIRECT_URL=$(curl -Ls $MPLACE_URL -o /dev/null -w %{url_effective})
         MPLACE_FILE=$(basename $MPLACE_REDIRECT_URL)
+        ZIP_FILENAME=$MPLACE_FILE
         # if obr doesnt exist on efs, try to fetch it first from marketplace
         if [ ! -f /media/atl/${MPLACE_FILE} ]; then
             curl -s $MPLACE_REDIRECT_URL -o /media/atl/${MPLACE_FILE}
-            ZIP_FILENAME=$MPLACE_FILE
         fi
         # if obr still doesnt exist on efs, try to fetch it from downlaods-internal
         if [ ! -f /media/atl/${MPLACE_FILE} ]; then
