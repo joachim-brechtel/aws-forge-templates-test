@@ -108,7 +108,7 @@ function configureJiraEnvironmentVariables (){
    fi
    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
 
-CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8 -XX:+UseG1GC"
 CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
 export CATALINA_OPTS
 EOT
@@ -319,7 +319,7 @@ function downloadInstaller {
     if ! curl -L -f --silent "${JIRA_INSTALLER_URL}" \
         -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
     then
-        local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from  - aborting installation"
+        local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from ${ATL_JIRA_RELEASES_S3_URL} - aborting installation"
         atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
     fi
