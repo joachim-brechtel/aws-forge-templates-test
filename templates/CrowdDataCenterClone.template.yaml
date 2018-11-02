@@ -30,7 +30,6 @@ Metadata:
           - DBMasterUserPassword
           - DBMultiAZ
           - DBPassword
-          - DBStorage
           - DBStorageType
       - Label:
           default: Networking
@@ -137,8 +136,6 @@ Metadata:
         default: DB Remove Abandoned?
       DBRemoveAbandonedTimeout:
         default: DB Remove Abandoned Timeout
-      DBStorage:
-        default: Database storage
       DBStorageType:
         default: Database storage type
       DBTestOnBorrow:
@@ -422,10 +419,6 @@ Parameters:
     Default: "look this up in RDS at DR region"
     Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
     Type: String
-  DBStorage:
-    Default: 20
-    Description: Database allocated storage size, in gigabytes (GB)
-    Type: Number
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
