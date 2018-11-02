@@ -558,8 +558,6 @@ Conditions:
     !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
-  DoRestoreFromRDSSnapshot:
-    !Not [!Equals [!Ref DBSnapshotName, '']]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
