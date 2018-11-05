@@ -333,7 +333,7 @@ function atl_addRedirectConnectorServerXml {
 
             <Connector port="${redirectPort}" protocol="${protocol}"
                    relaxedPathChars="[]|"
-                   relaxedQueryChars="[]|{}^&amp;#x5c;&amp;#x60;&amp;quot;&amp;lt;&amp;gt;"
+                   relaxedQueryChars="[]|{{}}^&amp;#x5c;&amp;#x60;&amp;quot;&amp;lt;&amp;gt;"
                    maxHttpHeaderSize="65536"
                    URIEncoding="UTF-8"
                    connectionTimeout="${connectionTimeout}"
