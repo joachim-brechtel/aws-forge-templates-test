@@ -107,9 +107,16 @@ function configureJiraEnvironmentVariables (){
       su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY.+)(384m|768m)(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
    fi
    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
-
-CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8 -XX:+UseG1GC"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+UseG1GC"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintAdaptiveSizePolicy"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintGCDetails"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:NumberOfGCLogFiles=10"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:GCLogFileSize=5m"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+UseGCLogFileRotation"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintTenuringDistribution"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8"
 CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
+
 export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureJiraEnvironmentVariables ==="
