@@ -332,6 +332,8 @@ function atl_addRedirectConnectorServerXml {
             <xsl:apply-templates select="@*|node()"/>
 
             <Connector port="${redirectPort}" protocol="${protocol}"
+                   relaxedPathChars="[]|"
+                   relaxedQueryChars="[]|{{}}^&#x5c;&#x60;&quot;&lt;&gt;"
                    maxHttpHeaderSize="65536"
                    URIEncoding="UTF-8"
                    connectionTimeout="${connectionTimeout}"
