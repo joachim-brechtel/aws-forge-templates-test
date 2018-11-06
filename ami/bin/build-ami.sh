@@ -14,6 +14,7 @@ DEBUG_MODE=
 source "${BASEDIR}/atl-aws-functions.sh"
 
 function usage {
+# -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
     cat << EOF
 usage: $0 options
 
@@ -43,7 +44,7 @@ COPY_AMIS=
 UPDATE_CLOUDFORMATION=
 ATL_PRODUCT="Bitbucket"
 
-while getopts "dhPr:cv:s:p:u" OPTION
+while getopts ":dhPr:cv:s:p:ub:o:" OPTION
 do
     case $OPTION in
         h)
@@ -74,7 +75,13 @@ do
         d)
             DEBUG_MODE="true"
             ;;
-        ?)
+        b)
+            BUSINESS_UNIT="${OPTARG}"
+            ;;
+        o)
+            RESOURCE_OWNER="${OPTARG}"
+            ;;
+        \?)
             usage
             exit
             ;;
@@ -142,6 +149,8 @@ packer -machine-readable build \
     -var aws_session_token="${AWS_SESSION_TOKEN}" \
     -var vpc_id="${AWS_VPC_ID}" \
     -var base_ami="${BASE_AMI}" \
+    -var business_unit="${BUSINESS_UNIT}" \
+    -var resource_owner="${RESOURCE_OWNER}" \
     -var availability_zone="${AWS_AZ}" \
     -var subnet_id="${AWS_SUBNET_ID}" \
     -var aws_region="${AWS_REGION}" \
