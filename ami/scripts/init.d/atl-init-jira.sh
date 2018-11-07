@@ -228,7 +228,7 @@ function configureDbProperties {
     <pool-min-size>${ATL_DB_POOLMINSIZE}</pool-min-size>
     <pool-max-size>${ATL_DB_POOLMAXSIZE}</pool-max-size>
     <pool-max-wait>${ATL_DB_MAXWAITMILLIS}</pool-max-wait>
-    <validation-query>select 1</validation-query>
+    <validation-query>select version();</validation-query>
     <min-evictable-idle-time-millis>${ATL_DB_MINEVICTABLEIDLETIMEMILLIS}</min-evictable-idle-time-millis>
     <time-between-eviction-runs-millis>${ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS}</time-between-eviction-runs-millis>
     <pool-max-idle>${ATL_DB_MAXIDLE}</pool-max-idle>
