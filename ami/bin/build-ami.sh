@@ -178,12 +178,10 @@ regionToAmi[$i]="${AWS_REGION} ${AWS_AMI}"
 if [[ -n "${COPY_AMIS}" ]]; then
     AWS_AMI_NAME=$(aws ec2 describe-images --region "${AWS_REGION}" --image-ids "${AWS_AMI}" | jq -r ".Images[0].Name")
     AWS_REGIONS=$(aws ec2 --region "${AWS_REGION}" describe-regions | jq -r ".Regions[].RegionName")
-    mapfile -t AWS_OTHER_REGIONS <<< "${AWS_REGIONS/"$AWS_REGION"}"
+    striplocal=$(echo "${AWS_REGIONS[@]/$AWS_REGION}"|sort)
+    AWS_OTHER_REGIONS=($striplocal)
     echo "Copying AMI ${AWS_AMI} to regions ${AWS_OTHER_REGIONS[*]}"
     for region in "${AWS_OTHER_REGIONS[@]}"; do
-        if [ -z "$region" ]; then
-            continue
-        fi
         ami=$(aws ec2 copy-image --source-region "${AWS_REGION}" --source-image-id "${AWS_AMI}" --region "${region}" --name "${AWS_AMI_NAME}" | jq -r ".ImageId")
         (
             echo "Copy to ${region} started (AMI ID: ${ami})"
@@ -196,7 +194,7 @@ fi
 
 if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     echo "Updating ${ATL_PRODUCT} CloudFormation template AMI mapping(s)..."
-    mapfile -t TEMPLATES <<< "$(find "${BASEDIR}/../../templates" -maxdepth 1 -iname "${ATL_PRODUCT}*.template.yaml")"
+    TEMPLATES=$(find "${BASEDIR}/../../templates" -iname "${ATL_PRODUCT}*.template.yaml" -maxdepth 1)
     for template in "${TEMPLATES[@]}"; do
         for regionami in "${regionToAmi[@]}"; do
             region=$(echo "$regionami" | cut -d' ' -f1)
