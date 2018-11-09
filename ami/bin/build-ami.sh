@@ -3,7 +3,7 @@
 
 set -e
 
-TMP_DIR=$(mktemp -d -t atlaws)
+TMP_DIR=$(mktemp -d -t atlaws.XXXXXX)
 echo "TMP_DIR = ${TMP_DIR}"
 PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
 # comment out the trap if you want the debug output to persist after the run
