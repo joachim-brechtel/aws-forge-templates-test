@@ -838,48 +838,48 @@ Mappings:
     ap-northeast-1:
       HVM64: ami-02802f0489dac5a26
       HVMG2: NOT_SUPPORTED
-      ap-northeast-2:
-        HVM64: ami-0e087b61705ba03c2
-        HVMG2: NOT_SUPPORTED
-      ap-south-1:
-        HVM64: ami-0e211c3109e51288d
-        HVMG2: NOT_SUPPORTED
-      ap-southeast-1:
-        HVM64: ami-07d8aeee24543ac30
-        HVMG2: NOT_SUPPORTED
-      ap-southeast-2:
-        HVM64: ami-049d05203e6aa71c0
-        HVMG2: NOT_SUPPORTED
-      ca-central-1:
-        HVM64: ami-00371269f2080b19f
-        HVMG2: NOT_SUPPORTED
-      eu-central-1:
-        HVM64: ami-02ea2729a0605411d
-        HVMG2: NOT_SUPPORTED
-      eu-west-1:
-        HVM64: ami-0ae232f5c199a9225
-        HVMG2: NOT_SUPPORTED
-      eu-west-2:
-        HVM64: ami-0492d308ca955b5bc
-        HVMG2: NOT_SUPPORTED
-      eu-west-3:
-        HVM64: ami-0331c85ab5f91837c
-        HVMG2: NOT_SUPPORTED
-      sa-east-1:
-        HVM64: ami-0dde4b0f9079e1f16
-        HVMG2: NOT_SUPPORTED
-      us-east-1:
-        HVM64: ami-0eeb1ce506c332e96
-        HVMG2: NOT_SUPPORTED
-      us-east-2:
-        HVM64: ami-0b5b71e7ecc794118
-        HVMG2: NOT_SUPPORTED
-      us-west-1:
-        HVM64: ami-0b530b4ad2a4e6050
-        HVMG2: NOT_SUPPORTED
-      us-west-2:
-        HVM64: ami-066f4a0ea944ac5cf
-        HVMG2: NOT_SUPPORTED
+    ap-northeast-2:
+      HVM64: ami-0e087b61705ba03c2
+      HVMG2: NOT_SUPPORTED
+    ap-south-1:
+      HVM64: ami-0e211c3109e51288d
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      HVM64: ami-07d8aeee24543ac30
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-2:
+      HVM64: ami-049d05203e6aa71c0
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-00371269f2080b19f
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      HVM64: ami-02ea2729a0605411d
+      HVMG2: NOT_SUPPORTED
+    eu-west-1:
+      HVM64: ami-0ae232f5c199a9225
+      HVMG2: NOT_SUPPORTED
+    eu-west-2:
+      HVM64: ami-0492d308ca955b5bc
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-0331c85ab5f91837c
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      HVM64: ami-0dde4b0f9079e1f16
+      HVMG2: NOT_SUPPORTED
+    us-east-1:
+      HVM64: ami-0eeb1ce506c332e96
+      HVMG2: NOT_SUPPORTED
+    us-east-2:
+      HVM64: ami-0b5b71e7ecc794118
+      HVMG2: NOT_SUPPORTED
+    us-west-1:
+      HVM64: ami-0b530b4ad2a4e6050
+      HVMG2: NOT_SUPPORTED
+    us-west-2:
+      HVM64: ami-066f4a0ea944ac5cf
+      HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
     Type: AWS::IAM::Role
