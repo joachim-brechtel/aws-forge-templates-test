@@ -177,9 +177,10 @@ regionToAmi[$i]="${AWS_REGION} ${AWS_AMI}"
 
 if [[ -n "${COPY_AMIS}" ]]; then
     AWS_AMI_NAME=$(aws ec2 describe-images --region "${AWS_REGION}" --image-ids "${AWS_AMI}" | jq -r ".Images[0].Name")
-    AWS_REGIONS=$(aws ec2 --region "${AWS_REGION}" describe-regions | jq -r ".Regions[].RegionName")
-    striplocal=$(echo "${AWS_REGIONS[@]/$AWS_REGION}"|sort)
-    AWS_OTHER_REGIONS=($striplocal)
+    declare -a AWS_OTHER_REGIONS
+    while IFS=$'\n' read -r line; do
+        AWS_OTHER_REGIONS+=("$line");
+    done < <(aws ec2 --region "${AWS_REGION}" describe-regions | jq --arg AWS_REGION "$AWS_REGION" -r '.Regions[] | select(.RegionName | contains($AWS_REGION) | not) | .RegionName')
     echo "Copying AMI ${AWS_AMI} to regions ${AWS_OTHER_REGIONS[*]}"
     for region in "${AWS_OTHER_REGIONS[@]}"; do
         ami=$(aws ec2 copy-image --source-region "${AWS_REGION}" --source-image-id "${AWS_AMI}" --region "${region}" --name "${AWS_AMI_NAME}" | jq -r ".ImageId")
