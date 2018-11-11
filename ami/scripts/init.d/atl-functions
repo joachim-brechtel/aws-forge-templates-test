@@ -81,7 +81,7 @@ function atl_freeSpace {
 }
 
 function atl_waitForDbToStart {
-    while su postgres -c "psql -w -t --command \"SELECT 1;\"" 2>&1 | egrep "starting|could not connect"; do
+    while su postgres -c "psql -w -t --command \"SELECT version();\"" 2>&1 | egrep "starting|could not connect"; do
         sleep 1
     done
 }
