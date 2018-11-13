@@ -172,7 +172,7 @@ function configureDbProperties {
         ["hibernate.c3p0.idle_test_period"]="${ATL_DB_IDLETESTPERIOD}"
         ["hibernate.c3p0.max_statements"]="${ATL_DB_MAXSTATEMENTS}"
         ["hibernate.c3p0.validate"]="${ATL_DB_VALIDATE}"
-        ["hibernate.c3p0.preferredTestQuery"]="${ATL_DB_PREFERREDTESTQUERY}"
+        ["hibernate.c3p0.preferredTestQuery"]="select version();"
         ["hibernate.c3p0.acquire_increment"]="${ATL_DB_ACQUIREINCREMENT}"
         ["shared-home"]="${ATL_CONFLUENCE_SHARED_HOME}"
     )

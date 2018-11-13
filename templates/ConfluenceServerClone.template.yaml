@@ -297,7 +297,7 @@ Parameters:
     Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
     Type: String
   DBPreferredTestQuery:
-    Default: 'select 1'
+    Default: 'select version();'
     Description: The query that will be executed for all connection tests
     Type: String
   DBAcquireIncrement:
