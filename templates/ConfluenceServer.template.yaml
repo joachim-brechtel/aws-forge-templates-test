@@ -955,11 +955,9 @@ Resources:
             010_enable_epel:
               command: yum-config-manager --enable epel
             020_ssm_group:
-              command: groupadd ssm-user --gid 400
-              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
+              command: groupadd ssm-user --gid 400 || groupmod -g 400 ssm-user
             030_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
+              command: useradd ssm-user --uid 400 -g ssm-user || usermod -u 400 ssm-user
         env:
           packages:
             yum:
