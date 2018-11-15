@@ -290,7 +290,7 @@ Parameters:
       - z1d.6xlarge
       - z1d.12xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
-    Description: Instance type for the cluster application nodes.
+    Description: Instance type for the cluster application nodes
     Type: String
   ClusterNodeMax:
     Default: 1
@@ -298,9 +298,10 @@ Parameters:
   ClusterNodeMin:
     Default: 1
     Type: Number
+    Description: Set to 1 for new deployment. Can be updated post launch.
   ClusterNodeVolumeSize:
     Default: 50
-    Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
+    Description: Size of cluster node root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   CrowdDownloadUrl:
     Default: ''

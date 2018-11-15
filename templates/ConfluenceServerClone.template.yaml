@@ -434,7 +434,7 @@ Parameters:
     Type: String
   InstanceVolumeSize:
     Default: 200
-    Description: Size of root volume in Gb (note - size based upon Application indexes x 4)
+    Description: Size of root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   InternalSubnets:
     Default: ''
