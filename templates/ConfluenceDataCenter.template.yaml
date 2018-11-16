@@ -84,10 +84,8 @@ Metadata:
           - TomcatMaxThreads
           - TomcatMinSpareThreads
           - TomcatProtocol
-          - TomcatProxyPort
           - TomcatRedirectPort
           - TomcatScheme
-          - TomcatSecure
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -191,14 +189,10 @@ Metadata:
         default: Tomcat Minimum Spare Threads
       TomcatProtocol:
         default: Tomcat Protocol
-      TomcatProxyPort:
-        default: Tomcat Proxy Port
       TomcatRedirectPort:
         default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
-      TomcatSecure:
-        default: Tomcat Secure?
       VPC:
         default: VPC *
 Parameters:
@@ -660,23 +654,15 @@ Parameters:
     Default: 'HTTP/1.1'
     Description: Sets the protocol to handle incoming traffic
     Type: String
-  TomcatProxyPort:
-    Default: 80
-    Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
-    Type: String
   TomcatRedirectPort:
     Default: 8443
     Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
-    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
+    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately.
     Type: String
     AllowedValues: [http, https]
-  TomcatSecure:
-    Default: false
-    Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
-    Type: String
   VPC:
     Default: ''
     ConstraintDescription: Must be the ID of a VPC.
@@ -1158,10 +1144,10 @@ Resources:
                     - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
                     - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
                     - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
-                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !If [SSLScheme, 443, 80]]
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
-                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
-                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
+                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !If [SSLScheme, https, http]]
+                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !If [SSLScheme, true, false]]
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
                     - "ATL_DB_NAME=confluence"
