@@ -222,9 +222,6 @@ function atl_configureTomcatConnector {
 
     if [[ -n "${ATL_TOMCAT_DEFAULTCONNECTORPORT}" ]]; then local defaultConnectorPort=${ATL_TOMCAT_DEFAULTCONNECTORPORT}; else local defaultConnectorPort=DEFAULT_CONNECTOR_PORT; fi
     if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}; else local redirectPort=REDIRECT_CONNECTOR_PORT; fi
-    if [[ -n "${ATL_TOMCAT_SECURE}" ]]; then local secure=${ATL_TOMCAT_SECURE}; else local secure=false; fi
-    if [[ -n "${ATL_TOMCAT_SCHEME}" ]]; then local scheme=${ATL_TOMCAT_SCHEME}; else local scheme=http; fi
-    if [[ -n "${ATL_TOMCAT_PROXYPORT}" ]]; then local proxyPort=${ATL_TOMCAT_PROXYPORT}; else local proxyPort=80; fi
     if [[ -n "${ATL_TOMCAT_ACCEPTCOUNT}" ]]; then local acceptCount=${ATL_TOMCAT_ACCEPTCOUNT}; else local acceptCount=100 ; fi
     if [[ -n "${ATL_TOMCAT_CONNECTIONTIMEOUT}" ]]; then local connectionTimeout=${ATL_TOMCAT_CONNECTIONTIMEOUT}
     else local connectionTimeout=60000 ; fi
@@ -236,10 +233,14 @@ function atl_configureTomcatConnector {
     if [[ -n "${ATL_TOMCAT_PROTOCOL}" ]]; then local protocol=${ATL_TOMCAT_PROTOCOL}; else local protocol='HTTP/1.1' ; fi
     if [[ -n "${ATL_TOMCAT_CONTEXTPATH}" ]]; then local contextPath=${ATL_TOMCAT_CONTEXTPATH}; else local contextPath='' ; fi
 
+    local secure="${ATL_TOMCAT_SECURE:-false}"
+    local scheme="${ATL_TOMCAT_SCHEME:-http}"
+    local proxyPort="${ATL_TOMCAT_PROXYPORT:-80}"
+
     if [[ "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_SELF_CERT_ENABLED})" || "xtrue" == "x$(atl_toLowerCase ${ATL_SSL_PROXY})" ]]; then
-        secure=true
-        scheme=https
-        proxyPort=443
+        secure="${ATL_TOMCAT_SECURE:-true}"
+        scheme="${ATL_TOMCAT_SCHEME:-https}"
+        proxyPort="${ATL_TOMCAT_PROXYPORT:-443}"
     fi
 
     local CONNECTOR_MATCHER="@port='${DEFAULT_CONNECTOR_PORT}'"
