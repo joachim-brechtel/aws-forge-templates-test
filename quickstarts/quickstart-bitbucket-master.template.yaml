@@ -6,26 +6,35 @@ Metadata:
     ParameterGroups:
       - Label:
           default: Bitbucket setup
-        Parameters: [BitbucketVersion]
+        Parameters:
+          - BitbucketVersion
       - Label:
           default: Cluster nodes
-        Parameters: [ClusterNodeInstanceType, ClusterNodeMin, ClusterNodeMax]
+        Parameters:
+          - ClusterNodeInstanceType
+          - ClusterNodeMax
+          - ClusterNodeMin
       - Label:
           default: File server
-        Parameters: [FileServerInstanceType, HomeSize, HomeVolumeType, HomeIops]
+        Parameters:
+          - FileServerInstanceType
+          - HomeSize
+          - HomeVolumeType
+          - HomeIops
       - Label:
           default: Database
         Parameters:
           - DBInstanceClass
+          - DBIops
           - DBMasterUserPassword
+          - DBMultiAZ
           - DBPassword
           - DBStorage
           - DBStorageType
-          - DBIops
-          - DBMultiAZ
       - Label:
           default: Elasticsearch
-        Parameters: [ElasticsearchInstanceType]
+        Parameters:
+          - ElasticsearchInstanceType
       - Label:
           default: Networking
         Parameters:
@@ -36,17 +45,17 @@ Metadata:
       - Label:
           default: Advanced (Optional)
         Parameters:
-          - DBSnapshotId
-          - HomeVolumeSnapshotId
-          - ESSnapshotId
+          - AMIOpts
           - BitbucketProperties
           - CatalinaOpts
-          - AMIOpts
-          - HomeDeleteOnTermination
-          - DBMaster
-          - StartCollectd
           - CreateBucket
+          - DBMaster
+          - DBSnapshotId
           - ESBucketName
+          - ESSnapshotId
+          - HomeVolumeSnapshotId
+          - HomeDeleteOnTermination
+          - StartCollectd
     ParameterLabels:
       AMIOpts:
         default: AMI Options
@@ -65,25 +74,25 @@ Metadata:
       ClusterNodeMin:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
-        default: Bitbucket cluster node instance type
+        default: Cluster node instance type
       CreateBucket:
         default: Create S3 bucket for Elasticsearch snapshots
       DBInstanceClass:
-        default: RDS instance class
-      DBMasterUserPassword:
-        default: Master password *
-      DBPassword:
-        default: Bitbucket database password *
-      DBMaster:
-        default: Bitbucket primary database
-      DBStorage:
-        default: Database storage
-      DBMultiAZ:
-        default: Enable RDS Multi-AZ deployment
-      DBStorageType:
-        default: Database storage type
+        default: Database instance class
       DBIops:
         default: RDS Provisioned IOPS
+      DBMasterUserPassword:
+        default: Master password *
+      DBMaster:
+        default: Bitbucket primary database
+      DBMultiAZ:
+        default: Enable RDS Multi-AZ deployment
+      DBPassword:
+        default: Bitbucket database password *
+      DBStorage:
+        default: Database storage
+      DBStorageType:
+        default: Database storage type
       DBSnapshotId:
         default: Database snapshot ID to restore
       ElasticsearchInstanceType:
@@ -98,12 +107,12 @@ Metadata:
         default: Delete Home on termination
       HomeIops:
         default: Home directory IOPS
-      HomeVolumeType:
-        default: Home directory volume type
       HomeSize:
         default: Home directory size
       HomeVolumeSnapshotId:
         default: Home volume snapshot ID to restore
+      HomeVolumeType:
+        default: Home directory volume type
       KeyName:
         default: Key Name *
       SSLCertificateName:
@@ -112,40 +121,37 @@ Metadata:
         default: Start the collectd service
 Parameters:
   AMIOpts:
+    Default: ''
     Description: A comma separated list of options to pass to the AMI
     Type: CommaDelimitedList
-    Default: ""
   AssociatePublicIpAddress:
-    Description: Controls if the EC2 instances are assigned a public IP address
-    Type: String
     Default: true
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
+    Description: Controls if the EC2 instances are assigned a public IP address
+    Type: String
   BitbucketProperties:
-    Description: A comma-separated list of bitbucket properties in the form key1=value1, key2=value2, ... Find documentation at https://confluence.atlassian.com/x/m5ZKLg
+    Default: ''
+    Description: A comma-separated list of bitbucket properties in the form 'key1=value1, key2=value2, ...' Find documentation at https://confluence.atlassian.com/x/m5ZKLg
     Type: CommaDelimitedList
-    Default: ""
   BitbucketVersion:
-    Description: "Version of Bitbucket to install, for example: 4.10.0 or higher. Find valid versions at http://go.atlassian.com/bbs-releases"
+    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
+    ConstraintDescription: 'Must be a valid Bitbucket version number. For example: 4.10.0 or higher'
+    Description: 'Version of Bitbucket to install, for example: 4.10.0 or higher. Find valid versions at http://go.atlassian.com/bbs-releases'
     Type: String
-    AllowedPattern: "(\\d+\\.\\d+\\.\\d+(-?.*))"
-    ConstraintDescription: "Must be a valid Bitbucket version number. For example: 4.10.0 or higher"
+  CatalinaOpts:
+    Default: ''
+    Description: Pass in any additional JVM options to tune Catalina Tomcat
+    Type: String
   CidrBlock:
+    Default: '0.0.0.0/0'
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
     Description: The CIDR IP range that is permitted to access the Bitbucket URL. Use 0.0.0.0/0 if you want public access from the internet.
-    Type: String
     MinLength: 9
     MaxLength: 18
-    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
-    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-  ClusterNodeMin:
-    Type: Number
-    Default: 1
-    Description: Set to 1 for new instances. Can be updated post launch.
-  ClusterNodeMax:
-    Type: Number
-    Default: 2
-  ClusterNodeInstanceType:
     Type: String
+  ClusterNodeInstanceType:
     Default: c4.xlarge
     AllowedValues:
       - c4.large
@@ -239,19 +245,22 @@ Parameters:
       - z1d.6xlarge
       - z1d.12xlarge
     ConstraintDescription: Must be an EC2 instance type from the selection list
-    Description: Instance type for the cluster nodes. See https://confluence.atlassian.com/x/GpdKLg for guidance
-  CatalinaOpts:
-    Description: Java options passed to the JVM that runs Bitbucket.
+    Description: 'Instance type for the cluster application nodes. See https://confluence.atlassian.com/x/GpdKLg for guidance'
     Type: String
-    Default: ""
+  ClusterNodeMax:
+    Default: 2
+    Type: Number
+  ClusterNodeMin:
+    Default: 1
+    Description: Set to 1 for new deployment. Can be updated post launch.
+    Type: Number
   CreateBucket:
-    Description: Set to true to create the S3 bucket within this stack, must be used in conjunction with ESBucketName
-    Type: String
     Default: true
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
-  DBInstanceClass:
+    Description: Set to true to create the S3 bucket within this stack, must be used in conjunction with ESBucketName.
     Type: String
+  DBInstanceClass:
     Default: db.m4.large
     AllowedValues:
       - db.m4.large
@@ -270,55 +279,62 @@ Parameters:
       - db.t2.large
       - db.t2.xlarge
       - db.t2.2xlarge
-    ConstraintDescription: Must be a valid RDS instance class, 'db.t2.medium' or larger.
-  DBMasterUserPassword:
-    NoEcho: true
-    Description: Password for the master ('postgres') account. Must be 8 - 128 characters.
+    ConstraintDescription: Must be a valid RDS instance class from the list
+    Description: RDS instance type
     Type: String
-    MinLength: 8
-    MaxLength: 128
-    AllowedPattern: "[a-zA-Z0-9]*"
-    ConstraintDescription: Must be at least 8 alphanumeric characters.
-  DBPassword:
-    Description: Password for the Bitbucket user ('atlbitbucket') account. Max length of 128 characters. Not used if you have specified a Database snapshot ID.
-    Type: String
-    MaxLength: 128
-    AllowedPattern: "[a-zA-Z0-9]*"
-    ConstraintDescription: If specified, must contain 8 to 128 alphanumeric characters
-    NoEcho: true
-  DBMaster:
-    Description: Database ARN of the RDS instance to replicate. Setting this parameter will bring up Bitbucket as a Disaster recovery standby, with an RDS read replica database.
-    Default: ""
-    Type: String
-    ConstraintDescription: Must be a valid RDS ARN.
-  DBSnapshotId:
-    Description: RDS snapshot ID of an existing backup to restore. Must be used in conjunction with HomeVolumeSnapshotId. Leave blank for a new instance
-    Type: String
-    Default: ""
-    ConstraintDescription: Must be a valid RDS snapshot ID, or blank.
-  DBStorage:
-    Description: Database allocated storage size, in gigabytes (GB). If you choose Provisioned IOPS, storage should be between 100 and 6144
-    Type: Number
-    Default: 10
-    MinValue: 5
-    MaxValue: 6144
-  DBMultiAZ:
-    Type: String
-    Default: true
-    AllowedValues: [true, false]
-    ConstraintDescription: Must be 'true' or 'false'.
-  DBStorageType:
-    Type: String
-    Default: General Purpose (SSD)
-    AllowedValues: [General Purpose (SSD), Provisioned IOPS]
-    ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
   DBIops:
     Default: 1000
-    Description: "Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00."
-    Type: Number
+    ConstraintDescription: Must be in the range 1000 - 30000.
+    Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00.'
     MinValue: 1000
     MaxValue: 30000
-    ConstraintDescription: Must be in the range 1000 - 30000.
+    Type: Number
+  DBMasterUserPassword:
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Must be at least 8 alphanumeric characters.
+    Description: Password for the master ('postgres') account.
+    MinLength: 8
+    MaxLength: 128
+    NoEcho: true
+    Type: String
+  DBMultiAZ:
+    Default: true
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Type: String
+  DBPassword:
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: If specified, must be at least 8 alphanumeric characters.
+    Description: Password for the Bitbucket user ('atlbitbucket') account. Max length of 128 characters. Not used if you have specified a Database snapshot ID.
+    MaxLength: 128
+    NoEcho: true
+    Type: String
+  DBMaster:
+    Default: ''
+    ConstraintDescription: Must be a valid RDS ARN.
+    Description: Database ARN of the RDS instance to replicate. Setting this parameter will bring up Bitbucket as a Disaster recovery standby, with an RDS read replica database.
+    Type: String
+  DBSnapshotId:
+    Default: ''
+    ConstraintDescription: Must be a valid RDS snapshot ID, or blank.
+    Description: RDS snapshot ID of an existing backup to restore. Must be used in conjunction with HomeVolumeSnapshotId. Leave blank for a new instance.
+    Type: String
+  DBStorage:
+    Default: 10
+    Description: Database allocated storage size, in gigabytes (GB). If you choose Provisioned IOPS, storage should be between 100 and 6144
+    MinValue: 5
+    MaxValue: 6144
+    Type: Number
+  DBStorageType:
+    Default: General Purpose (SSD)
+    AllowedValues:
+      - General Purpose (SSD)
+      - Provisioned IOPS
+    ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
+    Description: Database storage type
+    Type: String
   ElasticsearchInstanceType:
     Type: String
     Default: m3.xlarge.elasticsearch
@@ -335,73 +351,73 @@ Parameters:
       - i2.2xlarge.elasticsearch
     ConstraintDescription: Must be an Elasticsearch instance type in the M4, R4 or I2 family
   ESBucketName:
+    Default: ''
+    AllowedPattern: '[a-z0-9-]*'
+    ConstraintDescription: Must contain only lowercase letters, numbers and hyphens (-).
+    Description: Name of a new, or existing, S3 bucket configured for Elasticsearch snapshots.
     Type: String
-    Default: ""
-    Description: "Name of a new, or existing, S3 bucket configured for Elasticsearch snapshots"
-    ConstraintDescription: "Must contain only lowercase letters, numbers and hyphens (-)."
-    AllowedPattern: "[a-z0-9-]*"
   ESSnapshotId:
+    Default: ''
+    AllowedPattern: '[a-z0-9-]*'
+    ConstraintDescription: Must contain only lowercase letters, numbers and hyphens (-).
+    Description: Must be a valid snapshot ID for a snapshot in the configured S3 snapshot repository, must be used in conjunction with ESBucketName set to a correctly configured bucket.
     Type: String
-    Default: ""
-    Description: "Must be a valid snapshot ID for a snapshot in the configured S3 snapshot repository, must be used in conjunction with ESBucketName set to a correctly configured bucket"
-    AllowedPattern: "[a-z0-9-]*"
-    ConstraintDescription: "Must contain only lowercase letters, numbers and hyphens (-)."
   FileServerInstanceType:
-    Description: "Instance type for the file server hosting the Bitbucket shared home directory. See https://confluence.atlassian.com/x/GpdKLg for guidance"
-    Type: String
     Default: m4.xlarge
     AllowedValues:
-      - c4.xlarge
-      - c4.2xlarge
-      - c4.4xlarge
-      - c4.8xlarge
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m4.10xlarge
-      - m4.16xlarge
-      - x1.32xlarge
-    ConstraintDescription: Must be an EC2 instance type in the C5, M5, or X1 family, 'xlarge' or larger.
-  HomeDeleteOnTermination:
-    Description: Delete Bitbucket home directory volume when the file server instance is terminated.  You must back up your data before terminating your file server instance if this option is set to 'true'
+    - c4.xlarge
+    - c4.2xlarge
+    - c4.4xlarge
+    - c4.8xlarge
+    - m4.xlarge
+    - m4.2xlarge
+    - m4.4xlarge
+    - m4.10xlarge
+    - m4.16xlarge
+    - x1.32xlarge
+    ConstraintDescription: Must be an EC2 instance type in the C4, M4, or X1 family, 'xlarge' or larger.
+    Description: Instance type for the file server hosting the Bitbucket shared home directory. See https://confluence.atlassian.com/x/GpdKLg for guidance
     Type: String
+  HomeDeleteOnTermination:
     Default: true
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
+    Description: Delete Bitbucket home directory volume when the file server instance is terminated.  You must back up your data before terminating your file server instance if this option is set to 'true'
+    Type: String
   HomeIops:
-    Description: "Home directory IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB"
-    Type: Number
     Default: 1000
+    Description: 'Home directory IOPS (100 - 20000, only used with Provisioned IOPS). Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB'
+    Type: Number
     MinValue: 100
     MaxValue: 20000
     ConstraintDescription: Must be in the range 100 - 20000.
   HomeSize:
-    Description: Home directory storage size, in gibibytes (GiB) (100 - 16384)
-    Type: Number
     Default: 100
+    Description: Home directory storage size, in gigabytes (GB) (100 - 16384)
+    ConstraintDescription: Must be in the range 100 - 16384.
     MinValue: 100
     MaxValue: 16384
-    ConstraintDescription: Must be in the range 100 - 16384.
+    Type: Number
   HomeVolumeSnapshotId:
-    Description: EBS snapshot ID of an existing backup to restore as the home directory volume. Must be used in conjunction with DBSnapshotId. Leave blank for a new instance
-    Type: String
-    Default: ""
+    Default: ''
     ConstraintDescription: Must be a valid EBS snapshot ID
-  HomeVolumeType:
+    Description: EBS snapshot ID of an existing backup to restore as the home directory volume. Must be used in conjunction with DBSnapshotId. Leave blank for a new instance.
     Type: String
+  HomeVolumeType:
     Default: Provisioned IOPS
     AllowedValues: [General Purpose (SSD), Provisioned IOPS]
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
-  KeyName:
-    Description: The EC2 Key Pair to allow SSH access to the instances
-    Type: "AWS::EC2::KeyPair::KeyName"
-    ConstraintDescription: Must be the name of an existing EC2 Key Pair.
-  SSLCertificateName:
-    Description: The name of your Server Certificate to use for HTTPS. Refer to Amazon documentation for managing your server certificates. Leave blank if you don't want to set up HTTPS at this time
     Type: String
+  KeyName:
+    ConstraintDescription: Must be the name of an existing EC2 Key Pair.
+    Description: The EC2 Key Pair to allow SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+  SSLCertificateName:
+    Default: ''
+    Description: The name of your Server Certificate to use for HTTPS. Refer to Amazon documentation for managing your server certificates. Leave blank if you don't want to set up HTTPS at this time
     MinLength: 0
     MaxLength: 32
-    Default: ""
+    Type: String
   StartCollectd:
     Type: String
     Default: false
@@ -413,55 +429,55 @@ Conditions:
   SetupCollectd:
     !Equals [!Ref StartCollectd, true]
   RestoreFromEBSSnapshot:
-    !Not [!Equals [!Ref HomeVolumeSnapshotId, ""]]
+    !Not [!Equals [!Ref HomeVolumeSnapshotId, '']]
   RestoreFromRDSSnapshot:
-    !Not [!Equals [!Ref DBSnapshotId, ""]]
+    !Not [!Equals [!Ref DBSnapshotId, '']]
   RestoreFromESSnapshot:
     !And
-      - !Not [!Equals [!Ref ESSnapshotId, ""]]
+      - !Not [!Equals [!Ref ESSnapshotId, '']]
       - Condition: ESBucketNameSet
   CreateESBucket:
     !And
-      - !Equals [!Ref CreateBucket, "true"]
+      - !Equals [!Ref CreateBucket, 'true']
       - !And
         - !Not [Condition: RestoreFromESSnapshot]
         - Condition: ESBucketNameSet
   ESBucketNameSet:
-    !Not [!Equals [!Ref ESBucketName, ""]]
+    !Not [!Equals [!Ref ESBucketName, '']]
   StandbyMode:
-    !Not [!Equals [!Ref DBMaster, ""]]
+    !Not [!Equals [!Ref DBMaster, '']]
   SetupSSL:
-    !Not [!Equals [!Ref SSLCertificateName, ""]]
+    !Not [!Equals [!Ref SSLCertificateName, '']]
   NotStandbyMode:
-    !Equals [!Ref DBMaster, ""]
+    !Equals [!Ref DBMaster, '']
   KeyProvided:
     !Not [!Equals [!Ref KeyName, '']]
   IsHomeProvisionedIops:
     !Equals [!Ref HomeVolumeType, Provisioned IOPS]
   IsVersion4X:
-    !Equals ["4", !Select [0, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['4', !Select [0, !Split ['.', !Ref BitbucketVersion]]]
   IsVersion5X:
-    !Equals ["5", !Select [0, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['5', !Select [0, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX0:
-    !Equals ["0", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['0', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX1:
-    !Equals ["1", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['1', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX2:
-    !Equals ["2", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['2', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX3:
-    !Equals ["3", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['3', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX4:
-    !Equals ["4", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['4', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX5:
-    !Equals ["5", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['5', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   IsVersionX6:
-    !Equals ["6", !Select [1, !Split [".", !Ref BitbucketVersion]]]
+    !Equals ['6', !Select [1, !Split ['.', !Ref BitbucketVersion]]]
   ShouldUseES23:
     !Or [Condition: IsVersion4X, !And [Condition: IsVersion5X, !Or [Condition: IsVersionX0, Condition: IsVersionX1, Condition: IsVersionX2, Condition: IsVersionX3, Condition: IsVersionX4, Condition: IsVersionX5, Condition: IsVersionX6]]]
   RestoreRDSOrStandby:
     !Or [Condition: RestoreFromRDSSnapshot, Condition: StandbyMode]
   SetDBMasterUserPassword:
-    !And [!Not [!Equals [!Ref DBMasterUserPassword, ""]], Condition: NotStandbyMode]
+    !And [!Not [!Equals [!Ref DBMasterUserPassword, '']], Condition: NotStandbyMode]
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
 Mappings:
@@ -498,7 +514,7 @@ Mappings:
       HVM64: ami-0ccfb450bced77082
 Resources:
   BitbucketFileServerRole:
-    Type: "AWS::IAM::Role"
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -506,9 +522,9 @@ Resources:
           - Effect: Allow
             Principal:
               Service:
-                - "ec2.amazonaws.com"
-                - "es.amazonaws.com"
-            Action: ["sts:AssumeRole"]
+                - ec2.amazonaws.com
+                - es.amazonaws.com
+            Action: ['sts:AssumeRole']
       Path: /
       Policies:
         - PolicyName: BitbucketFileServerPolicy
@@ -517,42 +533,42 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - "ec2:AttachVolume"
-                  - "ec2:CopySnapshot"
-                  - "ec2:CreateSnapshot"
-                  - "ec2:CreateTags"
-                  - "ec2:CreateVolume"
-                  - "ec2:DeleteSnapshot"
-                  - "ec2:DescribeInstances"
-                  - "ec2:DescribeSnapshots"
-                  - "ec2:DescribeVolumes"
-                  - "ec2:DetachVolume"
-                  - "rds:AddTagsToResource"
-                  - "rds:CopyDBSnapshot"
-                  - "rds:CreateDBSnapshot"
-                  - "rds:DeleteDBSnapshot"
-                  - "rds:DescribeDBInstances"
-                  - "rds:DescribeDBSnapshots"
-                  - "rds:PromoteReadReplica"
-                  - "rds:ModifyDBInstance"
-                  - "rds:RestoreDBInstanceFromDBSnapshot"
-                  - "iam:PassRole"
-                  - "es:*"
-                Resource: ["*"]
+                  - 'ec2:AttachVolume'
+                  - 'ec2:CopySnapshot'
+                  - 'ec2:CreateSnapshot'
+                  - 'ec2:CreateTags'
+                  - 'ec2:CreateVolume'
+                  - 'ec2:DeleteSnapshot'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeSnapshots'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DetachVolume'
+                  - 'rds:AddTagsToResource'
+                  - 'rds:CopyDBSnapshot'
+                  - 'rds:CreateDBSnapshot'
+                  - 'rds:DeleteDBSnapshot'
+                  - 'rds:DescribeDBInstances'
+                  - 'rds:DescribeDBSnapshots'
+                  - 'rds:PromoteReadReplica'
+                  - 'rds:ModifyDBInstance'
+                  - 'rds:RestoreDBInstanceFromDBSnapshot'
+                  - 'iam:PassRole'
+                  - 'es:*'
+                Resource: ['*']
               - !If
                 - ESBucketNameSet
                 - Effect: Allow
                   Action:
-                    - "s3:DeleteObject"
-                    - "s3:GetObject"
-                    - "s3:ListBucket"
-                    - "s3:PutObject"
+                    - 's3:DeleteObject'
+                    - 's3:GetObject'
+                    - 's3:ListBucket'
+                    - 's3:PutObject'
                   Resource:
                     - !Sub ["arn:aws:s3:::${BucketName}", BucketName: !Ref ESBucketName]
                     - !Sub ["arn:aws:s3:::${BucketName}/*", BucketName: !Ref ESBucketName]
                 - !Ref "AWS::NoValue"
   BitbucketClusterNodeRole:
-    Type: "AWS::IAM::Role"
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -560,49 +576,49 @@ Resources:
           - Effect: Allow
             Principal:
               Service: [ec2.amazonaws.com]
-            Action: ["sts:AssumeRole"]
+            Action: ['sts:AssumeRole']
       Path: /
       Policies:
         - PolicyName: BitbucketClusterNodePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: ["ec2:DescribeInstances"]
+              - Action: ['ec2:DescribeInstances']
                 Effect: Allow
-                Resource: ["*"]
+                Resource: ['*']
   BitbucketFileServerInstanceProfile:
-    Type: "AWS::IAM::InstanceProfile"
+    Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles: [!Ref BitbucketFileServerRole]
   BitbucketClusterNodeInstanceProfile:
-    Type: "AWS::IAM::InstanceProfile"
+    Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles: [!Ref BitbucketClusterNodeRole]
   ClusterNodeGroup:
-    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       DesiredCapacity: !If [StandbyMode, 0, !Ref ClusterNodeMin]
       LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
-      MaxSize: !Ref ClusterNodeMax
       MinSize: !If [StandbyMode, 0, !Ref ClusterNodeMin]
+      MaxSize: !Ref ClusterNodeMax
       LoadBalancerNames: [!Ref LoadBalancer]
-      VPCZoneIdentifier: !Split [ ",", !ImportValue ATL-PriNets]
+      VPCZoneIdentifier: !Select [0, [!Split [ ',', !ImportValue ATL-PriNets]]]
       Tags:
         - Key: Name
           Value: !Sub ["${StackName} Bitbucket Node", StackName: !Ref 'AWS::StackName']
           PropagateAtLaunch: true
         - Key: Cluster
-          Value: !Ref "AWS::StackName"
+          Value: !Ref AWS::StackName
           PropagateAtLaunch: true
   ClusterNodeLaunchConfig:
-    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
           default: [1, 2]
-        "1":
+        '1':
           packages:
             !If
               - SetupCollectd
@@ -611,7 +627,7 @@ Resources:
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
-              - !Ref "AWS::NoValue"
+              - !Ref AWS::NoValue
           files:
             /etc/atl:
               content:
@@ -656,7 +672,7 @@ Resources:
                   - "[main]"
                   - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
                   - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
-              mode: "000400"
+              mode: '000400'
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
@@ -681,7 +697,7 @@ Resources:
                     -     . ~/.bashrc
                     - fi
                     - !Sub ["export CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
-              mode: "000644"
+              mode: '000644'
               owner: atlbitbucket
               group: atlbitbucket
           commands:
@@ -709,7 +725,7 @@ Resources:
                 ensureRunning: true
                 packages:
                   yum: [nfs-utils]
-        "2":
+        '2':
           commands:
             040_mount_nfs:
               command: "bash -c \"until mount /media/atl/bitbucket/shared; do echo 'Mount of shared volume failed trying again in 5 seconds.'; sleep 5; done\""
@@ -748,21 +764,21 @@ Resources:
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource ClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
   ClusterNodeScaleUpPolicy:
-    Type: "AWS::AutoScaling::ScalingPolicy"
+    Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref ClusterNodeGroup
       Cooldown: 600
       ScalingAdjustment: 1
   ClusterNodeScaleDownPolicy:
-    Type: "AWS::AutoScaling::ScalingPolicy"
+    Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref ClusterNodeGroup
       Cooldown: 600
       ScalingAdjustment: -1
   CPUAlarmHigh:
-    Type: "AWS::CloudWatch::Alarm"
+    Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Scale up if CPU > 60% for 5 minutes
       MetricName: CPUUtilization
@@ -777,7 +793,7 @@ Resources:
           Value: !Ref ClusterNodeGroup
       ComparisonOperator: GreaterThanThreshold
   CPUAlarmLow:
-    Type: "AWS::CloudWatch::Alarm"
+    Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Scale down if CPU < 40% for 30 minutes
       MetricName: CPUUtilization
@@ -792,7 +808,7 @@ Resources:
           Value: !Ref ClusterNodeGroup
       ComparisonOperator: LessThanThreshold
   Elasticsearch:
-    Type: "AWS::Elasticsearch::Domain"
+    Type: AWS::Elasticsearch::Domain
     Properties:
       ElasticsearchVersion: !If [ShouldUseES23, "2.3", "5.5"]
       ElasticsearchClusterConfig:
@@ -811,7 +827,7 @@ Resources:
         - Key: Application
           Value: !Ref "AWS::StackId"
   ElasticsearchBucket:
-    Type: "AWS::S3::Bucket"
+    Type: AWS::S3::Bucket
     Condition: CreateESBucket
     Properties:
       BucketName: !Ref ESBucketName
@@ -819,7 +835,7 @@ Resources:
         - Key: Cluster
           Value: !Ref "AWS::StackName"
   FileServer:
-    Type: "AWS::EC2::Instance"
+    Type: AWS::EC2::Instance
     Metadata:
       Comment: Set up NFS Server and initial bitbucket.properties
       AWS::CloudFormation::Init:
@@ -1019,33 +1035,33 @@ Resources:
               - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
               - !Sub [" --resource FileServer --region ${Region}\n", Region: !Ref "AWS::Region"]
   DB:
-    Type: "AWS::RDS::DBInstance"
+    Type: AWS::RDS::DBInstance
     Properties:
-      SourceDBInstanceIdentifier: !If [StandbyMode, !Ref DBMaster, !Ref "AWS::NoValue"]
-      DBName: !If [RestoreRDSOrStandby, !Ref "AWS::NoValue", bitbucket]
       AllocatedStorage: !Ref DBStorage
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
+      DBName: !If [RestoreRDSOrStandby, !Ref "AWS::NoValue", bitbucket]
       DBSnapshotIdentifier: !If [RestoreFromRDSSnapshot, !Ref DBSnapshotId, !Ref "AWS::NoValue"]
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
       EngineVersion: 10
+      Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref "AWS::NoValue"]
       MasterUsername: postgres
       MasterUserPassword: !If [SetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref "AWS::NoValue"]
-      StorageType: !If [DBProvisionedIops, io1, gp2]
-      Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref "AWS::NoValue"]
       MultiAZ: !If [StandbyMode, !Ref "AWS::NoValue", !Ref DBMultiAZ]
-      VPCSecurityGroups: [!Ref SecurityGroup]
+      StorageType: !If [DBProvisionedIops, io1, gp2]
+      SourceDBInstanceIdentifier: !If [StandbyMode, !Ref DBMaster, !Ref "AWS::NoValue"]
       Tags:
-        - Key: Name
-          Value: !Sub ["${StackName} Bitbucket PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+      - Key: Name
+        Value: !Sub ["${StackName} Bitbucket PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+      VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
-    Type: "AWS::RDS::DBSubnetGroup"
+    Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: DBSubnetGroup
       SubnetIds: !Split [ ",", !ImportValue ATL-PriNets]
   LoadBalancer:
-    Type: "AWS::ElasticLoadBalancing::LoadBalancer"
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
       AppCookieStickinessPolicy:
         - CookieName: !If [IsVersion4X, JSESSIONID, BITBUCKETSESSIONID]
@@ -1072,7 +1088,7 @@ Resources:
                 - SessionStickiness
               SSLCertificateId: !Sub
                 - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref "AWS::AccountId"
+                - AccountId: !Ref AWS::AccountId
                   SSLCertificateName: !Ref SSLCertificateName
             - !Ref AWS::NoValue
         - LoadBalancerPort: 7999
@@ -1094,7 +1110,7 @@ Resources:
         - Key: Cluster
           Value: !Ref AWS::StackName
   SecurityGroup:
-    Type: "AWS::EC2::SecurityGroup"
+    Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group allowing SSH and HTTP/HTTPS access
       SecurityGroupIngress:
@@ -1116,35 +1132,35 @@ Resources:
           CidrIp: !Ref CidrBlock
       Tags:
         - Key: Name
-          Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
+          Value: !Join [' ', [!Ref 'AWS::StackName', sg]]
       VpcId: !ImportValue ATL-VPCID
   SecurityGroupIngress:
-    Type: "AWS::EC2::SecurityGroupIngress"
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref SecurityGroup
-      IpProtocol: "-1"
-      FromPort: "-1"
-      ToPort: "-1"
+      IpProtocol: '-1'
+      FromPort: '-1'
+      ToPort: '-1'
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
   ClusterNodeGroup:
     Description: The name of the auto scaling group of cluster nodes
     Value: !Ref ClusterNodeGroup
-  ServiceURL:
-    Description: The URL of the Bitbucket Data Center instance
-    Value: !Sub
-      - "${HTTP}://${LoadBalancerDNSName}"
-      - HTTP: !If [SetupSSL, "https", "http"]
-        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
   DBMaster:
     Description: The RDS ARN to use when creating a Data Center standby stack
     Value: !If [NotStandbyMode, !Sub ["arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${DB}", {DB: !Ref "DB"}], !Ref "AWS::NoValue"]
+  ServiceURL:
+    Description: The URL of the Bitbucket Data Center instance
+    Value: !Sub
+    - "${HTTP}://${LoadBalancerDNSName}"
+    - HTTP: !If [SetupSSL, https, http]
+      LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
     Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
+      Name: !Join ['', [!Ref 'AWS::StackName', -SGname]]
     }
