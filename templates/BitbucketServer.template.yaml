@@ -523,16 +523,16 @@ Resources:
                   - "BITBUCKET_HOME=/media/atl/bitbucket\n"
                   - "BITBUCKET_UID=atlbitbucket\n"
                   - "BITBUCKET_GID=atlbitbucket\n"
-                  - "BACKUP_HOME_TYPE=amazon-ebs\n"
+                  - "BACKUP_DISK_TYPE=amazon-ebs\n"
                   - "BACKUP_DATABASE_TYPE=postgresql-fslevel\n"
                   - "BACKUP_ARCHIVE_TYPE=\n"
                   - "BACKUP_ZERO_DOWNTIME=true\n"
                   - "HOME_DIRECTORY_MOUNT_POINT=/media/atl\n"
-                  - "HOME_DIRECTORY_DEVICE_NAME=/dev/sdf\n"
+                  - "EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/sdf)\n"
                   - !Join
                     - ''
                     -
-                      - RESTORE_HOME_DIRECTORY_VOLUME_TYPE=
+                      - RESTORE_DISK_VOLUME_TYPE=
                       - !If
                         - IsHomeProvisionedIops
                         - io1
@@ -543,13 +543,16 @@ Resources:
                     - !Join
                       - ''
                       -
-                        - RESTORE_HOME_DIRECTORY_IOPS=
+                        - RESTORE_DISK_IOPS=
                         - !Ref 'HomeIops'
                         - "\n"
                     - !Ref 'AWS::NoValue'
                   - "FILESYSTEM_TYPE=zfs\n"
-                  - "ZFS_HOME_TANK_NAME=$(run sudo zfs list -H -o name,mountpoint\
-                    \ | grep \"${HOME_DIRECTORY_MOUNT_POINT}\" | cut -f1)\n"
+                  - "ZFS_FILESYSTEM_NAMES=()"
+                  - "for volume in \"${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}\"; do"
+                  - "    mount_point=\"$(echo \"${volume}\" | cut -d \":\" -f1)\""
+                  - "    ZFS_FILESYSTEM_NAMES+=($(run sudo zfs list -H -o name,mountpoint | grep \"${mount_point}\" | cut -f1))"
+                  - "done"
                   - "CURL_OPTIONS=\"-L -s -f\"\n"
                   - !Join
                     - ''
