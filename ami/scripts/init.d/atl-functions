@@ -220,8 +220,8 @@ function atl_configureTomcatConnector {
     local WEB_XML="${6}/web.xml"
     local FORCE="${7:-"false"}"
 
-    if [[ -n "${ATL_TOMCAT_DEFAULTCONNECTORPORT}" ]]; then local defaultConnectorPort=${ATL_TOMCAT_DEFAULTCONNECTORPORT}; else local defaultConnectorPort=DEFAULT_CONNECTOR_PORT; fi
-    if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}; else local redirectPort=REDIRECT_CONNECTOR_PORT; fi
+    if [[ -n "${ATL_TOMCAT_DEFAULTCONNECTORPORT}" ]]; then local defaultConnectorPort=${ATL_TOMCAT_DEFAULTCONNECTORPORT}; else local defaultConnectorPort=${DEFAULT_CONNECTOR_PORT}; fi
+    if [[ -n "${ATL_TOMCAT_REDIRECTPORT}" ]]; then local redirectPort=${ATL_TOMCAT_REDIRECTPORT}; else local redirectPort=${REDIRECT_CONNECTOR_PORT}; fi
     if [[ -n "${ATL_TOMCAT_ACCEPTCOUNT}" ]]; then local acceptCount=${ATL_TOMCAT_ACCEPTCOUNT}; else local acceptCount=100 ; fi
     if [[ -n "${ATL_TOMCAT_CONNECTIONTIMEOUT}" ]]; then local connectionTimeout=${ATL_TOMCAT_CONNECTIONTIMEOUT}
     else local connectionTimeout=60000 ; fi
