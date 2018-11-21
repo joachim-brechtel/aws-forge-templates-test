@@ -2,9 +2,8 @@
 # Validate Cloudformation templates that are located in /templates and /quickstart folders.
 # The script requires AWS credentials to be set in the shell and connectivity to AWS.
 #==============================================================================
-set -e
-
 BASEDIR=$(dirname $0)
+S3_BUCKET="dc-deployments-temp-bamboo" # Make sure you have access to this bucket if you are validating large templates
 
 cd ${BASEDIR}/..
 ABSOLUTE_AWS_DIR=$(pwd)
@@ -17,5 +16,29 @@ else
     TEMPLATES_PATH="${ABSOLUTE_AWS_DIR}/templates"
 fi
 
+TEMPLATE_FULL_PATH=${TEMPLATES_PATH}/${TEMPLATE_NAME}
+
+TEMPLATE_SIZE=$(wc -c < "${TEMPLATE_FULL_PATH}")
+
+if [ "${TEMPLATE_SIZE}" -ge 51200 ]; then
+    aws s3 cp ${TEMPLATE_FULL_PATH} s3://${S3_BUCKET}/${TEMPLATE_NAME}
+    TEMPLATE_SOURCE="--template-url https://s3.amazonaws.com/dc-deployments-temp-bamboo/${TEMPLATE_NAME}"
+else
+    TEMPLATE_SOURCE="--template-body file://${TEMPLATE_FULL_PATH}"
+fi
+
+
 echo "Validating ${TEMPLATE_NAME}..."
-aws cloudformation validate-template --template-body "file://${TEMPLATES_PATH}/${TEMPLATE_NAME}"
+VALIDATION_OUTPUT=$(aws cloudformation validate-template ${TEMPLATE_SOURCE} 2>&1)
+VALIDATION_EXIT_CODE=$?
+
+if [ ${VALIDATION_EXIT_CODE} -ne 0 ]; then
+    ERROR_TO_DISPLAY=$(echo ${VALIDATION_OUTPUT} | tail -1)
+
+    echo "VALIDATION ERROR: ${TEMPLATE_NAME}"
+    echo "VALIDATION ERROR: ${ERROR_TO_DISPLAY}"
+else
+    echo "TEMPLATE VALID: ${TEMPLATES_PATH}"
+fi
+
+echo -e
