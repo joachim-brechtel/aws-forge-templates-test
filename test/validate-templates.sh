@@ -17,5 +17,5 @@ if [ ${#FAILED_TEMPLATES[@]} -gt 0 ]; then
     done
     exit 1
 else
-    echo "[OK] All templates are valid"
+    echo "[OK] All templates in '${TEMPLATE_FOLDER}' folder are valid"
 fi

@@ -39,6 +39,6 @@ if [ ${VALIDATION_EXIT_CODE} -ne 0 ]; then
     echo "[ERROR] ${ERROR_TO_DISPLAY}"
     exit 1
 else
-    echo "[OK]: ${TEMPLATES_PATH}"
+    echo "[OK]: ${TEMPLATE_NAME}"
     exit 0
 fi
