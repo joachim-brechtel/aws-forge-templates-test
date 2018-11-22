@@ -35,10 +35,10 @@ VALIDATION_EXIT_CODE=$?
 if [ ${VALIDATION_EXIT_CODE} -ne 0 ]; then
     ERROR_TO_DISPLAY=$(echo ${VALIDATION_OUTPUT} | tail -1)
 
-    echo "VALIDATION ERROR: ${TEMPLATE_NAME}"
-    echo "VALIDATION ERROR: ${ERROR_TO_DISPLAY}"
+    echo "[ERROR] ${TEMPLATE_NAME}"
+    echo "[ERROR] ${ERROR_TO_DISPLAY}"
     exit 1
 else
-    echo "TEMPLATE VALID: ${TEMPLATES_PATH}"
+    echo "[OK]: ${TEMPLATES_PATH}"
     exit 0
 fi

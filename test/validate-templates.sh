@@ -11,9 +11,11 @@ for filename in ${TEMPLATE_FOLDER}/*.yaml; do
 done
 
 if [ ${#FAILED_TEMPLATES[@]} -gt 0 ]; then
-    echo -e "\nFailed templates:"
+    echo -e "\n[ERROR] Failed templates:"
     for template in "${FAILED_TEMPLATES[@]}"; do
         echo "${template}"
     done
     exit 1
+else
+    echo "[OK] All templates are valid"
 fi
