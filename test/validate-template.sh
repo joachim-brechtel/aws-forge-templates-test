@@ -37,8 +37,8 @@ if [ ${VALIDATION_EXIT_CODE} -ne 0 ]; then
 
     echo "VALIDATION ERROR: ${TEMPLATE_NAME}"
     echo "VALIDATION ERROR: ${ERROR_TO_DISPLAY}"
+    exit 1
 else
     echo "TEMPLATE VALID: ${TEMPLATES_PATH}"
+    exit 0
 fi
-
-echo -e
