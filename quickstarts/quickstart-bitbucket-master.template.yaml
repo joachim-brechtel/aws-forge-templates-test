@@ -337,16 +337,16 @@ Parameters:
     Type: String
   ElasticsearchInstanceType:
     Type: String
-    Default: m3.xlarge.elasticsearch
+    Default: m4.xlarge.elasticsearch
     AllowedValues:
-      - m3.large.elasticsearch
-      - m3.xlarge.elasticsearch
-      - m3.2xlarge.elasticsearch
-      - r3.large.elasticsearch
-      - r3.xlarge.elasticsearch
-      - r3.2xlarge.elasticsearch
-      - r3.4xlarge.elasticsearch
-      - r3.8xlarge.elasticsearch
+      - m4.large.elasticsearch
+      - m4.xlarge.elasticsearch
+      - m4.2xlarge.elasticsearch
+      - r4.large.elasticsearch
+      - r4.xlarge.elasticsearch
+      - r4.2xlarge.elasticsearch
+      - r4.4xlarge.elasticsearch
+      - r4.8xlarge.elasticsearch
       - i2.xlarge.elasticsearch
       - i2.2xlarge.elasticsearch
     ConstraintDescription: Must be an Elasticsearch instance type in the M4, R4 or I2 family
@@ -810,6 +810,10 @@ Resources:
   Elasticsearch:
     Type: AWS::Elasticsearch::Domain
     Properties:
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 100
+        VolumeType: gp2
       ElasticsearchVersion: !If [ShouldUseES23, "2.3", "5.5"]
       ElasticsearchClusterConfig:
         InstanceType: !Ref ElasticsearchInstanceType
