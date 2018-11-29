@@ -1028,6 +1028,8 @@ Resources:
                 localansiblerepopath=/home/localansible
                 gitkeylocation=/root/.ssh/gitkey
 
+                # ensure awscli is up to date
+                pip install --upgrade awscli
                 gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitSshKeyName}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
                 echo -e $gitkey > $gitkeylocation
                 chmod 600 $gitkeylocation
