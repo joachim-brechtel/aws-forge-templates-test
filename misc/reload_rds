@@ -25,4 +25,4 @@ export PGPASSWORD=${ATL_DB_PASSWORD}
 export PGPASSWORD=${ATL_JDBC_PASSWORD}
 
 # reload the db from sql dump filename passed in $1
-pg_restore --verbose --no-privileges --jobs 2 --no-owner -h ${ATL_DB_HOST} -p ${ATL_DB_PORT} -U ${ATL_JDBC_USER} -d ${ATL_DB_NAME} $1
+pg_restore --verbose --no-privileges --jobs=$(nproc) --no-owner -h ${ATL_DB_HOST} -p ${ATL_DB_PORT} -U ${ATL_JDBC_USER} -d ${ATL_DB_NAME} $1
