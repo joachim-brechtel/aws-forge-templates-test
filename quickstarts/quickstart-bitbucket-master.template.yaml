@@ -41,7 +41,7 @@ Metadata:
           - AssociatePublicIpAddress
           - CidrBlock
           - KeyName
-          - SSLCertificateName
+          - SSLCertificateARN
       - Label:
           default: Advanced (Optional)
         Parameters:
@@ -115,8 +115,8 @@ Metadata:
         default: Home directory volume type
       KeyName:
         default: Key Name *
-      SSLCertificateName:
-        default: SSL Certificate Name
+      SSLCertificateARN:
+        default: SSL Certificate ARN
       StartCollectd:
         default: Start the collectd service
 Parameters:
@@ -412,11 +412,11 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
-  SSLCertificateName:
+  SSLCertificateARN:
     Default: ''
-    Description: The name of your Server Certificate to use for HTTPS. Refer to Amazon documentation for managing your server certificates. Leave blank if you don't want to set up HTTPS at this time
+    Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
-    MaxLength: 32
+    MaxLength: 90
     Type: String
   StartCollectd:
     Type: String
@@ -446,8 +446,8 @@ Conditions:
     !Not [!Equals [!Ref ESBucketName, '']]
   StandbyMode:
     !Not [!Equals [!Ref DBMaster, '']]
-  SetupSSL:
-    !Not [!Equals [!Ref SSLCertificateName, '']]
+  DoSSL:
+    !Not [!Equals [!Ref SSLCertificateARN, '']]
   NotStandbyMode:
     !Equals [!Ref DBMaster, '']
   KeyProvided:
@@ -663,7 +663,7 @@ Resources:
                     - ATL_POSTGRES_ENABLED=false
                     - !Sub ["ATL_PROXY_NAME=${LoadBalancerDNSName}", LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName]
                     - ATL_SSL_SELF_CERT_ENABLED=false
-                    - !If [SetupSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
+                    - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Join ["\n", !Ref AMIOpts]
             /etc/cfn/cfn-hup.conf:
               content: !Join
@@ -900,7 +900,7 @@ Resources:
                     - !Sub ["INSTANCE_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                     - !Sub
                       - "BITBUCKET_URL=${HTTP}://${LoadBalancerDNSName}"
-                      - HTTP: !If [SetupSSL, "https", "http"]
+                      - HTTP: !If [DoSSL, "https", "http"]
                         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
                     - BITBUCKET_HOME=/media/atl/bitbucket
                     - BITBUCKET_UID=atlbitbucket
@@ -1083,21 +1083,18 @@ Resources:
       Listeners:
         - LoadBalancerPort: 80
           Protocol: HTTP
-          InstancePort: !If [SetupSSL, 7991, 7990]
+          InstancePort: !If [DoSSL, 7991, 7990]
           InstanceProtocol: HTTP
           PolicyNames: [SessionStickiness]
         - !If
-            - SetupSSL
+            - DoSSL
             - LoadBalancerPort: 443
               Protocol: HTTPS
               InstancePort: 7990
               InstanceProtocol: HTTP
               PolicyNames:
                 - SessionStickiness
-              SSLCertificateId: !Sub
-                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref AWS::AccountId
-                  SSLCertificateName: !Ref SSLCertificateName
+              SSLCertificateId: !Ref SSLCertificateARN
             - !Ref AWS::NoValue
         - LoadBalancerPort: 7999
           Protocol: TCP
@@ -1164,7 +1161,7 @@ Outputs:
     Description: The URL of the Bitbucket Data Center instance
     Value: !Sub
     - "${HTTP}://${LoadBalancerDNSName}"
-    - HTTP: !If [SetupSSL, https, http]
+    - HTTP: !If [DoSSL, https, http]
       LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   SGname:
     Description: The name of the SecurityGroup
