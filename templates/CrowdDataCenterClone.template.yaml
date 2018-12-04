@@ -83,10 +83,8 @@ Metadata:
           - TomcatMaxThreads
           - TomcatMinSpareThreads
           - TomcatProtocol
-          - TomcatProxyPort
           - TomcatRedirectPort
           - TomcatScheme
-          - TomcatSecure
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -182,14 +180,10 @@ Metadata:
         default: Tomcat Minimum Spare Threads
       TomcatProtocol:
         default: Tomcat Protocol
-      TomcatProxyPort:
-        default: Tomcat Proxy Port
       TomcatRedirectPort:
         default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
-      TomcatSecure:
-        default: Tomcat Secure?
       VPC:
         default: VPC *
 Parameters:
@@ -540,23 +534,15 @@ Parameters:
     Default: 'HTTP/1.1'
     Description: Sets the protocol to handle incoming traffic
     Type: String
-  TomcatProxyPort:
-    Default: 80
-    Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
-    Type: String
   TomcatRedirectPort:
     Default: 8443
     Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
-    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
+    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately.
     Type: String
     AllowedValues: [http, https]
-  TomcatSecure:
-    Default: false
-    Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
-    Type: String
   VPC:
     Default: ''
     ConstraintDescription: Must be the ID of a VPC.
@@ -856,49 +842,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-02802f0489dac5a26
+      HVM64: ami-0668e889571177541
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-0e087b61705ba03c2
+      HVM64: ami-0e6ef2338b375928c
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-0e211c3109e51288d
+      HVM64: ami-069361102744e5a93
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-07d8aeee24543ac30
+      HVM64: ami-005a3649c84ec039c
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-049d05203e6aa71c0
+      HVM64: ami-0463115d9fd50a839
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-00371269f2080b19f
+      HVM64: ami-0cf6b2ff26f8304ae
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-02ea2729a0605411d
+      HVM64: ami-0c8cf723261359d88
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-0ae232f5c199a9225
+      HVM64: ami-07e993bfa8bb47ba6
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-0492d308ca955b5bc
+      HVM64: ami-041ddb159c6b57cd1
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0331c85ab5f91837c
+      HVM64: ami-0fb2951093a6d6834
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0dde4b0f9079e1f16
+      HVM64: ami-04fdbc4b800d7263b
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0eeb1ce506c332e96
+      HVM64: ami-07238f13cc6b12f3b
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0b5b71e7ecc794118
+      HVM64: ami-0fae304980d54c6cb
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0b530b4ad2a4e6050
+      HVM64: ami-0fa9408227fc9ab4a
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-066f4a0ea944ac5cf
+      HVM64: ami-09608735aec8c0c26
       HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
@@ -1008,10 +994,10 @@ Resources:
                     - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
                     - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
                     - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
-                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !If [SSLScheme, 443, 80]]
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
-                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
-                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
+                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !If [SSLScheme, https, http]]
+                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !If [SSLScheme, true, false]]
                     - "ATL_CROWD_FULL_DISPLAY_NAME=\"Atlassian Crowd\""
                     - "ATL_CROWD_NAME=crowd"
                     - "ATL_CROWD_SHORT_DISPLAY_NAME=Crowd"
@@ -1058,6 +1044,8 @@ Resources:
                 localansiblerepopath=/home/localansible
                 gitkeylocation=/root/.ssh/gitkey
 
+                # ensure awscli is up to date
+                pip install --upgrade awscli
                 gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitSshKeyName}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
                 echo -e $gitkey > $gitkeylocation
                 chmod 600 $gitkeylocation
@@ -1091,11 +1079,9 @@ Resources:
               command: mkdir -p /media/atl/crowd/shared
               ignoreErrors: false
             050_ssm_group:
-              command: groupadd ssm-user --gid 400
-              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
+              command: groupadd ssm-user --gid 400 || groupmod -g 400 ssm-user
             051_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
+              command: useradd ssm-user --uid 400 -g ssm-user || usermod -u 400 ssm-user
             052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
               ignoreErrors: true

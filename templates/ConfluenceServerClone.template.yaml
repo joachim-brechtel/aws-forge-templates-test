@@ -81,10 +81,8 @@ Metadata:
           - TomcatMaxThreads
           - TomcatMinSpareThreads
           - TomcatProtocol
-          - TomcatProxyPort
           - TomcatRedirectPort
           - TomcatScheme
-          - TomcatSecure
     ParameterLabels:
       AutologinCookieAge:
         default: Rememberme cookie age
@@ -176,14 +174,10 @@ Metadata:
         default: Tomcat Minimum Spare Threads
       TomcatProtocol:
         default: Tomcat Protocol
-      TomcatProxyPort:
-        default: Tomcat Proxy Port
       TomcatRedirectPort:
         default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
-      TomcatSecure:
-        default: Tomcat Secure?
       VPC:
         default: VPC *
 Parameters:
@@ -528,23 +522,15 @@ Parameters:
     Default: 'HTTP/1.1'
     Description: Sets the protocol to handle incoming traffic
     Type: String
-  TomcatProxyPort:
-    Default: 80
-    Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
-    Type: String
   TomcatRedirectPort:
     Default: 8443
     Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
-    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
+    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately.
     Type: String
     AllowedValues: [http, https]
-  TomcatSecure:
-    Default: false
-    Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
-    Type: String
   VPC:
     Default: ''
     ConstraintDescription: Must be the ID of a VPC.
@@ -836,49 +822,49 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-0ff04d1e6cf9942f7
+      HVM64: ami-08b4b40c21fb332f4
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-0ce26dc8b6a0b295b
+      HVM64: ami-0ffeff08279000ea9
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-0e3b42504f0f32e17
+      HVM64: ami-0b4b9ceae49d33244
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-0b30326eda2353659
+      HVM64: ami-0543de506fd35844e
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0418642a0d1a147c7
+      HVM64: ami-026559c75cd28cd76
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-085ab9efcf4de4f2b
+      HVM64: ami-0be7c011fa9ca1e42
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-089909865bc5858f2
+      HVM64: ami-099dee0b0ff0c43c0
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-097de13ca4520e9c2
+      HVM64: ami-017e221604829393a
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-03e612fcd9b2181c2
+      HVM64: ami-0eb668697e42cb317
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0c3dcb6936386396f
+      HVM64: ami-08e2080043541889b
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-04e67fbe58dc4b901
+      HVM64: ami-086df342bdc03ad58
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0a09b7dc02b1eeebb
+      HVM64: ami-09f24498a75030f04
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0c92cdf54b883d848
+      HVM64: ami-00ed87069b74843da
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-09ebc28c4178530b4
+      HVM64: ami-0721c0e5c4fca9a93
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0a5ecda5dbb6d9d48
+      HVM64: ami-09650ad1f112756f1
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceServerRole:
@@ -953,11 +939,9 @@ Resources:
             010_enable_epel:
               command: yum-config-manager --enable epel
             020_ssm_group:
-              command: groupadd ssm-user --gid 400
-              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
+              command: groupadd ssm-user --gid 400 || groupmod -g 400 ssm-user
             030_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
+              command: useradd ssm-user --uid 400 -g ssm-user || usermod -u 400 ssm-user
         env:
           packages:
             yum:
@@ -1014,10 +998,10 @@ Resources:
                     - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
                     - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
                     - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
-                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !If [SSLScheme, 443, 80]]
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
-                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
-                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
+                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !If [SSLScheme, https, http]]
+                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !If [SSLScheme, true, false]]
                     - "ATL_SYNCHRONY_SERVICE_URL=http://127.0.0.1/synchrony/v1"
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_CONFLUENCE_DATA_CENTER=false"
@@ -1060,6 +1044,8 @@ Resources:
                 localansiblerepopath=/home/localansible
                 gitkeylocation=/root/.ssh/gitkey
 
+                # ensure awscli is up to date
+                pip install --upgrade awscli
                 gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitSshKeyName}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
                 echo -e $gitkey > $gitkeylocation
                 chmod 600 $gitkeylocation

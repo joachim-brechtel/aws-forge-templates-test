@@ -13,6 +13,7 @@ source unload_rds.properties
 
 export PGPASSWORD=${ATL_JDBC_PASSWORD}
 
-# -c=clean (ie drop db items before recreating them)
-# -O means remove ownership, we will import all with the default owner of the new db
-pg_dump --create --file=${1}rdsdump.sql --schema=public --host ${ATL_DB_HOST} --port=${ATL_DB_PORT} --username ${ATL_JDBC_USER} --no-owner ${ATL_DB_NAME}
+# --format=directory is used so we can dump and import in parallel jobs - one job per core (--jobs=$(nproc))
+# -no-owner means remove ownership, we will import all with the db user as specified in reload_rds
+# -no-privileges means remove all role allocations
+pg_dump --verbose --format=directory --jobs=$(nproc) --file=${1}rdsdump.sql --schema=public --no-owner --no-privileges --host ${ATL_DB_HOST} --port=${ATL_DB_PORT} --username ${ATL_JDBC_USER} ${ATL_DB_NAME}
