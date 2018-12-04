@@ -55,8 +55,8 @@ Parameters:
     Description: CIDR Block allowed to access Atlassian Servcies
     Type: String
   AvailabilityZones:
-    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
-      The logical order is preserved and only 2 AZs are used for this deployment.'
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note: You must specify 2 AZs here; 
+      if more are specified only the first 2 will be used.'
     Type: List<AWS::EC2::AvailabilityZone::Name>
   KeyPairName:
     Description: Public/private key pairs allow you to securely connect to your instance
