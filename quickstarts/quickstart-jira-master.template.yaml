@@ -3,7 +3,7 @@
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
-Description: Atlassian JIRA Data Center
+Description: Atlassian Jira Data Center
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -297,6 +297,7 @@ Parameters:
     Type: Number
   ClusterNodeMin:
     Default: 1
+    Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
   ClusterNodeVolumeSize:
     Default: 50
@@ -332,16 +333,16 @@ Parameters:
     Default: 1000
     ConstraintDescription: 'Must be in the range 1000 - 30000'
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
-    MinValue: 1000
     MaxValue: 30000
+    MinValue: 1000
     Type: Number
   DBMasterUserPassword:
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
     NoEcho: True
-    MinLength: 8
     MaxLength: 128
+    MinLength: 8
     Type: String
   DBMaxIdle:
     Default: 20

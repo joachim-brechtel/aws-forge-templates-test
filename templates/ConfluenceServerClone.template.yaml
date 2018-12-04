@@ -258,7 +258,6 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: ''
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -428,7 +427,7 @@ Parameters:
     Type: String
   InstanceVolumeSize:
     Default: 200
-    Description: Size of root volume in Gb (note - size based upon Application indexes x 4)
+    Description: Size of root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   InternalSubnets:
     Default: ''
@@ -1191,20 +1190,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} DR NFS Node"
-        - Key: business_unit
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - CostCentre
-        - Key: resource_owner
-          Value: !FindInMap
-          - AWSCostCentre2ServiceOwner
-          - !Ref BusinessUnit
-          - ServiceOwner
         - Key: service_name
           Value: !Ref AWS::StackName
-        - Key: wpe_monitoring
-          Value: !Ref Monitoring
       Volumes:
         - VolumeId: !Ref EBSRestoreVol
           Device: /dev/xvdk

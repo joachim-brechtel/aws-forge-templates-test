@@ -52,31 +52,31 @@ Metadata:
       - Label:
           default: Application Tuning (Optional)
         Parameters:
-            - TomcatContextPath
-            - CatalinaOpts
-            - JvmHeapOverride
-            - DBPoolMaxSize
-            - DBPoolMinSize
-            - DBMaxIdle
-            - DBMaxWaitMillis
-            - DBMinEvictableIdleTimeMillis
-            - DBMinIdle
-            - DBRemoveAbandoned
-            - DBRemoveAbandonedTimeout
-            - DBTestOnBorrow
-            - DBTestWhileIdle
-            - DBTimeBetweenEvictionRunsMillis
-            - MailEnabled
-            - TomcatAcceptCount
-            - TomcatConnectionTimeout
-            - TomcatDefaultConnectorPort
-            - TomcatEnableLookups
-            - TomcatMaxThreads
-            - TomcatMinSpareThreads
-            - TomcatProtocol
-            - TomcatRedirectPort
-            - TomcatScheme
-    ParameterLabels:
+          - TomcatContextPath
+          - CatalinaOpts
+          - JvmHeapOverride
+          - DBPoolMaxSize
+          - DBPoolMinSize
+          - DBMaxIdle
+          - DBMaxWaitMillis
+          - DBMinEvictableIdleTimeMillis
+          - DBMinIdle
+          - DBRemoveAbandoned
+          - DBRemoveAbandonedTimeout
+          - DBTestOnBorrow
+          - DBTestWhileIdle
+          - DBTimeBetweenEvictionRunsMillis
+          - MailEnabled
+          - TomcatAcceptCount
+          - TomcatConnectionTimeout
+          - TomcatDefaultConnectorPort
+          - TomcatEnableLookups
+          - TomcatMaxThreads
+          - TomcatMinSpareThreads
+          - TomcatProtocol
+          - TomcatRedirectPort
+          - TomcatScheme
+  ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
       CatalinaOpts:
@@ -291,16 +291,17 @@ Parameters:
     Type: Number
   ClusterNodeMin:
     Default: 1
+    Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
   ClusterNodeVolumeSize:
     Default: 50
-    Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
+    Description: Size of cluster node root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   CrowdDownloadUrl:
     Default: ''
+    ConstraintDescription: Must be a valid Crowd download url
     Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
-    ConstraintDescription: Must be a valid Crowd download url
   CrowdVersion:
     Default: 3.2.1
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
@@ -335,7 +336,7 @@ Parameters:
     Type: String
   DBIops:
     Default: 1000
-    ConstraintDescription: 'Must be in the range 1000 - 30000'
+    ConstraintDescription: Must be in the range 1000 - 30000
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
     MinValue: 1000
     MaxValue: 30000

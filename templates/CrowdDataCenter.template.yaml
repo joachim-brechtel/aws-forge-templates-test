@@ -191,6 +191,7 @@ Parameters:
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   CatalinaOpts:
+    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -302,16 +303,17 @@ Parameters:
     Type: Number
   ClusterNodeMin:
     Default: 1
+    Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
   ClusterNodeVolumeSize:
     Default: 50
-    Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
+    Description: Size of cluster node root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   CrowdDownloadUrl:
     Default: ''
+    ConstraintDescription: Must be a valid Crowd download url
     Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
-    ConstraintDescription: Must be a valid Crowd download url
   CrowdVersion:
     Default: 3.2.1
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
@@ -319,6 +321,7 @@ Parameters:
     Description: The version of Crowd to install
     Type: String
   CustomDnsName:
+    Default: ''
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
@@ -345,7 +348,7 @@ Parameters:
     Type: String
   DBIops:
     Default: 1000
-    ConstraintDescription: 'Must be in the range 1000 - 30000'
+    ConstraintDescription: Must be in the range 1000 - 30000
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
     MinValue: 1000
     MaxValue: 30000
@@ -931,6 +934,9 @@ Resources:
         - Key: Cluster
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
+        - Key: service_name
+          Value: !Ref AWS::StackName
+          PropagateAtLaunch: true
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn:
@@ -1141,6 +1147,8 @@ Resources:
           Value: !Join [' ', [!Ref 'AWS::StackName', 'cluster shared-files']]
         - Key: Application
           Value: !Ref AWS::StackId
+        - Key: service_name
+          Value: !Ref AWS::StackName
   EFSMountAz1:
     Type: AWS::EFS::MountTarget
     Properties:
@@ -1185,6 +1193,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ["${StackName} Crowd PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+        - Key: service_name
+          Value: !Ref AWS::StackName
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -1245,6 +1255,8 @@ Resources:
         - Key: Name
           Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
         - Key: Cluster
+          Value: !Ref AWS::StackName
+        - Key: service_name
           Value: !Ref AWS::StackName
   LoadBalancerCname:
     Condition: UseHostedZone
