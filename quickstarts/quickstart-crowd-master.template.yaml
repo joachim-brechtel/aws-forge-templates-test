@@ -885,9 +885,20 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: ['ec2:DescribeInstances']
+              - Action:
+                - 'ec2:DescribeInstances'
+                - 'route53:ListHostedZones'
+                - 'route53:ListResourceRecordSet'
                 Effect: Allow
                 Resource: ['*']
+              - Action:
+                - "route53:ChangeResourceRecordSets"
+                Effect: Allow
+                Resource:
+                  - "arn:aws:route53:::healthcheck/*"
+                  - "arn:aws:route53:::change/*"
+                  - "arn:aws:route53:::hostedzone/*"
+                  - "arn:aws:route53:::delegationset/*"
   CrowdClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

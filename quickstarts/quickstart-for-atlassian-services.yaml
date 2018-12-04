@@ -217,27 +217,6 @@ Mappings:
       Partition: aws
       QuickStartS3URL: https://s3.amazonaws.com
 Resources:
-  R53UpdaterPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      ManagedPolicyName: "CfnStackR53NodesSelfupdater"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Action:
-              - "route53:ListHostedZones"
-              - "route53:ListResourceRecordSets"
-            Resource: "*"
-          - Effect: "Allow"
-            Action:
-            - "route53:ChangeResourceRecordSets"
-            Resource:
-              - "arn:aws:route53:::healthcheck/*"
-              - "arn:aws:route53:::change/*"
-              - "arn:aws:route53:::hostedzone/*"
-              - "arn:aws:route53:::delegationset/*"
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
