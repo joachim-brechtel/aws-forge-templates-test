@@ -94,7 +94,143 @@ pipelines:
               - if [ "${FORGEENABLED}" = "true" ]; then export FORGEELBNAME=$(aws elb describe-load-balancers | jq '.LoadBalancerDescriptions'|jq '.[]'|jq '.LoadBalancerName'|grep Forge|tr -d '"');fi
               - echo "${FORGEELBNAME}"
               - if [ "${FORGEENABLED}" = "true" ]; then aws elb wait any-instance-in-service --load-balancer-name $FORGEELBNAME;fi
+              # for some reason forge takes a short while to start to respond after ELB shows up so adding in a sleep
+              - sleep 30
               - if [ "${FORGEENABLED}" = "true" ]; then curl --fail ${FORGEURL}/status;fi
+        - parallel:     # build/test all app stacks in parallel
+          - step:
+              name: Build Crowd from quickstart
+              script:
+                - apk update
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - pip --no-cache-dir install awscli
+                - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                - aws configure set default.region ${CI_DEFAULT_REGION}
+                - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                - cd ami
+                - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLCROWD\"; then touch crowdExists; fi
+                - export VPC=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="VPCID")|.OutputValue'|tr -d '"')
+                - export PUBSUB=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="PublicSubnets")|.OutputValue'|tr -d '"')
+                - export PRISUB=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="PrivateSubnets")|.OutputValue'|tr -d '"')
+                - cat ../ci-parameters-crowd.json
+                - aws s3 cp ../quickstarts/quickstart-crowd-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-crowd-master.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-crowd-master.template.yaml
+                - aws s3 cp ../templates/CrowdDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/templates/CrowdDataCenter.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/templates/CrowdDataCenter.template.yaml
+                - if [ ! -e "crowdExists" ]; then aws cloudformation create-stack --stack-name ATLCROWD --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-crowd-master.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-crowd.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
+                - aws cloudformation wait stack-create-complete --stack-name ATLCROWD
+                - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLCROWD" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
+                - export ELBNAME=$(aws cloudformation describe-stacks --stack-name="ATLCROWD" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"'| awk -F'[.|/|-]' {'print $3"-"$4"-"$5'})
+                - aws elb wait any-instance-in-service --load-balancer-name $ELBNAME
+                - echo "${SERVICEURL}"
+                - curl --fail ${SERVICEURL}/status
+          - step:
+              name: Build Jira from quickstart
+              script:
+                - apk update
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - pip --no-cache-dir install awscli
+                - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                - aws configure set default.region ${CI_DEFAULT_REGION}
+                - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                - cd ami
+                - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLJIRA\"; then touch jiraExists; fi
+                - cat ../ci-parameters-jira.json
+                - aws s3 cp ../quickstarts/quickstart-jira-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-jira-master.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-jira-master.template.yaml
+                - aws s3 cp ../templates/JiraDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/templates/JiraDataCenter.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/templates/JiraDataCenter.template.yaml
+                - if [ ! -e "jiraExists" ]; then aws cloudformation create-stack --stack-name ATLJIRA --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-jira-master.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-jira.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
+                - aws cloudformation wait stack-create-complete --stack-name ATLJIRA
+                - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLJIRA" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
+                - export ELBNAME=$(aws elb describe-load-balancers | jq '.LoadBalancerDescriptions'|jq '.[]'|jq '.LoadBalancerName'|grep ATLJIRA|tr -d '"')
+                - echo "${ELBNAME}"
+                - aws elb wait any-instance-in-service --load-balancer-name $ELBNAME
+                - echo "${SERVICEURL}"
+                - curl --fail ${SERVICEURL}/status
+          - step:
+              name: Build CONFLUENCE from quickstart
+              script:
+                - apk update
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - pip --no-cache-dir install awscli
+                - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                - aws configure set default.region ${CI_DEFAULT_REGION}
+                - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                - cd ami
+                - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLCONFLUENCE\"; then touch confluenceExists; fi
+                - cat ../ci-parameters-confluence.json
+                - aws s3 cp ../quickstarts/quickstart-confluence-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-confluence-master.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-confluence-master.template.yaml
+                - aws s3 cp ../templates/ConfluenceDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/templates/ConfluenceDataCenter.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/templates/ConfluenceDataCenter.template.yaml
+                - if [ ! -e "confluenceExists" ]; then aws cloudformation create-stack --stack-name ATLCONFLUENCE --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/quickstarts/quickstart-confluence-master.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-confluence.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
+                - aws cloudformation wait stack-create-complete --stack-name ATLCONFLUENCE
+                - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLCONFLUENCE" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
+                - echo $SERVICEURL
+                - export TGARN=$(aws cloudformation describe-stacks --stack-name="ATLCONFLUENCE" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ConfluenceTargetGroupARN")|.OutputValue'|tr -d '"')
+                - echo $TGARN
+                - aws elbv2 wait target-in-service --target-group-arn $TGARN
+                - echo "${SERVICEURL}"
+                - curl --fail ${SERVICEURL}/status
+        - step:
+            name: Cleanup Crowd
+            trigger: manual
+            script:
+              - apk update
+              - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+              - pip --no-cache-dir install awscli
+              - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+              - aws cloudformation delete-stack --stack-name ATLCROWD
+        - step:
+            name: Cleanup Jira
+            trigger: manual
+            script:
+              - apk update
+              - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+              - pip --no-cache-dir install awscli
+              - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+              - aws cloudformation delete-stack --stack-name ATLJIRA
+        - step:
+            name: Cleanup Confluence
+            trigger: manual
+            script:
+              - apk update
+              - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+              - pip --no-cache-dir install awscli
+              - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+              - aws cloudformation delete-stack --stack-name ATLCONFLUENCE
+        - step:
+            name: Cleanup BitBucket
+            trigger: manual
+            script:
+              - apk update
+              - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+              - pip --no-cache-dir install awscli
+              - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+              - aws cloudformation delete-stack --stack-name ATLBITBUCKET
         - step:
             name: Cleanup Atlassian Services Stack
             trigger: manual
