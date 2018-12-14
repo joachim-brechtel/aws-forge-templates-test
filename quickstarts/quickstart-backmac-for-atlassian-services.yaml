@@ -188,6 +188,8 @@ Mappings:
       HVM64: ami-0b18956f
     eu-central-1:
       HVM64: ami-0233214e13e500f77
+    eu-north-1:
+      HVM64: ami-4abe3234
     eu-west-1:
       HVM64: ami-047bb4163c506cd98
     eu-west-2:
