@@ -94,7 +94,7 @@ case $ATL_PRODUCT_ID in
         ATL_PRODUCT="Bitbucket"
         ;;
     jira)
-        ATL_PRODUCT="JIRA"
+        ATL_PRODUCT="Jira"
         ;;
     confluence)
         ATL_PRODUCT="Confluence"
