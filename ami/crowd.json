@@ -13,6 +13,8 @@
     "config_location":          "/etc/sysconfig/atl",
     "log_location":             "/var/log/atl.log",
     "name":                     "crowd",
+    "short_display_name":       "Crowd",
+    "full_display_name":        "Atlassian Crowd",
     "app_data_dir":             "/var/atlassian/application-data",
     "home_dir":                 "/var/atlassian/application-data/crowd",
     "install_dir":              "/opt/atlassian/crowd",
