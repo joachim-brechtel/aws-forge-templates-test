@@ -386,7 +386,7 @@ function installJIRA {
     fi
     # overrideVersion always wins out over requestedVersion
     if [[ -n $overrideVersion ]]; then requestedVersion=$overrideVersion; fi
-    lastVersionFile=$(ls -tr1 /media/atl/jira*.version |tail -1)
+    lastVersionFile=$(ls -tr1 /media/atl/*.version |tail -1)
     if [[ -n $lastVersionFile ]]; then currentVersion="$(cat $lastVersionFile 2>/dev/null)"; fi
     if [[ -n $currentVersion ]] && [[ -n $requestedVersion ]] ; then
       # abend if requested version is older than current
