@@ -1120,6 +1120,7 @@ Resources:
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ConfluenceServerGroup --region ${AWS::Region}
 # Elastic file system
+# EFS isn't available in all AWS regions; check https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/ to ensure your target region is supported
   ElasticFileSystem:
     Type: AWS::EFS::FileSystem
     Properties:
