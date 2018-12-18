@@ -298,11 +298,13 @@ function restoreInstaller {
 function downloadInstaller {
     local ATL_LOG_HEADER="[downloadInstaller]: "
 
-    local VERSION_FILE_URL="${ATL_JIRA_RELEASES_S3_URL}/latest"
+    local VERSION_FILE_URL="https://marketplace.atlassian.com/rest/2/applications/jira/versions/latest"
 
     atl_log "${ATL_LOG_HEADER} Downloading installer description from ${VERSION_FILE_URL}"
-    if ! curl -L -f --silent "${VERSION_FILE_URL}" \
-        -o "$(atl_tempDir)/version" >> "${ATL_LOG}" 2>&1
+    local JIRA_VERSION=$(curl --silent "${VERSION_FILE_URL}" | jq -r '.version')
+    echo "${JIRA_VERSION}" > $(atl_tempDir)/version
+
+    if [ -z "$JIRA_VERSION" ]
     then
         local ERROR_MESSAGE="Could not download installer description from ${VERSION_FILE_URL} - aborting installation"
         atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
