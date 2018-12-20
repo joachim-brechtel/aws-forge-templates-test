@@ -1786,14 +1786,17 @@ Resources:
           FromPort: 25500
           ToPort: 25500
           CidrIp: !Ref CidrBlock
+          Description: 'Confluence Collaborative Editing cluster base port (Aleph)'
         - IpProtocol: tcp
           FromPort: 5801
           ToPort: 5801
           CidrIp: !Ref CidrBlock
+          Description: 'Confluence Data Center clustering (Hazelcast)'
         - IpProtocol: tcp
           FromPort: 8091
           ToPort: 8091
           CidrIp: !Ref CidrBlock
+          Description: 'Confluence Collaborative Editing (Synchrony)'
       Tags:
         - Key: Name
           Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
