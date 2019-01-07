@@ -251,6 +251,6 @@ pipelines:
               # cleanup MASTERSTACK
               - aws cloudformation delete-stack --stack-name $MASTERSTACK
     'DCD-*':
-        - step:
+      - step:
           <<: *ci_build_step
           name: Build Atlassian Services AWS Environment (VPC + tooling) from quickstart (if doesnt exist) on DCD branch
