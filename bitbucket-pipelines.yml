@@ -7,7 +7,7 @@ pipelines:
         script:
             - echo 'only running CI on ITOPS branches for now'
   branches:
-    'ITOPS-*':
+    'ITOPS-*': &ci_pipeline
         - step:
             name: Build Atlassian Services AWS Environment (VPC + tooling) from quickstart (if doesnt exist)
             script:
@@ -250,3 +250,4 @@ pipelines:
               - aws s3 rm s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/${BITBUCKET_BUILD_NUMBER} --recursive
               # cleanup MASTERSTACK
               - aws cloudformation delete-stack --stack-name $MASTERSTACK
+  'DCD-*': *ci_pipeline
