@@ -251,7 +251,4 @@ pipelines:
               # cleanup MASTERSTACK
               - aws cloudformation delete-stack --stack-name $MASTERSTACK
     'DCD-*':
-      <<: *ci_pipeline
-        - step:
-            name: Placholder step
-            script: echo 'Placeholder step'
+        - *ci_pipeline
