@@ -8,7 +8,7 @@ pipelines:
             - echo 'only running CI on ITOPS branches for now'
   branches:
     'ITOPS-*': &ci_pipeline
-        - step: &ci_build_step
+        - step:
             name: Build Atlassian Services AWS Environment (VPC + tooling) from quickstart (if doesnt exist)
             script:
               - export CIHOME=$(pwd)
@@ -252,3 +252,6 @@ pipelines:
               - aws cloudformation delete-stack --stack-name $MASTERSTACK
     'DCD-*':
       <<: *ci_pipeline
+        - step:
+            name: Placholder step
+            script: echo 'Placeholder step'
