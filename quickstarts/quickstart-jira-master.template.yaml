@@ -937,6 +937,9 @@ Resources:
                   - "arn:aws:route53:::change/*"
                   - "arn:aws:route53:::hostedzone/*"
                   - "arn:aws:route53:::delegationset/*"
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   JiraClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

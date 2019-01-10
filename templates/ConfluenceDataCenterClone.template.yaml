@@ -1059,6 +1059,9 @@ Resources:
               - Action: ['s3:Get*']
                 Effect: Allow
                 Resource: ['arn:aws:s3:::/atlassian-software/snapshots/confluence/*']
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   ConfluenceClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
