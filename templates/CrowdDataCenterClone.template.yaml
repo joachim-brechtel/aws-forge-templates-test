@@ -912,6 +912,9 @@ Resources:
               - Action: ['ec2:DescribeInstances']
                 Effect: Allow
                 Resource: ['*']
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   CrowdClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
