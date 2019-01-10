@@ -1,0 +1,34 @@
+[
+    {
+        "ParameterKey": "AssociatePublicIpAddress",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "DBMasterUserPassword",
+        "ParameterValue": "$[taskcat_genpass_8]"
+    },
+    {
+        "ParameterKey": "DBMultiAZ",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "DBPassword",
+        "ParameterValue": "$[taskcat_genpass_8]"
+    },
+    {
+        "ParameterKey": "DBStorage",
+        "ParameterValue": "100"
+    },
+    {
+        "ParameterKey": "DBStorageType",
+        "ParameterValue": "Provisioned IOPS"
+    },
+    {
+        "ParameterKey": "CustomDnsName",
+        "ParameterValue": "qs-conf-ci.awsqs.com"
+    },
+    {
+        "ParameterKey": "KeyName",
+        "ParameterValue": "replaced-by-taskcat-override-file"
+    }
+]
