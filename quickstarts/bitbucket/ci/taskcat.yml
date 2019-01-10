@@ -1,0 +1,15 @@
+global:
+  qsname: bitbucket
+  owner: quickstart-eng@amazon.com
+  marketplace-ami: false
+  reporting: true
+  regions:
+    - eu-west-1
+    - us-east-1
+    - us-west-2
+tests:
+  bitbucket:
+   template_file: quickstart-bitbucket-master.template.yaml
+   parameter_input: quickstart-bitbucket-master.json
+   regions:
+    - ap-southeast-1
