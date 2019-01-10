@@ -268,6 +268,6 @@ pipelines:
                 - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
                 - cd quickstarts/jira
-                - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"--REPLACE-KEY-ID-HERE--\"}]" | sed -e s/--REPLACE-KEY-ID-HERE--/${CI_SECRET_ACCESS_KEY}/g > ci/taskcat_project_override.json
+                - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"--REPLACE-KEY-ID-HERE--\"}]" | sed -e s/--REPLACE-KEY-ID-HERE--/$AWS_ACCESS_KEY/g > ci/taskcat_project_override.json
                 - cat ci/taskcat_project_override.json
                 - taskcat -c ci/taskcat.yml
