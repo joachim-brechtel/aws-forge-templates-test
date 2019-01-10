@@ -258,6 +258,7 @@ pipelines:
                 - echo 'Setup VPC here'
         - step:
             name: Taskcat run jira
+            script:
                 - apk update
                 - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
                 - pip --no-cache-dir install awscli taskcat
