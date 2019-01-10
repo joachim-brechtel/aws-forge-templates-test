@@ -256,24 +256,50 @@ pipelines:
             name: Setup VPC & other services if they do not exist'
             script:
                 - echo 'Setup VPC here'
-        - step:
-            name: Taskcat run jira
-            image: frolvlad/alpine-python3
-            script:
-                - apk update
-#                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
-#                - apk add --no-cache python3
-#                - python3 -m ensurepip && rm -r /usr/lib/python*/ensurepip && pip3 install --upgrade pip setuptools
-#                - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi
-#                - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi
-#                -  rm -r /root/.cache
-                - pip --no-cache-dir install awscli taskcat
-                - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
-                - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
-                - aws configure set default.region ${CI_DEFAULT_REGION}
-                - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
-                - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
-                - cd quickstarts/jira
-                - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$AWS_ACCESS_KEY\"}]" > ci/taskcat_project_override.json
-                - cat ci/taskcat_project_override.json
-                - taskcat -l -c ci/taskcat.yml
+#        Duplication ahead
+        - parallel:
+          - step:
+              name: Taskcat run jira
+              image: frolvlad/alpine-python3
+              script:
+                  - apk update
+                  - pip --no-cache-dir install awscli taskcat
+                  - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                  - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                  - aws configure set default.region ${CI_DEFAULT_REGION}
+                  - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                  - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                  - cd quickstarts/jira
+                  - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$AWS_ACCESS_KEY\"}]" > ci/taskcat_project_override.json
+                  - cat ci/taskcat_project_override.json
+                  - taskcat -l -c ci/taskcat.yml
+          - step:
+              name: Taskcat run confluence
+              image: frolvlad/alpine-python3
+              script:
+                  - apk update
+                  - pip --no-cache-dir install awscli taskcat
+                  - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                  - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                  - aws configure set default.region ${CI_DEFAULT_REGION}
+                  - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                  - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                  - cd quickstarts/confluence
+                  - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$AWS_ACCESS_KEY\"}]" > ci/taskcat_project_override.json
+                  - cat ci/taskcat_project_override.json
+                  - taskcat -l -c ci/taskcat.yml
+          - step:
+              name: Taskcat run bitbucket
+              image: frolvlad/alpine-python3
+              script:
+                  - apk update
+                  - pip --no-cache-dir install awscli taskcat
+                  - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                  - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                  - aws configure set default.region ${CI_DEFAULT_REGION}
+                  - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                  - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                  - cd quickstarts/bitbucket
+                  - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$AWS_ACCESS_KEY\"}]" > ci/taskcat_project_override.json
+                  - cat ci/taskcat_project_override.json
+                  - taskcat -l -c ci/taskcat.yml
