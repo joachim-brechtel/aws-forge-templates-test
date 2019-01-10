@@ -442,9 +442,10 @@ Parameters:
   DeployEnvironment:
     Default: prod
     AllowedValues:
+      - dev
+      - dr
       - prod
       - stg
-      - dr
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
