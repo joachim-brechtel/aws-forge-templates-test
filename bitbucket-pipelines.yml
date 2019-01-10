@@ -8,7 +8,7 @@ pipelines:
             - echo 'only running CI on ITOPS branches for now'
   branches:
     'ITOPS-*': &ci_pipeline
-        - step:
+        - step: &setup_step
             name: Build Atlassian Services AWS Environment (VPC + tooling) from quickstart (if doesnt exist)
             script:
               - export CIHOME=$(pwd)
@@ -250,4 +250,22 @@ pipelines:
               - aws s3 rm s3://${CI_S3_OUTPUT_BUCKET}/quickstarts/${BITBUCKET_BUILD_NUMBER} --recursive
               # cleanup MASTERSTACK
               - aws cloudformation delete-stack --stack-name $MASTERSTACK
-    'DCD-*': *ci_pipeline
+    'DCD-*':
+        - step:
+                #<<: *setup_step
+            name: Setup VPC & other services if they do not exist'
+            script:
+                - echo 'Setup VPC here'
+        - step:
+            name: Taskcat run jira
+                - apk update
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - pip --no-cache-dir install awscli taskcat
+                - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
+                - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
+                - aws configure set default.region ${CI_DEFAULT_REGION}
+                - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+                - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                - cd quickstarts/jira
+                -echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"--REPLACE-KEY-ID-HERE--\"}]" | sed -e s/--REPLACE-KEY-ID-HERE--/$AWS_ACCESS_KEY_ID/g > ci/taskcat_project_override.json
+                - cat ci/taskcat_project_override.json 
