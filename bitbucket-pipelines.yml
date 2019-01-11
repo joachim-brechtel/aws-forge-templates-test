@@ -254,9 +254,42 @@ pipelines:
         - step:
                 #<<: *setup_step
             name: Setup VPC & other services if they do not exist'
+            image: python:3.6-alpine
             script:
-                - echo 'Setup VPC here'
-#        Duplication ahead
+              - export CIHOME=$(pwd)
+              - apk update
+              - apk --no-cache add curl groff less jq
+              - pip --no-cache-dir install awscli taskcat
+              - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - if [ -z "${CI_ALTERNATE_REGION}" ]; then ; else aws configure set default.region ${CI_ALTERNATE_REGION}; fi
+              #- aws configure set default.region ${CI_DEFAULT_REGION}
+              # you can also override region manually, if needed, on the line below
+              # - aws configure set default.region us-east-2
+              # - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
+              # - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+
+              - export MASTERSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]| select(.TemplateDescription=="Master Template for Atlassian Services")|.StackName')
+              - if [ -z "$MASTERSTACK" ]; then export MASTERSTACK="ATL";fi
+              - echo $MASTERSTACK
+              - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep "\"${MASTERSTACK}\""; then touch vpcExists; fi
+              - ls
+              # S3 COPY
+              - aws s3 cp quickstarts/quickstart-vpc-for-atlassian-services.yaml s3://quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml
+              - aws s3 cp quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-bastion-for-atlassian-services.yaml
+              # Validate Template
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-bastion-for-atlassian-services.yaml
+
+              - if [ ! -e "vpcExists" ]; then aws --debug cloudformation create-stack --stack-name "${MASTERSTACK}" --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-vpc-stack.json --tags "Key=Name,Value=taskcat-ci-user" "Key=service_name,Value=taskcat-ci-user" "Key=business_unit,Value=${Engineering:Server}" "Key=resource_owner,Value=abrokes"; fi
+              - if [ ! -e "vpcExists" ]; then aws --debug cloudformation wait stack-create-complete --stack-name "${MASTERSTACK}"; fi
+              # is bastion listening for ssh ?
+              - export BASTIONSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Bastion"))|.StackName')
+              - export BASTIONIP=$(aws cloudformation describe-stacks --stack-name=$BASTIONSTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="BastionPubIp")|.OutputValue'|tr -d '"')
+              - echo $BASTIONIP
+              - nc -n -w3 -z $BASTIONIP 22
+      #        Duplication ahead
         - parallel:
           - step:
               name: Taskcat run jira
