@@ -70,4 +70,4 @@ changes you make before attempting to push upstream.
 [quickstart-atlassian-jira]: https://github.com/aws-quickstart/quickstart-atlassian-jira
 [quickstart-atlassian-confluence]: https://github.com/aws-quickstart/quickstart-atlassian-confluence
 [taskcat]: https://github.com/aws-quickstart/taskcat
-[sequence-diagram]: docs/quickstart-development-flow.png
+[sequence-diagram]: https://bitbucket.org/atlassian/atlassian-aws-deployment/raw/DCD-62-upstream-howto/docs/quickstart-development-flow.png
