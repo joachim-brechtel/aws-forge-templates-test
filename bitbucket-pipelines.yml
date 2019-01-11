@@ -272,7 +272,7 @@ pipelines:
                   - cd quickstarts/jira
                   - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                   - cat ci/taskcat_project_override.json
-                  - taskcat -l -c ci/taskcat.yml
+                  - taskcat -c ci/taskcat.yml
           - step:
               name: Taskcat run confluence
               image: python:3.6-alpine
@@ -287,7 +287,7 @@ pipelines:
                   - cd quickstarts/confluence
                   - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                   - cat ci/taskcat_project_override.json
-                  - taskcat -l -c ci/taskcat.yml
+                  - taskcat -c ci/taskcat.yml
           - step:
               name: Taskcat run bitbucket
               image: python:3.6-alpine
@@ -302,4 +302,4 @@ pipelines:
                   - cd quickstarts/bitbucket
                   - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                   - cat ci/taskcat_project_override.json
-                  - taskcat -l -c ci/taskcat.yml
+                  - taskcat -c ci/taskcat.yml
