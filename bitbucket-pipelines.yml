@@ -263,7 +263,6 @@ pipelines:
               - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
               - aws configure set default.region ${CI_DEFAULT_REGION}
-              - if [ -z "${CI_ALTERNATE_REGION}" ]; then ; else aws configure set default.region ${CI_ALTERNATE_REGION}; fi
               #- aws configure set default.region ${CI_DEFAULT_REGION}
               # you can also override region manually, if needed, on the line below
               # - aws configure set default.region us-east-2
