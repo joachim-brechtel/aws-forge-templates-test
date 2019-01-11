@@ -58,6 +58,10 @@ changes will not be accepted to master until these are passing. The taskcat main
 file is [ci/taskcat.yml](ci/taskcat.yml). You should run taskcat against any
 changes you make before attempting to push upstream.
 
+## Development process
+
+![Sequence diagram][sequence-diagram]
+
 
 
 
@@ -66,3 +70,4 @@ changes you make before attempting to push upstream.
 [quickstart-atlassian-jira]: https://github.com/aws-quickstart/quickstart-atlassian-jira
 [quickstart-atlassian-confluence]: https://github.com/aws-quickstart/quickstart-atlassian-confluence
 [taskcat]: https://github.com/aws-quickstart/taskcat
+[sequence-diagram]: docs/quickstart-development-flow.png
