@@ -298,6 +298,7 @@ pipelines:
               - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
               - mkdir -p ~/.ssh
               - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
+              - (umask  077 ; echo ${CI_TASKCAT_USER_GITHUB_PRIVATE_KEY} | base64 -d > ~/.ssh/id_rsa)
               - chmod 744 ./scripts/bootstrap && ./scripts/bootstrap
               - cd quickstarts
               - cp -r ./ci/jira/* ./${QS_PROJECT_NAME}/ci/
@@ -320,6 +321,7 @@ pipelines:
               - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
               - mkdir -p ~/.ssh
               - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
+              - (umask  077 ; echo ${CI_TASKCAT_USER_GITHUB_PRIVATE_KEY} | base64 -d > ~/.ssh/id_rsa)
               - chmod 744 ./scripts/bootstrap && ./scripts/bootstrap
               - cd quickstarts
               - cp -r ./ci/confluence/* ./${QS_PROJECT_NAME}/ci/
@@ -343,6 +345,7 @@ pipelines:
               - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
               - mkdir -p ~/.ssh
               - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
+              - (umask  077 ; echo ${CI_TASKCAT_USER_GITHUB_PRIVATE_KEY} | base64 -d > ~/.ssh/id_rsa)
               - chmod 744 ./scripts/bootstrap && ./scripts/bootstrap
               - cd quickstarts
               - cp -r ./ci/bitbucket/* ./${QS_PROJECT_NAME}/ci/
