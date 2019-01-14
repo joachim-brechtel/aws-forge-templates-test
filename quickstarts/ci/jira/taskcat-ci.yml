@@ -11,4 +11,4 @@ global:
 tests:
   jira:
     parameter_input: quickstart-jira-dc-ci.json
-    template_file: JiraDataCenter.template.yaml
+    template_file: JiraDataCenter.template
