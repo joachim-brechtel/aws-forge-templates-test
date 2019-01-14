@@ -1,19 +1,5 @@
 image: bashell/alpine-bash
 
-definitions:
-  script_run_taskcat: &run_taskcat
-    - apk update
-    - pip --no-cache-dir install awscli taskcat
-    - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
-    - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
-    - aws configure set default.region ${CI_DEFAULT_REGION}
-    - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
-    - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
-    - cd quickstarts/${QS_PROJECT_NAME}
-    - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
-    - cat ci/taskcat_project_override.json
-    - taskcat -c ci/taskcat.yml
-
 pipelines:
   default:
     - step:
@@ -301,17 +287,49 @@ pipelines:
               name: Taskcat run jira
               image: python:3.6-alpine
               script:
-                - export QS_PROJECT_NAME=jira
-                - *run_taskcat
+              - export QS_PROJECT_NAME=jira
+              - apk update
+              - pip --no-cache-dir install awscli taskcat
+              - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
+              - cd quickstarts/${QS_PROJECT_NAME}
+              - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
+              - cat ci/taskcat_project_override.json
+              - taskcat -c ci/taskcat.yml
           - step:
               name: Taskcat run confluence
               image: python:3.6-alpine
               script:
-                - export QS_PROJECT_NAME=confluence
-                - *run_taskcat
+              - export QS_PROJECT_NAME=confluence
+              - apk update
+              - pip --no-cache-dir install awscli taskcat
+              - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
+              - cd quickstarts/${QS_PROJECT_NAME}
+              - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
+              - cat ci/taskcat_project_override.json
+              - taskcat -c ci/taskcat.yml
+
           - step:
               name: Taskcat run bitbucket
               image: python:3.6-alpine
               script:
-                  - export QS_PROJECT_NAME=bitbucket
-                  - *run_taskcat
+              - export QS_PROJECT_NAME=bitbucket
+              - apk update
+              - pip --no-cache-dir install awscli taskcat
+              - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
+              - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
+              - aws configure set default.region ${CI_DEFAULT_REGION}
+              - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
+              - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
+              - cd quickstarts/${QS_PROJECT_NAME}
+              - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
+              - cat ci/taskcat_project_override.json
+              - taskcat -c ci/taskcat.yml
+
