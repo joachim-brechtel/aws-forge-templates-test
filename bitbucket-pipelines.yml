@@ -289,6 +289,7 @@ pipelines:
               script:
               - export QS_PROJECT_NAME=quickstart-atlassian-jira
               - apk update
+              - apk --no-cache add jq openssh git groff
               - pip --no-cache-dir install awscli taskcat
               - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
@@ -308,6 +309,7 @@ pipelines:
               script:
               - export QS_PROJECT_NAME=quickstart-atlassian-confluence
               - apk update
+              - apk --no-cache add jq openssh git groff
               - pip --no-cache-dir install awscli taskcat
               - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
@@ -328,6 +330,7 @@ pipelines:
               script:
               - export QS_PROJECT_NAME=quickstart-atlassian-bitbucket
               - apk update
+              - apk --no-cache add jq openssh git groff
               - pip --no-cache-dir install awscli taskcat
               - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
               - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
