@@ -1,0 +1,14 @@
+---
+global:
+  marketplace-ami: false
+  owner: varbatti@atlassian.com
+  #owner: dc-deployments-syd@atlassian.com
+  qsname: confluence
+  regions:
+    - us-east-2
+  reporting: true
+
+tests:
+  confluence:
+    parameter_input: quickstart-confluence-ci.json
+    template_file: ConfluenceDataCenter.template.yaml
