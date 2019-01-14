@@ -133,13 +133,13 @@ function configureSharedHome {
         if ! chown -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" ${CONFLUENCE_SHARED}/* >> "${ATL_LOG}" 2>&1; then
             atl_log "Chown on contents of shared home failed most likley because this is a new cluster or instance and no contents yet exist, moving on"
         fi
-        su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
+        su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
         if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]]; then
             mkdir -p "${CONFLUENCE_SHARED}"/{backups,attachments,imgEffects,thumbnails}
-            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/backups\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/attachments\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/imgEffects\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-            su "${ATL_CONFLUENCE_USER}" -c "ln -Fs \"${CONFLUENCE_SHARED}/thumbnails\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/backups\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/attachments\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/imgEffects\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
+            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/thumbnails\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
         fi
     else
         atl_log "No mountpoint for shared home exists."
