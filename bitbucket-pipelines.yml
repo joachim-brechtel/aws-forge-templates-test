@@ -1,25 +1,26 @@
 image: bashell/alpine-bash
 
+definitions:
+  steps:
+    - step: &run_taskcat
+        - apk update
+        - pip --no-cache-dir install awscli taskcat
+        - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
+        - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
+        - aws configure set default.region ${CI_DEFAULT_REGION}
+        - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
+        - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
+        - cd quickstarts/${QS_PROJECT_NAME}
+        - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
+        - cat ci/taskcat_project_override.json
+        - taskcat -c ci/taskcat.yml
+
 pipelines:
   default:
     - step:
         name: 'default'
         script:
             - echo 'only running CI on ITOPS branches for now'
-definitions:
-  steps:
-    - step: &run_taskcat
-      - apk update
-      - pip --no-cache-dir install awscli taskcat
-      - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
-      - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
-      - aws configure set default.region ${CI_DEFAULT_REGION}
-      - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
-      - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
-      - cd quickstarts/${QS_PROJECT_NAME}
-      - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
-      - cat ci/taskcat_project_override.json
-      - taskcat -c ci/taskcat.yml
   branches:
     'ITOPS-*':
         - step:
