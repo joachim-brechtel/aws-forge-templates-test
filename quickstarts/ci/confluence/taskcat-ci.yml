@@ -3,7 +3,7 @@ global:
   marketplace-ami: false
   owner: varbatti@atlassian.com
   #owner: dc-deployments-syd@atlassian.com
-  qsname: confluence
+  qsname: quickstart-atlassian-confluence
   regions:
     - us-east-2
   reporting: true

@@ -1,6 +1,6 @@
 ---
 global:
-  qsname: bitbucket
+  qsname: quickstart-atlassian-bitbucket
   owner: varbatti@atlassian.com
   #owner: dc-deployments-syd@atlassian.com
   marketplace-ami: false

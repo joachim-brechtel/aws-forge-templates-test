@@ -3,7 +3,7 @@ global:
   marketplace-ami: false
   owner: quickstart-eng@amazon.com
   #owner: dc-deployments-syd@atlassian.com
-  qsname: jira
+  qsname: quickstart-atlassian-jira
   regions:
     - us-east-2
   reporting: true
