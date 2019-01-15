@@ -7,8 +7,10 @@ set -e
 
 if [ "$1" == "--no-recurse" ]; then
         echo "Updating submodules non recursively\n"
-        git submodule update --init
+        git submodule update --init --remote
 else
         echo "Updating submodules recursively\n"
-        git submodule update --init --recursive
+        git submodule update --init --remote --recursive
 fi
+
+git submodule status
