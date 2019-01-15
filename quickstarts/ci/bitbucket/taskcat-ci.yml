@@ -10,4 +10,4 @@ global:
 tests:
   bitbucket:
     parameter_input: quickstart-bitbucket-ci.json
-    template_file: BitbucketDataCenter.template
+    template_file: quickstart-bitbucket-dc.template.yaml

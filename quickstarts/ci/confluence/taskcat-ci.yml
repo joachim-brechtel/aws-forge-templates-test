@@ -11,4 +11,4 @@ global:
 tests:
   confluence:
     parameter_input: quickstart-confluence-ci.json
-    template_file: ConfluenceDataCenter.template
+    template_file: quickstart-confluence-master.template.yaml
