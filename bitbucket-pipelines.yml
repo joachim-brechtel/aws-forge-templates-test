@@ -350,7 +350,7 @@ pipelines:
               - cd quickstarts
               - cp -r ./ci/bitbucket/* ./${QS_PROJECT_NAME}/ci/
               - cd ${QS_PROJECT_NAME}
-              - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
+              - echo "[{\"ParameterKey\":\"KeyPairName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
               - cat ci/taskcat_project_override.json
               - taskcat -c ci/taskcat-ci.yml
 
