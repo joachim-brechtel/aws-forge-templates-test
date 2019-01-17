@@ -117,6 +117,7 @@ pipelines:
                 - export PUBSUB=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="PublicSubnets")|.OutputValue'|tr -d '"')
                 - export PRISUB=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="PrivateSubnets")|.OutputValue'|tr -d '"')
                 - cat ../ci-parameters-crowd.json
+                - aws s3 cp ../quickstarts/quickstart-crowd-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-crowd-master.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-crowd-master.template.yaml
                 - aws s3 cp ../templates/CrowdDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/CrowdDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/CrowdDataCenter.template.yaml
