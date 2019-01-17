@@ -151,7 +151,7 @@ Parameters:
     Description: Backupmachine node instance type.
     Type: String
   S3LambdaBucketFolder:
-    Default: ''
+    Default: 'master'
     Description: The folder within the S3 bucket to look for Lambdas and other Quick Start assets.
       Leave empty for the root of the bucket. Don't include a trailing slash.
     Type: String
