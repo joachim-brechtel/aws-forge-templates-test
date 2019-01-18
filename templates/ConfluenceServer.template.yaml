@@ -952,9 +952,6 @@ Resources:
           PropagateAtLaunch: true
   ConfluenceServerLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
-    DependsOn:
-      - EFSMountAz1
-      - EFSMountAz2
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
@@ -1061,6 +1058,84 @@ Resources:
               mode: "000400"
               owner: root
               group: root
+            /tmp/bootstrap_confluence_home:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
+
+                set -xe
+
+                ebsToMount=''
+                currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
+                instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
+                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Application,Values=${AWS::StackId} | jq .Volumes[])
+                existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
+                deviceName="/dev/xvdb"
+                mountPoint="/var/atlassian/application-data/confluence"
+
+                if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
+                  if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
+
+                    echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
+                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=Application,Value=${AWS::StackId}}]')
+                    existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
+
+                    echo "Waiting for snapshot creation to finish"
+                    aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
+
+                    echo "Creating new EBS volume from snapshot in $currentAz"
+                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
+
+                    echo "Deleting old EBS snapshot and volume"
+                    aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
+                    aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
+                  else
+                    echo "Existing EBS volume is in our AZ; using existing EBS"
+                    ebsToMount=$existingEbs
+                  fi
+                else
+                  echo "Creating new EBS volume in $currentAz"
+                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${InstanceVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
+                fi
+
+                ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
+
+                echo "Waiting for EBS to be available"
+                aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
+
+                ebsToMountVolumeSize=$(echo "$ebsToMount" | jq -r .Size)
+                if [[ "${InstanceVolumeSize}" > "$ebsToMountVolumeSize" ]]; then
+                  echo "EBS is smaller than requested by stack config; resizing from $ebsToMountVolumeSize to ${InstanceVolumeSize}"
+                  aws --region=${AWS::Region} ec2 modify-volume --volume-id "$ebsToMountVolumeId" --size "${InstanceVolumeSize}"
+                  echo "Waiting..."
+                  until [[ "None" != $(aws --region=${AWS::Region} ec2 describe-volumes-modifications --volume-ids "$ebsToMountVolumeId" --filters Name=modification-state,Values="optimizing,completed" --query "VolumesModifications[0].ModificationState" --output text) ]]; do
+                    sleep 2
+                  done
+                fi
+
+                echo "Attaching EBS volume to this instance"
+                aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
+
+                echo "Waiting..."
+                aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
+
+                echo "Sleep a moment to ensure the device is truly available"
+                sleep 5
+
+                echo "Checking EBS for existing filesystem"
+                if [[ ! $(blkid $deviceName) ]]; then
+                  echo "No filesystem found; creating ext4 filesystem"
+                  mkfs -t ext4 $deviceName
+                fi
+
+                echo "Creating mount point"
+                mkdir -p $mountPoint
+
+                echo "Mounting EBS"
+                mount $deviceName $mountPoint
+              mode: "000750"
+              owner: root
+              group: root
             /tmp/bootstrap_local_ansible:
               content: !Sub |
                 #!/usr/bin/env bash
@@ -1085,20 +1160,9 @@ Resources:
               owner: root
               group: root
           commands:
-            010_make_mount_point:
-              command: mkdir -p /media/atl
-            020_ensure_efs_utils:
-              command: yum install -y amazon-efs-utils
-              ignoreErrors: false
-            021_add_efs_mount:
-              command: !Sub "echo \"${ElasticFileSystem}:/ /media/atl efs defaults,_netdev 0 0\" >>/etc/fstab"
-              ignoreErrors: false
-            030_mount_all:
-              command: mount -a
-              ignoreErrors: true
-            040_make_shared_home_dir:
-              command: mkdir -p /media/atl/confluence/shared-home
-            050_bootstrap_local_ansible:
+            010_bootstrap_confluence_home:
+              command: /tmp/bootstrap_confluence_home > /var/log/bootstrap_confluence_home.log 2>&1
+            020_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
@@ -1117,7 +1181,11 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref InstanceVolumeSize
+            VolumeSize: 100
+            VolumeType: gp2
+        - DeviceName: /dev/xvdb
+          Ebs: {}
+          NoDevice: true
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1139,39 +1207,6 @@ Resources:
           yum update -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ConfluenceServerGroup --region ${AWS::Region}
-# Elastic file system
-# EFS isn't available in all AWS regions; check https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/ to ensure your target region is supported
-  ElasticFileSystem:
-    Type: AWS::EFS::FileSystem
-    Properties:
-      FileSystemTags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}/shared-files"
-        - Key: Application
-          Value: !Ref AWS::StackId
-  EFSMountAz1:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups: [!Ref SecurityGroup]
-      SubnetId: !Select [0, !Ref InternalSubnets]
-  EFSMountAz2:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups: [!Ref SecurityGroup]
-      SubnetId: !Select [1, !Ref InternalSubnets]
-  EFSCname:
-    Type: AWS::Route53::RecordSet
-    Condition: UseHostedZone
-    Properties:
-      HostedZoneName: !Ref HostedZone
-      Comment: Route53 cname for the efs
-      Name: !Sub "${AWS::StackName}.efs.${HostedZone}"
-      Type: CNAME
-      TTL: '900'
-      ResourceRecords:
-        - !Sub "${ElasticFileSystem}.efs.${AWS::Region}.amazonaws.com."
 # Database
   DB:
     Type: AWS::RDS::DBInstance
@@ -1367,14 +1402,6 @@ Outputs:
     Condition: UseDatabaseEncryption
     Description: The alias of the encryption key created for RDS
     Value: !Ref EncryptionKeyAlias
-  EFSCname:
-    Description: The cname of the EFS
-    Value: !If
-      - UseHostedZone
-      - !Ref EFSCname
-      - !Ref ElasticFileSystem
-    Export:
-      Name: !Sub "${AWS::StackName}-EFSCname"
   ConfluenceTargetGroupARN:
     Description: The name of the load balancer for Confluence Server
     Value: !Ref ConfluenceServerTargetGroup
