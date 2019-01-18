@@ -179,7 +179,7 @@ function configureDbProperties {
     )
 
     if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]] && [[ -f "${LOCAL_CFG_XML}" ]] && grep "setupStep>complete" "${LOCAL_CFG_XML}" >> "${ATL_LOG}" 2>&1; then
-        # Confluence Server uses an additional EBS volume for local-home, but we find a completed config, we'll need to update the XML config with any updated values
+        # Confluence Server uses an additional EBS volume for local-home, but if we find a completed XML config, we'll need to update it
         atl_log "Found existing Confluence Server config in local-home; editing confluence.cfg.xml with updated configuration options"
         for PROP in "${!SERVER_PROPS[@]}"; do
             xmlstarlet edit --inplace --update "/confluence-configuration/properties/property[@name='${PROP}']" --value "${SERVER_PROPS[${PROP}]}" "${LOCAL_CFG_XML}"
