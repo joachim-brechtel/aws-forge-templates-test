@@ -333,12 +333,24 @@ Parameters:
       - db.m4.4xlarge
       - db.m4.10xlarge
       - db.m4.16xlarge
+      - db.m5.large
+      - db.m5.xlarge
+      - db.m5.2xlarge
+      - db.m5.4xlarge
+      - db.m5.12xlarge
+      - db.m5.24xlarge
       - db.r4.large
       - db.r4.xlarge
       - db.r4.2xlarge
       - db.r4.4xlarge
       - db.r4.8xlarge
       - db.r4.16xlarge
+      - db.r5.large
+      - db.r5.xlarge
+      - db.r5.2xlarge
+      - db.r5.4xlarge
+      - db.r5.12xlarge
+      - db.r5.24xlarge
       - db.t2.medium
       - db.t2.large
       - db.t2.xlarge
@@ -442,9 +454,10 @@ Parameters:
   DeployEnvironment:
     Default: prod
     AllowedValues:
+      - dev
+      - dr
       - prod
       - stg
-      - dr
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
@@ -914,6 +927,9 @@ Resources:
               - Action: ['ec2:DescribeInstances']
                 Effect: Allow
                 Resource: ['*']
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   CrowdClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

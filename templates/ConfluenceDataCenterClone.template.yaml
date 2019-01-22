@@ -357,12 +357,24 @@ Parameters:
       - db.m4.4xlarge
       - db.m4.10xlarge
       - db.m4.16xlarge
+      - db.m5.large
+      - db.m5.xlarge
+      - db.m5.2xlarge
+      - db.m5.4xlarge
+      - db.m5.12xlarge
+      - db.m5.24xlarge
       - db.r4.large
       - db.r4.xlarge
       - db.r4.2xlarge
       - db.r4.4xlarge
       - db.r4.8xlarge
       - db.r4.16xlarge
+      - db.r5.large
+      - db.r5.xlarge
+      - db.r5.2xlarge
+      - db.r5.4xlarge
+      - db.r5.12xlarge
+      - db.r5.24xlarge
       - db.t2.medium
       - db.t2.large
       - db.t2.xlarge
@@ -453,9 +465,10 @@ Parameters:
   DeployEnvironment:
     Default: stg
     AllowedValues:
+      - dev
+      - dr
       - prod
       - stg
-      - dr
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
@@ -972,52 +985,52 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-0b83c99390bb6585a
+      HVM64: ami-0863c9b8eaf45ba69
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-0e0d50477039ffa38
+      HVM64: ami-08e554d753f31c6cd
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-09f11f1977d58de87
+      HVM64: ami-017541a7da8a16b8d
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-0700a822cd1d78491
+      HVM64: ami-007ccec94b9f149bb
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0c9a48f81e93b953e
+      HVM64: ami-055470be9b79d3bbe
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-01adbdfa415e00cb9
+      HVM64: ami-06b49910290f3e5a6
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-080726c4c8f228a83
+      HVM64: ami-0e1a0ad1b2ba99089
       HVMG2: NOT_SUPPORTED
     eu-north-1:
-      HVM64: ami-0fe24367b18211909
+      HVM64: ami-023fba85bb2b3735e
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-099054f9a03a341d8
+      HVM64: ami-0d39ef7c33397ef4d
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-0209358c1833447f2
+      HVM64: ami-02ff6823d57c9970c
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-06ce3868db79f1206
+      HVM64: ami-05c44790568c102e6
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-03e24acf991586a31
+      HVM64: ami-0899349666757a3c0
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-02d297ed7d7b82a23
+      HVM64: ami-071bb84313641e79b
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-077dbf8bbe6d9cc1c
+      HVM64: ami-0c2591c710513f2fb
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-09d5f14e7281215ba
+      HVM64: ami-0eaacee6b545f6f2f
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0620c0a4cc7d70b35
+      HVM64: ami-0d366733f0553d7d2
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceClusterNodeRole:
@@ -1059,6 +1072,9 @@ Resources:
               - Action: ['s3:Get*']
                 Effect: Allow
                 Resource: ['arn:aws:s3:::/atlassian-software/snapshots/confluence/*']
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   ConfluenceClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

@@ -408,6 +408,9 @@ Resources:
                 Effect: Allow
                 Resource:
                   - '*'
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   BitbucketInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

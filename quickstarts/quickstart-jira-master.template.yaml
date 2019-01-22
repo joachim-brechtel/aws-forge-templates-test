@@ -425,9 +425,10 @@ Parameters:
   DeployEnvironment:
     Default: prod
     AllowedValues:
+      - dev
+      - dr
       - prod
       - stg
-      - dr
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
@@ -937,6 +938,9 @@ Resources:
                   - "arn:aws:route53:::change/*"
                   - "arn:aws:route53:::hostedzone/*"
                   - "arn:aws:route53:::delegationset/*"
+              - Action: ['s3:PutObjectAcl']
+                Effect: Allow
+                Resource: ['arn:aws:s3:::btf-analytics/*']
   JiraClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
