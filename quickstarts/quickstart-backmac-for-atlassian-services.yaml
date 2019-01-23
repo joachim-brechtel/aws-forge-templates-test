@@ -24,8 +24,7 @@ Metadata:
       - Label:
           default: Integrations
         Parameters:
-          - StrideRoomAPIURL
-          - StrideRoomToken
+          - WebhookNotificationURL
       - Label:
           default: Advanced
         Parameters:
@@ -152,8 +151,7 @@ Parameters:
     Type: String
   S3LambdaBucketFolder:
     Default: 'master'
-    Description: The folder within the S3 bucket to look for Lambdas and other Quick Start assets.
-      Leave empty for the root of the bucket. Don't include a trailing slash.
+    Description: The folder within the S3 bucket to look for Lambdas and other Quick Start assets. Don't include a trailing slash.
     Type: String
   S3LambdaBucketPrefix:
     Default: 'atlassian-aws-lambdaresources'
@@ -161,23 +159,14 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, and hyphens (-).
       It cannot start or end with a hyphen (-).
     Type: String
-  StrideRoomAPIURL:
+  WebhookNotificationURL:
     Default: ''
-    Description: The Stride Room API URL for notifications
-    Type: String
-  StrideRoomToken:
-    Default: ''
-    Description: The Stride Room Token for notifications
+    Description: The Webhook Notification URL to post to
     Type: String
   VPC:
-    ConstraintDescription: Must be the ID of a VPC.
-    Description: Virtual Private Cloud
-    Type: AWS::EC2::VPC::Id
-
-Conditions:
-  UsePublicIp: !Equals
-    - !Ref AssociatePublicIpAddress
-    - 'true'
+     ConstraintDescription: Must be the ID of a VPC.
+     Description: Virtual Private Cloud
+     Type: AWS::EC2::VPC::Id
 
 Mappings:
   AWSRegionArch2AMI:
@@ -218,6 +207,17 @@ Resources:
     Properties:
       Path: /
       Roles: [!Ref BackmacRole]
+  BackmacCommon:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+      Content:
+        S3Bucket: !Join ['-', [!Ref S3LambdaBucketPrefix, !Ref 'AWS::Region']]
+        S3Key: !Join ['/', [!Ref S3LambdaBucketFolder, backmac_common.zip]]
+      Description: Common Backmac Functions
+      LayerName: BackmacCommon
   backmacreadqueue:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -467,10 +467,11 @@ Resources:
       Description: ''
       Environment:
         Variables:
-          room_api_url: !Ref StrideRoomAPIURL
-          room_token: !Ref StrideRoomToken
+          webhook_notification_url: !Ref WebhookNotificationURL
       FunctionName: backmac_fail
       Handler: backmac_fail.lambda_handler
+      Layers:
+        - !Ref BackmacCommon
       MemorySize: 128
       Role: !GetAtt [BackmacRole, Arn]
       Runtime: python3.6
@@ -484,10 +485,11 @@ Resources:
       Description: ''
       Environment:
         Variables:
-          room_api_url: !Ref StrideRoomAPIURL
-          room_token: !Ref StrideRoomToken
+          webhook_notification_url: !Ref WebhookNotificationURL
       FunctionName: backmac_success
       Handler: backmac_success.lambda_handler
+      Layers:
+        - !Ref BackmacCommon
       MemorySize: 128
       Role: !GetAtt [BackmacRole, Arn]
       Runtime: python3.6
@@ -501,10 +503,11 @@ Resources:
       Description: ''
       Environment:
         Variables:
-          room_api_url: !Ref StrideRoomAPIURL
-          room_token: !Ref StrideRoomToken
+          webhook_notification_url: !Ref WebhookNotificationURL
       FunctionName: backmac_runcomplete
       Handler: backmac_runcomplete.lambda_handler
+      Layers:
+        - !Ref BackmacCommon
       MemorySize: 128
       Role: !GetAtt [BackmacRole, Arn]
       Runtime: python3.6
@@ -518,10 +521,11 @@ Resources:
       Description: ''
       Environment:
         Variables:
-          room_api_url: !Ref StrideRoomAPIURL
-          room_token: !Ref StrideRoomToken
+          webhook_notification_url: !Ref WebhookNotificationURL
       FunctionName: backmac_requeue_notify
       Handler: backmac_requeue_notify.lambda_handler
+      Layers:
+        - !Ref BackmacCommon
       MemorySize: 128
       Role: !GetAtt [BackmacRole, Arn]
       Runtime: python3.6
@@ -574,11 +578,12 @@ Resources:
       Description: 'Finds stacks to add to backup queue'
       Environment:
         Variables:
-          room_api_url: !Ref StrideRoomAPIURL
-          room_token: !Ref StrideRoomToken
+          webhook_notification_url: !Ref WebhookNotificationURL
           dr_region:  !Ref BackmacDRRegion
       FunctionName: backmac_runbackups
       Handler: backmac_runbackups.lambda_handler
+      Layers:
+        - !Ref BackmacCommon
       MemorySize: 128
       Role: !GetAtt [BackmacRole, Arn]
       Runtime: python3.6
@@ -1586,7 +1591,7 @@ Resources:
               - "yum -y update aws-cfn-bootstrap\n"
               - "yum -y install nfs-utils amazon-efs-utils nvme-cli\n"
               - "yum -y install https://rpmfind.net/linux/fedora/linux/development/rawhide/Everything/x86_64/os/Packages/r/rsync-3.1.3-5.fc30.x86_64.rpm\n"
-              - !Sub ["/usr/bin/aws s3 cp s3://atlassian-aws-lambdaresources-${Region}/${S3LambdaBucketFolder}/parallel_sync /usr/local/bin/parallel_sync\n", {Region: !Ref "AWS::Region", AccountId: !Ref "AWS::AccountId"}]
+              - !Sub ["/usr/bin/aws s3 cp s3://${S3LambdaBucketPrefix}-${Region}/${S3LambdaBucketFolder}/parallel_sync /usr/local/bin/parallel_sync\n", {Region: !Ref "AWS::Region", AccountId: !Ref "AWS::AccountId"}]
               - "chmod u+x /usr/local/bin/parallel_sync\n"
               - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", {StackName: !Ref "AWS::StackName"}]
               - !Sub [" --resource BackmacNode --region ${Region}\n", {Region: !Ref "AWS::Region"}]
@@ -1728,13 +1733,23 @@ Resources:
               - backmacrunbackups
               - 'Arn'
           Id: 'Backmac_RunBackups'
+          Input:
+            Fn::Sub:
+            - |-
+              {
+                "backup_machine": "${backup_machine}",
+                "webhook_notification_url": "${WebhookNotificationURL}"
+              }
+            - backup_machine:
+                Fn::GetAtt:
+                  - backmacstatemachine
+                  - Name
         -
           Arn:
             Fn::GetAtt:
               - backmacsnapshotcleaner
               - 'Arn'
           Id: 'Backmac_SnapshotCleaner'
-
 Outputs:
   BackmacAZ:
     Export:
