@@ -308,7 +308,7 @@ pipelines:
                 - cd ${QS_PROJECT_NAME}
                 - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                 - cat ci/taskcat_project_override.json
-                - taskcat -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
+                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
               artifacts:
                 - quickstarts/quickstart-atlassian-jira/taskcat_outputs/*
           - step:
@@ -333,7 +333,7 @@ pipelines:
                 - cd ${QS_PROJECT_NAME}
                 - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                 - cat ci/taskcat_project_override.json
-                - taskcat -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
+                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
               artifacts:
                 - quickstarts/quickstart-atlassian-confluence/taskcat_outputs/*
           - step:
@@ -358,6 +358,6 @@ pipelines:
                 - cd ${QS_PROJECT_NAME}
                 - echo "[{\"ParameterKey\":\"KeyPairName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                 - cat ci/taskcat_project_override.json
-                - taskcat -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
+                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
               artifacts:
                 - quickstarts/quickstart-atlassian-bitbucket/taskcat_outputs/*
