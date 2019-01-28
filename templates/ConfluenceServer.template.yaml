@@ -1119,8 +1119,10 @@ Resources:
                 echo "Waiting..."
                 aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
 
-                echo "Sleep a moment to ensure the device is truly available"
-                sleep 5
+                echo "Checking OS for device availablity"
+                until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
+                  sleep 2
+                done
 
                 echo "Checking EBS for existing filesystem"
                 if [[ ! $(blkid $deviceName) ]]; then
