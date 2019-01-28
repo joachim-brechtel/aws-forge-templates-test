@@ -1159,7 +1159,6 @@ Resources:
         - DeviceName: /dev/xvda
           Ebs:
             VolumeSize: 100
-            VolumeType: gp2
         - DeviceName: /dev/xvdb
           Ebs: {}
           NoDevice: true
