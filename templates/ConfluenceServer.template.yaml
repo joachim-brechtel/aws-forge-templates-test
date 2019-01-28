@@ -11,6 +11,7 @@ Metadata:
           default: Confluence setup
         Parameters:
           - ConfluenceVersion
+          - LocalHomeVolumeSize
       - Label:
           default: Deployment information
         Parameters:
@@ -19,7 +20,6 @@ Metadata:
           default: Instance parameters
         Parameters:
           - InstanceType
-          - InstanceVolumeSize
       - Label:
           default: Database
         Parameters:
@@ -133,8 +133,6 @@ Metadata:
         default: Route 53 Hosted Zone (optional)
       InstanceType:
         default: EC2 instance type
-      InstanceVolumeSize:
-        default: EC2 volume size
       InternalSubnets:
         default: Internal subnets *
       JvmHeapOverrideConfluence:
@@ -149,6 +147,8 @@ Metadata:
         default: Git repo for local-ansible
       LocalAnsibleGitSshKeyName:
         default: Git SSH key name for local-ansible
+      LocalHomeVolumeSize:
+        default: Confluence Home EBS volume size
       MailEnabled:
         default: Enable App to Process Email
       SSLCertificateARN:
@@ -440,10 +440,6 @@ Parameters:
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the application server.
     Type: String
-  InstanceVolumeSize:
-    Default: 200
-    Description: Size of root volume in Gb (note - size based upon Application indexes x 4)
-    Type: Number
   InternalSubnets:
     Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
@@ -478,6 +474,10 @@ Parameters:
     Default: ''
     Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
+  LocalHomeVolumeSize:
+    Default: 200
+    Description: Size of Confluence Home EBS volume in Gb (note - size based upon Application indexes x 4). This param is ONLY used for new/initial deployments and changing this value WILL NOT resize an existing EBS for this stack.
+    Type: Number
   MailEnabled:
     AllowedValues:
       - true
@@ -1095,23 +1095,13 @@ Resources:
                   fi
                 else
                   echo "Creating new EBS volume in $currentAz"
-                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${InstanceVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
+                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${LocalHomeVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
                 fi
 
                 ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
 
                 echo "Waiting for EBS to be available"
                 aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
-
-                ebsToMountVolumeSize=$(echo "$ebsToMount" | jq -r .Size)
-                if [[ "${InstanceVolumeSize}" > "$ebsToMountVolumeSize" ]]; then
-                  echo "EBS is smaller than requested by stack config; resizing from $ebsToMountVolumeSize to ${InstanceVolumeSize}"
-                  aws --region=${AWS::Region} ec2 modify-volume --volume-id "$ebsToMountVolumeId" --size "${InstanceVolumeSize}"
-                  echo "Waiting..."
-                  until [[ "None" != $(aws --region=${AWS::Region} ec2 describe-volumes-modifications --volume-ids "$ebsToMountVolumeId" --filters Name=modification-state,Values="optimizing,completed" --query "VolumesModifications[0].ModificationState" --output text) ]]; do
-                    sleep 2
-                  done
-                fi
 
                 echo "Attaching EBS volume to this instance"
                 aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
