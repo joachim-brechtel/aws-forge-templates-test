@@ -1075,7 +1075,6 @@ Resources:
 
                 if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
                   if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
-
                     echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
                     existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=Application,Value=${AWS::StackId}}]')
                     existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
@@ -1085,10 +1084,6 @@ Resources:
 
                     echo "Creating new EBS volume from snapshot in $currentAz"
                     ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
-
-                    echo "Deleting old EBS snapshot and volume"
-                    aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
-                    aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
                   else
                     echo "Existing EBS volume is in our AZ; using existing EBS"
                     ebsToMount=$existingEbs
@@ -1125,6 +1120,12 @@ Resources:
 
                 echo "Mounting EBS"
                 mount $deviceName $mountPoint
+
+                if [[ -n $existingEbsSnapshotId ]]; then
+                  echo "Deleting old EBS snapshot and volume"
+                  aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
+                  aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
+                fi
               mode: "000750"
               owner: root
               group: root
