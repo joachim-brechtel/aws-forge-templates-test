@@ -359,12 +359,12 @@ pipelines:
                 - echo "[{\"ParameterKey\":\"KeyPairName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
                 - cat ci/taskcat_project_override.json
                 - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-bitbucket-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=true
-                - sleep 30 #Until this code changes to wait
-                - export SERVICE_URL=$(aws cloudformation describe-stacks  | jq -c '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == "tcat-bitbucket-${BITBUCKET_BUILD_NUMBER}"))) | .[0].Outputs | .[] | select (.OutputKey=="ServiceURL") | .OutputValue' |tr -d '"')
+                - export SERVICE_URL=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-bitbucket-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0].Outputs | .[] | select (.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
 #                - export TGARN=$(aws cloudformation describe-stacks  | jq -c '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == "tcat-bitbucket-${BITBUCKET_BUILD_NUMBER}"))) | .[0].Outputs | select(.OutputKey=="ConfluenceTargetGroupARN")|.OutputValue'|tr -d '"'')
 #                - echo $TGARN
 #                - aws elbv2 wait target-in-service --target-group-arn $TGARN
                 - echo "${SERVICEURL}"
+                - sleep 30 #Until this code changes to wait
                 - curl --fail ${SERVICEURL}/status
               artifacts:
                 - quickstarts/quickstart-atlassian-bitbucket/taskcat_outputs/*
