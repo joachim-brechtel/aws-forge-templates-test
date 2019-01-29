@@ -20,7 +20,6 @@ Based on `https://stash.atlassian.com/projects/AV/repos/instenv-app/browse/utils
 # Environmental variables to configure the lambda function
 AWS_REGIONS = os.getenv('CLEANUP_AWS_REGION')
 AWS_ACCOUNT = os.getenv('CLEANUP_AWS_ACCOUNT')
-DELETE_AFTER_TAG_KEY = os.getenv('CLEANUP_TAG', 'delete_after')
 
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
@@ -39,7 +38,6 @@ def configure_logging():
 
 
 def handler(_event, _context):
-    print("Beginning Lambda from print")
     configure_logging()
     if not AWS_ACCOUNT or not AWS_REGIONS:
         logger.error("You need to setup AWS_ACCOUNT and AWS_REGIONS environment variables. See README.md")
@@ -79,8 +77,9 @@ def should_retain_stack(cfn, stack_id: str, cleanup_taskcat_only: bool) -> bool:
 
 def delete_cfn_stack(cfn_client, stack: dict) -> None:
     logger.info("Deleting stack :%s", stack['StackName'])
-    try:
-        cfn_client.delete_stack(StackName=stack['StackName'])
-    except Exception as e:
-        logger.error("Error deleting CFn stack: %s", stack['StackName'])
-        logger.error(repr(e))
+    if not DRY_RUN:
+        try:
+            cfn_client.delete_stack(StackName=stack['StackName'])
+        except Exception as e:
+            logger.error("Error deleting CFn stack: %s", stack['StackName'])
+            logger.error(repr(e))
