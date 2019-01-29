@@ -31,12 +31,14 @@ logger = logging.getLogger(__name__)
 logging_level = logging.DEBUG
 logger.setLevel(logging_level)
 
+
 def configure_logging():
     logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging_level)
     logging.getLogger('boto3').setLevel(logging.WARN)
     logging.getLogger('botocore').setLevel(logging.WARN)
 
-def handler(event, context):
+
+def handler(_event, _context):
     print("Beginning Lambda from print")
     configure_logging()
     if not AWS_ACCOUNT or not AWS_REGIONS:
@@ -48,31 +50,37 @@ def handler(event, context):
     for region in regions:
         delete_cfn_stacks(region)
 
+
 def delete_cfn_stacks(region: str) -> bool:
     cfn = boto3.client('cloudformation', region_name=region)
-    stack_summary_dict = cfn.list_stacks(StackStatusFilter=['CREATE_COMPLETE','UPDATE_COMPLETE','ROLLBACK_COMPLETE'])
+    stack_summary_dict = cfn.list_stacks(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE'])
     filtered_stacks = stack_summary_dict['StackSummaries']
     root_stacks = [stack for stack in filtered_stacks if 'RootId' not in stack.keys()]
-    [delete_cfn_stack(cfn, stack) for stack in root_stacks if not should_retain_stack(cfn, stack['StackId'], CLEANUP_TASKCAT_ONLY == 'True')]
+    [delete_cfn_stack(cfn, stack) for stack in root_stacks if
+     not should_retain_stack(cfn, stack['StackId'], CLEANUP_TASKCAT_ONLY == 'True')]
     return True
 
-def should_retain_stack(cfn, stackId: str , cleanup_taskcat_only: bool) -> bool:
-    stack_description = cfn.describe_stacks(StackName=stackId)
+
+def should_retain_stack(cfn, stack_id: str, cleanup_taskcat_only: bool) -> bool:
+    stack_description = cfn.describe_stacks(StackName=stack_id)
     stacks = stack_description['Stacks']
     if len(stacks) != 1:
         raise Exception('StackId has to be unique and must resolve to one stack')
     stack = stacks[0]
     tags = stack['Tags']
     logger.debug("Tags: %s", tags)
-    override_cleanup_tag_set = next((tag for tag in tags if tag['Key'] == 'override_periodic_cleanup' and tag['Value'].lower() == 'true'),None) != None
+    override_cleanup_tag_set = next(
+        (tag for tag in tags if tag['Key'] == 'override_periodic_cleanup' and tag['Value'].lower() == 'true'),
+        None) is not None
     if cleanup_taskcat_only:
         return stack['StackName'].lower().startswith('tcat') and not override_cleanup_tag_set
     return override_cleanup_tag_set
 
+
 def delete_cfn_stack(cfn_client, stack: dict) -> None:
     logger.info("Deleting stack :%s", stack['StackName'])
     try:
-        cfn_client.delete_stack(StackName=stack['StackName']) 
+        cfn_client.delete_stack(StackName=stack['StackName'])
     except Exception as e:
         logger.error("Error deleting CFn stack: %s", stack['StackName'])
         logger.error(repr(e))
