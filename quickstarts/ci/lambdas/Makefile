@@ -2,6 +2,8 @@
 
 default: clean
 
+aws-region ?= us-east-2
+
 clean:
 	@echo "Cleaning vendor and artifacts"
 	rm -rf vendor/ *.zip __pycache__
@@ -15,10 +17,10 @@ zip-deps: vendor
 package: zip-deps
 	zip -g cleanup.zip cleanup.py
 
-upload: package
-		aws lambda create-function  --function-name cleaner-lambda --zip-file fileb://cleanup.zip --runtime  python3.6 --handler cleanup.cleanup --role "arn:aws:iam::$(aws-account):role/$(aws-role)"
+create-lambda: package
+		aws lambda create-function  --function-name cleaner-lambda --zip-file fileb://cleanup.zip --runtime  python3.6 --handler cleanup.handler --role "arn:aws:iam::$(aws-account):role/$(aws-role)" --environment Variables="{CLEANUP_AWS_ACCOUNT=$(aws-account),CLEANUP_AWS_REGION=$(aws-region),CLEANUP_TASKCAT_ONLY=True}" --timeout 30
 
-update: package
+update-lambda: package
 		aws lambda update-function-code  --function-name cleaner-lambda --zip-file fileb://cleanup.zip
 
 delete-lambda:

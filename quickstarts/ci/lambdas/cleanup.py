@@ -1,12 +1,8 @@
 import logging
 import os
-from datetime import datetime
 
 import boto3
-from dateutil import parser
-from time import sleep
-
-import pytz
+from distutils.util import strtobool
 
 """ Function to clean up resources created by Instant Environments
 This function assumes that each resource that should be managed by the cleanup script requires
@@ -24,7 +20,7 @@ AWS_ACCOUNT = os.getenv('CLEANUP_AWS_ACCOUNT')
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
 DRY_RUN = os.getenv('DRY_RUN', False)
-CLEANUP_TASKCAT_ONLY = os.getenv('CLEANUP_TASKCAT_ONLY', 'True')
+CLEANUP_TASKCAT_ONLY = strtobool(os.getenv('CLEANUP_TASKCAT_ONLY', 'True'))
 
 logger = logging.getLogger(__name__)
 logging_level = logging.DEBUG
@@ -51,11 +47,11 @@ def handler(_event, _context):
 
 def delete_cfn_stacks(region: str) -> bool:
     cfn = boto3.client('cloudformation', region_name=region)
-    stack_summary_dict = cfn.list_stacks(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE'])
+    stack_summary_dict = cfn.list_stacks(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE','DELETE_FAILED'])
     filtered_stacks = stack_summary_dict['StackSummaries']
     root_stacks = [stack for stack in filtered_stacks if 'RootId' not in stack.keys()]
     [delete_cfn_stack(cfn, stack) for stack in root_stacks if
-     not should_retain_stack(cfn, stack['StackId'], CLEANUP_TASKCAT_ONLY == 'True')]
+     not should_retain_stack(cfn, stack['StackId'], CLEANUP_TASKCAT_ONLY)]
     return True
 
 
@@ -67,12 +63,17 @@ def should_retain_stack(cfn, stack_id: str, cleanup_taskcat_only: bool) -> bool:
     stack = stacks[0]
     tags = stack['Tags']
     logger.debug("Tags: %s", tags)
+
     override_cleanup_tag_set = next(
-        (tag for tag in tags if tag['Key'] == 'override_periodic_cleanup' and tag['Value'].lower() == 'true'),
+        (tag for tag in tags if tag['Key'] == 'override_periodic_cleanup' and strtobool(tag['Value'])),
         None) is not None
-    if cleanup_taskcat_only:
-        return stack['StackName'].lower().startswith('tcat') and not override_cleanup_tag_set
-    return override_cleanup_tag_set
+
+    if override_cleanup_tag_set:
+        logger.info("Retaining stack with name : %s", stack['StackName'])
+        return True
+
+    logger.info("Has the stack been created by taskcat? : %s", stack['StackName'])
+    return not (cleanup_taskcat_only and stack['StackName'].lower().startswith('tcat'))
 
 
 def delete_cfn_stack(cfn_client, stack: dict) -> None:
