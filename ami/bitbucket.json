@@ -32,7 +32,7 @@
     "release_s3_path":          "releases/bitbucket",
 
     "git_version":              "2.14.4",
-    "postgres_version":         "10.6",
+    "postgres_version":         "9.6",
 
     "diy_backup_display_name":  "Bitbucket DIY Backup",
     "diy_backup_clone_url":     "https://bitbucket.org/atlassianlabs/atlassian-bitbucket-diy-backup.git",
