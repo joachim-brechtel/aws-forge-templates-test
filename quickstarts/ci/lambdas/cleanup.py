@@ -47,7 +47,8 @@ def handler(_event, _context):
 
 def delete_cfn_stacks(region: str) -> bool:
     cfn = boto3.client('cloudformation', region_name=region)
-    stack_summary_dict = cfn.list_stacks(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE','DELETE_FAILED'])
+    stack_status_list = ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'DELETE_FAILED']
+    stack_summary_dict = cfn.list_stacks(StackStatusFilter=stack_status_list)
     filtered_stacks = stack_summary_dict['StackSummaries']
     root_stacks = [stack for stack in filtered_stacks if 'RootId' not in stack.keys()]
     [delete_cfn_stack(cfn, stack) for stack in root_stacks if
@@ -80,7 +81,86 @@ def delete_cfn_stack(cfn_client, stack: dict) -> None:
     logger.info("Deleting stack :%s", stack['StackName'])
     if not DRY_RUN:
         try:
+            delete_stack_resources(cfn_client, stack)
             cfn_client.delete_stack(StackName=stack['StackName'])
         except Exception as e:
             logger.error("Error deleting CFn stack: %s", stack['StackName'])
             logger.error(repr(e))
+
+
+def delete_stack_resources(cfn_client, stack):
+    if stack["StackStatus"] == "DELETE_FAILED":
+        resource_list = cfn_client.describe_stack_resources(StackName=stack["StackName"])
+        region_name = cfn_client._client_config.region_name
+        for resource in resource_list:
+            _build_aws_resource(resource, region_name).delete_resource()
+
+
+client_dict = {}
+
+
+def build_ec2_client(region: str):
+    if "ec2" not in client_dict:
+        ec2_client = boto3.client('ec2', region_name=region)
+        client_dict["ec2"] = ec2_client
+        return ec2_client
+    return client_dict.get("ec2")
+
+
+def build_asg_client(region: str):
+    if "autoscaling" not in client_dict:
+        ec2_client = boto3.client('autoscaling', region_name=region)
+        client_dict["autoscaling"] = ec2_client
+        return ec2_client
+    return client_dict.get("autoscaling")
+
+
+class AwsResource:
+    def delete_resource(self):
+        pass
+
+
+class ClusterNodeGroup(AwsResource):
+    def __init__(self, logical_id, physical_id, region):
+        self.region = region
+        self.logical_id = logical_id
+        self.physical_id = physical_id
+
+    def delete_resource(self):
+        try:
+            build_asg_client(region=self.region).delete_auto_scaling_group(AutoScalingGroupName=self.physical_id,
+                                                                           Force=True)
+        except Exception as e:
+            logger.error("Exception while deleting ASG with ID - %s:%s", self.physical_id, self.logical_id)
+            logger.error("Exception  %s", repr(e))
+
+
+class SecurityGroup(AwsResource):
+    def __init__(self, logical_id, physical_id, region):
+        self.region = region
+        self.logical_id = logical_id
+        self.physical_id = physical_id
+
+    def delete_resource(self):
+        try:
+            build_ec2_client(region=self.region).delete_security_group(GroupId=self.physical_id)
+        except Exception as e:
+            logger.error("Exception while deleting Security Group with ID - %s:%s", self.physical_id, self.logical_id)
+            logger.error("Exception  %s", repr(e))
+
+
+class NullAwsResource(AwsResource):
+    def delete_resource(self):
+        logger.info("No delete operation defined for unknown resource type")
+
+
+def _build_aws_resource(resource: dict, region: str) -> AwsResource:
+    logical_id = resource['LogicalResourceId']
+    resource_type = resource["ResourceType"]
+    physical_id = resource['PhysicalResourceId']
+
+    if resource_type == "AWS::EC2::ClusterNodeGroup":
+        return ClusterNodeGroup(logical_id, physical_id, region)
+    if resource_type == "AWS::EC2::SecurityGroup":
+        return SecurityGroup(logical_id, physical_id, region)
+    return NullAwsResource()
