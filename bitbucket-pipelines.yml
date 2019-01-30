@@ -332,8 +332,14 @@ pipelines:
                 - cp -r ./ci/confluence/* ./${QS_PROJECT_NAME}/ci/
                 - cd ${QS_PROJECT_NAME}
                 - echo "[{\"ParameterKey\":\"KeyName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
-                - cat ci/taskcat_project_override.json
-                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-${BITBUCKET_BUILD_NUMBER}
+                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-confluence-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=true
+                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-confluence-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
+                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
+                - export ELB_NAME=$(aws cloudformation describe-stack-resources --stack-name "${STACK_NAME}" | jq -c '.StackResources | .[] | select(.LogicalResourceId=="LoadBalancer") | .PhysicalResourceId' | tr -d '"')
+                - echo $ELB_NAME
+                - aws elb wait any-instance-in-service --load-balancer-name $ELB_NAME
+                - echo "${SERVICE_URL}"
+                - curl --fail ${SERVICE_URL}/status
               artifacts:
                 - quickstarts/quickstart-atlassian-confluence/taskcat_outputs/*
           - step:
