@@ -24,10 +24,6 @@
         "ParameterValue": "Provisioned IOPS"
     },
     {
-        "ParameterKey": "CustomDnsName",
-        "ParameterValue": "qs-conf-ci.awsqs.com"
-    },
-    {
         "ParameterKey": "KeyName",
         "ParameterValue": "replaced-by-taskcat-override-file"
     }
