@@ -315,9 +315,9 @@ Parameters:
     Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
   CrowdVersion:
-    Default: 3.2.1
+    Default: 3.3.3
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
-    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
+    ConstraintDescription: Must be a valid Crowd version number, for example 3.3.3.
     Description: The version of Crowd to install
     Type: String
   CustomDnsName:

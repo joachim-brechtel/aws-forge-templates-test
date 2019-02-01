@@ -135,10 +135,11 @@ Parameters:
     Type: CommaDelimitedList
     Default: ""
   BitbucketVersion:
-    Description: "Version of Bitbucket to install, for example: 4.10.0 or higher. Find valid versions at http://go.atlassian.com/bbs-releases"
+    Default: 5.16.0
+    Description: "Version of Bitbucket to install, for example: 5.0.0 or higher. Find valid versions at http://go.atlassian.com/bbs-releases"
     Type: String
     AllowedPattern: "(\\d+\\.\\d+\\.\\d+(-?.*))"
-    ConstraintDescription: "Must be a valid Bitbucket version number. For example: 4.10.0 or higher"
+    ConstraintDescription: "Must be a valid Bitbucket version number. For example: 5.0.0 or higher"
   CidrBlock:
     Description: The CIDR IP range that is permitted to access the Bitbucket URL. Use 0.0.0.0/0 if you want public access from the internet.
     Type: String
