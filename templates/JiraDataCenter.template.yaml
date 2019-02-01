@@ -471,7 +471,7 @@ Parameters:
     ConstraintDescription: Must be a valid Jira download url from version 7 or higher
   JiraProduct:
     Default: All
-    Description: The Jira Product to install. Installs latest available version of the selected product
+    Description: The Jira product to install.
     Type: String
     ConstraintDescription: 'Must be "Core", "Software", "ServiceDesk", or "All"'
     AllowedValues:
@@ -480,9 +480,9 @@ Parameters:
       - ServiceDesk
       - Software
   JiraVersion:
-    Default: latest
-    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))|(latest)'
-    ConstraintDescription: Must be a valid Jira version number, for example 7.2.3. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes. If using Jira Service Desk only, must be the Service Desk version number corresponding to the Jira version you require (found at https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history).
+    Default: 7.13.1
+    AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
+    ConstraintDescription: Must be a valid Jira version number, for example 7.13.1. Find valid versions at https://jira.atlassian.com/display/DOC/Jira+Release+Notes. If using Jira Service Desk only, must be the Service Desk version number corresponding to the Jira version you require (found at https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history).
     Description: The version of Jira to install
     Type: String
   JvmHeapOverride:
