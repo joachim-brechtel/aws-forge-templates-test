@@ -3,6 +3,8 @@ import os
 
 import boto3
 from distutils.util import strtobool
+import datetime 
+from dateutil import tz
 
 """ Function to clean up resources created by Instant Environments
 This function assumes that each resource that should be managed by the cleanup script requires
@@ -74,7 +76,20 @@ def should_retain_stack(cfn, stack_id: str, cleanup_taskcat_only: bool) -> bool:
         return True
 
     logger.info("Has the stack been created by taskcat? : %s", stack['StackName'])
-    return not (cleanup_taskcat_only and stack['StackName'].lower().startswith('tcat'))
+    return not (cleanup_taskcat_only and can_purge_stack(stack))
+
+
+def can_purge_stack(stack: dict) -> bool:
+    stack_last_updated_at = stack.get("LastUpdatedTime")
+    stack_created_at = stack.get("CreationTime")
+
+    stack_last_touched_timestamp = stack_last_updated_at if stack_last_updated_at is not None else stack_created_at
+
+    now = datetime.datetime.now().replace(tzinfo=tz.tzutc())
+    is_stack_last_modified_more_than_1_hour_ago = round((now - stack_last_touched_timestamp).total_seconds()) > 7200
+    logger.info("Stack with name :%s last created more than 1 hour ago", stack["StackName"])
+
+    return stack['StackName'].lower().startswith('tcat') and is_stack_last_modified_more_than_1_hour_ago 
 
 
 def delete_cfn_stack(cfn_client, stack: dict) -> None:
