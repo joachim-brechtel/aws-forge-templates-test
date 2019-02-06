@@ -243,7 +243,6 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - i3.metal
       - m4.large
       - m4.xlarge
       - m4.2xlarge
@@ -544,7 +543,6 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - i3.metal
       - m4.large
       - m4.xlarge
       - m4.2xlarge
@@ -681,8 +679,6 @@ Conditions:
     !Not [!Equals [!Ref SubDomainName, '']]
   UseSynchronyAutoScalingGroup:
     !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
-  GovCloudCondition:
-    !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
 Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
@@ -773,9 +769,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     i3.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    i3.metal:
       Arch: HVM64
       Jvmheap: 12288m
     m4.large:
@@ -1021,13 +1014,14 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Action:
-                - 'ec2:DescribeInstances'
-                - 'route53:ListHostedZones'
-                - 'route53:ListResourceRecordSet'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'route53:ListHostedZones'
+                  - 'route53:ListResourceRecordSet'
                 Effect: Allow
                 Resource: ['*']
               - Action:
-                - "route53:ChangeResourceRecordSets"
+                  - "route53:ChangeResourceRecordSets"
                 Effect: Allow
                 Resource:
                   - "arn:aws:route53:::healthcheck/*"
@@ -1055,6 +1049,11 @@ Resources:
               - Action: ['s3:PutObjectAcl']
                 Effect: Allow
                 Resource: ['arn:aws:s3:::btf-analytics/*']
+              - Action:
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                "Condition": !Sub '{"StringEquals": {"ec2:ResourceTag/Name": "${AWS::StackName} sg" }}'
+                Effect: Allow
+                Resource: ['*']
   ConfluenceClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -1072,7 +1071,7 @@ Resources:
       VPCZoneIdentifier: !Split [ ",", !ImportValue ATL-PriNets]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Confluence Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Confluence Node"
           PropagateAtLaunch: true
         - Key: Cluster
           Value: !Ref AWS::StackName
@@ -1082,7 +1081,6 @@ Resources:
     DependsOn:
       - EFSMountAz1
       - EFSMountAz2
-      - DB
     Metadata:
       AWS::CloudFormation::Init:
         config:
@@ -1285,23 +1283,23 @@ Resources:
             -
               - "#!/bin/bash -xe\n"
               - "yum update -y aws-cfn-bootstrap\n"
-              - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
-              - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
+              - !Sub "/opt/aws/bin/cfn-init -v --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}\n"
+              - !Sub "/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeGroup --region ${AWS::Region}"
   ClusterNodeScaleUpPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref ClusterNodeGroup
-      Cooldown: 600
+      Cooldown: '600'
       ScalingAdjustment: 1
   ClusterNodeScaleDownPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref ClusterNodeGroup
-      Cooldown: 600
+      Cooldown: '600'
       ScalingAdjustment: -1
   CPUAlarmHigh:
     Type: AWS::CloudWatch::Alarm
@@ -1346,7 +1344,7 @@ Resources:
       VPCZoneIdentifier: !Split [ ",", !ImportValue ATL-PriNets]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Synchrony Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Synchrony Node"
           PropagateAtLaunch: true
         - Key: synchrony_service
           Value: !Ref AWS::StackName
@@ -1360,7 +1358,6 @@ Resources:
     DependsOn:
       - EFSMountAz1
       - EFSMountAz2
-      - DB
     Metadata:
       AWS::CloudFormation::Init:
         config:
@@ -1537,17 +1534,17 @@ Resources:
             -
               - "#!/bin/bash -xe\n"
               - "yum update -y aws-cfn-bootstrap\n"
-              - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource SynchronyClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
-              - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource SynchronyClusterNodeGroup --region ${Region}", Region: !Ref "AWS::Region"]
+              - !Sub "/opt/aws/bin/cfn-init -v --stack ${AWS::StackName}"
+              - !Sub " --resource SynchronyClusterNodeLaunchConfig --region ${AWS::Region}\n"
+              - !Sub "/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName}"
+              - !Sub " --resource SynchronyClusterNodeGroup --region ${AWS::Region}"
   SynchronyClusterNodeScaleUpPolicy:
     Type: "AWS::AutoScaling::ScalingPolicy"
     Condition: UseSynchronyAutoScalingGroup
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref SynchronyClusterNodeGroup
-      Cooldown: 600
+      Cooldown: '600'
       ScalingAdjustment: 1
   SynchronyClusterNodeScaleDownPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
@@ -1555,7 +1552,7 @@ Resources:
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref SynchronyClusterNodeGroup
-      Cooldown: 600
+      Cooldown: '600'
       ScalingAdjustment: -1
   SynchronyCPUAlarmHigh:
     Type: AWS::CloudWatch::Alarm
@@ -1619,7 +1616,7 @@ Resources:
       Comment: Route53 cname for the efs
       Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
 # Database
@@ -1631,7 +1628,7 @@ Resources:
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
-      EngineVersion: 9.6
+      EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
@@ -1656,7 +1653,7 @@ Resources:
       Comment: Route53 cname for the RDS
       Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
@@ -1665,13 +1662,13 @@ Resources:
     Properties:
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
-          Value: 300
+          Value: '300'
       Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Split [ ",", !ImportValue ATL-PubNets]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
         - Key: Cluster
           Value: !Ref AWS::StackName
   LoadBalancerListener:
@@ -1700,7 +1697,7 @@ Resources:
         - SubDomainName: !If [UseSubDomainName, !Ref 'SubDomainName', !Ref 'AWS::StackName']
           HostedZone: !Ref 'HostedZone'
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
   SynchronyListenerRule:
@@ -1726,13 +1723,13 @@ Resources:
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
       Matcher:
-        HttpCode: 200
+        HttpCode: '200'
       HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
       HealthCheckPort: !Ref TomcatDefaultConnectorPort
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
         - Key: stickiness.enabled
-          Value: true
+          Value: 'true'
         - Key: stickiness.type
           Value: lb_cookie
       Tags:
@@ -1753,13 +1750,13 @@ Resources:
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
       Matcher:
-        HttpCode: 200
+        HttpCode: '200'
       HealthCheckPath: /synchrony/heartbeat
-      HealthCheckPort: 8091
+      HealthCheckPort: '8091'
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
         - Key: stickiness.enabled
-          Value: true
+          Value: 'true'
         - Key: stickiness.type
           Value: lb_cookie
       Tags:
@@ -1809,7 +1806,7 @@ Resources:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref SecurityGroup
-      IpProtocol: -1
+      IpProtocol: '-1'
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
@@ -1830,7 +1827,7 @@ Resources:
             Resource: '*'
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Encryption Key"
   EncryptionKeyAlias:
     Condition: UseDatabaseEncryption
     Type: AWS::KMS::Alias
