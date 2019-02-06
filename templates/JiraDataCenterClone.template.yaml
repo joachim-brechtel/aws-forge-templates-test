@@ -241,7 +241,6 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - i3.metal
       - m4.large
       - m4.xlarge
       - m4.2xlarge
@@ -689,9 +688,6 @@ Mappings:
     i3.16xlarge:
       Arch: HVM64
       Jvmheap: 12288m
-    i3.metal:
-      Arch: HVM64
-      Jvmheap: 12288m
     m4.large:
       Arch: HVM64
       Jvmheap: 5120m
@@ -951,12 +947,22 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: ['ec2:DescribeInstances']
+              - Action:
+                - 'ec2:DescribeInstances'
+                - 'ec2:DescribeSecurityGroups'
                 Effect: Allow
                 Resource: ['*']
               - Action: ['s3:PutObjectAcl']
                 Effect: Allow
                 Resource: ['arn:aws:s3:::btf-analytics/*']
+              - Action:
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                Condition:
+                  StringEquals:
+                    'ec2:ResourceTag/Name':
+                    - !Sub '${AWS::StackName} sg'
+                Effect: Allow
+                Resource: ['*']
   JiraClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -975,16 +981,13 @@ Resources:
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Jira Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Jira Node"
           PropagateAtLaunch: true
         - Key: Cluster
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
-    DependsOn:
-      - NFSServer
-      - DB
     Metadata:
       Comment: ''
       AWS::CloudFormation::Init:
@@ -1180,10 +1183,10 @@ Resources:
             -
               - "#!/bin/bash -xe\n"
               - "yum update -y aws-cfn-bootstrap\n"
-              - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
-              - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
+              - !Sub "/opt/aws/bin/cfn-init -v --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}\n"
+              - !Sub "/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}"
   EBSRestoreVol:
     Type: AWS::EC2::Volume
     Properties:
@@ -1191,7 +1194,7 @@ Resources:
       SnapshotId: !Ref EBSSnapshotId
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Jira DR volume", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Jira DR volume"
         - Key: Cluster
           Value: !Ref AWS::StackName
         - Key: Application
@@ -1246,7 +1249,7 @@ Resources:
         - GroupSet:
             - !Ref SecurityGroup
           AssociatePublicIpAddress: false
-          DeviceIndex: 0
+          DeviceIndex: '0'
           DeleteOnTermination: true
           SubnetId: !Select [0, !Ref InternalSubnets]
       UserData: !Base64
@@ -1286,7 +1289,7 @@ Resources:
             - !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} DR NFS Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} DR NFS Node"
       Volumes:
         - VolumeId: !Ref EBSRestoreVol
           Device: /dev/xvdk
@@ -1301,7 +1304,7 @@ Resources:
       Comment: Route53 A rec for the nfs
       Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
       Type: A
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt NFSServer.PrivateIp
   DB:
@@ -1312,7 +1315,7 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       DBSnapshotIdentifier: !Ref DBSnapshotName
       Engine: postgres
-      EngineVersion: 9.6
+      EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
@@ -1320,7 +1323,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Jira PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Jira PostgreSQL Database"
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -1335,7 +1338,7 @@ Resources:
       Comment: Route53 cname for the RDS
       Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
@@ -1352,7 +1355,7 @@ Resources:
         IdleTimeout: 3600
       CrossZone: true
       Listeners:
-        - LoadBalancerPort: 80
+        - LoadBalancerPort: '80'
           Protocol: HTTP
           InstancePort: !Ref TomcatDefaultConnectorPort
           InstanceProtocol: HTTP
@@ -1370,16 +1373,16 @@ Resources:
           - !Ref AWS::NoValue
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
-        Timeout: 29
-        Interval: 30
-        UnhealthyThreshold: 2
-        HealthyThreshold: 2
+        Timeout: '29'
+        Interval: '30'
+        UnhealthyThreshold: '2'
+        HealthyThreshold: '2'
       Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
         - Key: Cluster
           Value: !Ref AWS::StackName
   LoadBalancerCname:
@@ -1390,7 +1393,7 @@ Resources:
       Comment: Route53 cname for the ALB
       Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
   SecurityGroup:
@@ -1418,7 +1421,7 @@ Resources:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref SecurityGroup
-      IpProtocol: -1
+      IpProtocol: '-1'
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup

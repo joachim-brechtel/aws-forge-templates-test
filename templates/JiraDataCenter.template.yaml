@@ -238,7 +238,6 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - i3.metal
       - m4.large
       - m4.xlarge
       - m4.2xlarge
@@ -511,10 +510,6 @@ Parameters:
     Default: true
     Description: Enable mail processing and sending
     Type: String
-  SubDomainName:
-    Description: Leave this field blank to use your stack name as the sub-domain.
-    Default: ''
-    Type: String
   SSLCertificateARN:
     Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
@@ -691,9 +686,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     i3.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    i3.metal:
       Arch: HVM64
       Jvmheap: 12288m
     m4.large:
@@ -955,12 +947,22 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: ['ec2:DescribeInstances']
+              - Action:
+                - 'ec2:DescribeInstances'
+                - 'ec2:DescribeSecurityGroups'
                 Effect: Allow
                 Resource: ['*']
               - Action: ['s3:PutObjectAcl']
                 Effect: Allow
                 Resource: ['arn:aws:s3:::btf-analytics/*']
+              - Action:
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                Condition:
+                  StringEquals:
+                    'ec2:ResourceTag/Name':
+                    - !Sub '${AWS::StackName} sg'
+                Effect: Allow
+                Resource: ['*']
   JiraClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -979,7 +981,7 @@ Resources:
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Jira Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Jira Node"
           PropagateAtLaunch: true
         - Key: Cluster
           Value: !Ref AWS::StackName
@@ -989,7 +991,6 @@ Resources:
     DependsOn:
       - EFSMountAz1
       - EFSMountAz2
-      - DB
     Metadata:
       Comment: ''
       AWS::CloudFormation::Init:
@@ -1182,10 +1183,10 @@ Resources:
             -
               - "#!/bin/bash -xe\n"
               - "yum update -y aws-cfn-bootstrap\n"
-              - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
-              - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
+              - !Sub "/opt/aws/bin/cfn-init -v --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}\n"
+              - !Sub "/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}"
 # Elastic file system
 # EFS isn't available in all AWS regions; check https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/ to ensure your target region is supported
   ElasticFileSystem:
@@ -1216,7 +1217,7 @@ Resources:
       Comment: Route53 cname for the efs
       Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
 # Database
@@ -1228,7 +1229,7 @@ Resources:
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
-      EngineVersion: 9.6
+      EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
@@ -1238,7 +1239,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Jira PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Jira PostgreSQL Database"
       VPCSecurityGroups: [!Ref SecurityGroup]
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -1253,7 +1254,7 @@ Resources:
       Comment: Route53 cname for the RDS
       Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
@@ -1270,7 +1271,7 @@ Resources:
         IdleTimeout: 3600
       CrossZone: true
       Listeners:
-        - LoadBalancerPort: 80
+        - LoadBalancerPort: '80'
           Protocol: HTTP
           InstancePort: !Ref TomcatDefaultConnectorPort
           InstanceProtocol: HTTP
@@ -1288,16 +1289,16 @@ Resources:
           - !Ref AWS::NoValue
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
-        Timeout: 29
-        Interval: 30
-        UnhealthyThreshold: 2
-        HealthyThreshold: 2
+        Timeout: '29'
+        Interval: '30'
+        UnhealthyThreshold: '2'
+        HealthyThreshold: '2'
       Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
         - Key: Cluster
           Value: !Ref AWS::StackName
   LoadBalancerCname:
@@ -1308,7 +1309,7 @@ Resources:
       Comment: Route53 cname for the ALB
       Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
   SecurityGroup:
@@ -1336,7 +1337,7 @@ Resources:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref SecurityGroup
-      IpProtocol: -1
+      IpProtocol: '-1'
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
@@ -1357,7 +1358,7 @@ Resources:
             Resource: '*'
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Encryption Key"
   EncryptionKeyAlias:
     Condition: UseDatabaseEncryption
     Type: AWS::KMS::Alias
