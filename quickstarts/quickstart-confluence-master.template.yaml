@@ -1051,7 +1051,10 @@ Resources:
                 Resource: ['arn:aws:s3:::btf-analytics/*']
               - Action:
                   - 'ec2:AuthorizeSecurityGroupIngress'
-                "Condition": !Sub '{"StringEquals": {"ec2:ResourceTag/Name": "${AWS::StackName} sg" }}'
+                Condition:
+                  StringEquals:
+                    'ec2:ResourceTag/Name':
+                    - !Sub '${AWS::StackName} sg'
                 Effect: Allow
                 Resource: ['*']
   ConfluenceClusterNodeInstanceProfile:
