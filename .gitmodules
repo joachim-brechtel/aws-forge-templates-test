@@ -1,0 +1,12 @@
+[submodule "quickstarts/quickstart-atlassian-bitbucket"]
+	path = quickstarts/quickstart-atlassian-bitbucket
+	url = git://github.com/atlassian/quickstart-atlassian-bitbucket.git
+	branch = develop
+[submodule "quickstarts/quickstart-atlassian-confluence"]
+	path = quickstarts/quickstart-atlassian-confluence
+	url = git://github.com/atlassian/quickstart-atlassian-confluence.git
+	branch = develop
+[submodule "quickstarts/quickstart-atlassian-jira"]
+	path = quickstarts/quickstart-atlassian-jira
+	url = git://github.com/atlassian/quickstart-atlassian-jira.git
+	branch = develop

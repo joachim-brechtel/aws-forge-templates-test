@@ -13,6 +13,20 @@ This directory contains the following AWS CloudFormation Quickstart templates:
 | `quickstart-forge-for-atlassian-services.yaml` | This quickstart spins up Forge in a pre-existing Atlassian Service VPC only
 | `quickstart-jira-master.template.yaml` | This quickstart spins up a Jira instance in a pre-existing Atlassian Service VPC only
 
+### Directory structure changes
+
+> Directory structure changes are not completely done.
+
+The following quickstart templates will be moved into a `git submodule`.
+  * quickstart-atlassian-jira
+  * quickstart-atlassian-confluence
+  * quickstart-atlassian-bitbucket
+  * quickstart-atlassian-services
+
+The submodules refer to quickstart projects in the [Atlassian org on github](https://github.com/atlassian/)
+
+Once the directory changes have been made, changes to the above-mentioned quickstarts have to be made on the Github repositories and the submodule must be updated in this repository to reflect the latest changes. CI builds that validate the quickstarts by running the templates will run in Bitbucket.
+
 
 **Key Terms:**
 

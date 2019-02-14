@@ -1,0 +1,30 @@
+[
+    {
+        "ParameterKey": "AssociatePublicIpAddress",
+        "ParameterValue": "true"
+    },
+    {
+        "ParameterKey": "DBMasterUserPassword",
+        "ParameterValue": "$[taskcat_genpass_8]"
+    },
+    {
+        "ParameterKey": "DBMultiAZ",
+        "ParameterValue": "false"
+    },
+    {
+        "ParameterKey": "DBPassword",
+        "ParameterValue": "$[taskcat_genpass_8]"
+    },
+    {
+        "ParameterKey": "DBStorage",
+        "ParameterValue": "100"
+    },
+    {
+        "ParameterKey": "DBStorageType",
+        "ParameterValue": "Provisioned IOPS"
+    },
+    {
+        "ParameterKey": "KeyName",
+        "ParameterValue": "replaced-by-taskcat-override-file"
+    }
+]

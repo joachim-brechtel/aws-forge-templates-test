@@ -1,4 +1,7 @@
-.idea
+.idea/*
 *.sublime-project
 *.sublime-workspace
 .DS_Store
+**/taskcat_outputs/*
+**/taskcat_project_override.json
+__pycache__
