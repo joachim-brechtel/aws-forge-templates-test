@@ -98,10 +98,11 @@ Parameters:
     Type: CommaDelimitedList
     Default: ''
   BitbucketVersion:
-    Default: 5.16.0
-    AllowedPattern: (\d+\.\d+\.\d+(-?.*))
-    Description: Version of Bitbucket for the latest public release
-    ConstraintDescription: Must be a valid Bitbucket version number
+    Default: latest
+    AllowedPattern: (\d+\.\d+\.\d+(-?.*))|latest
+    ConstraintDescription: Must be a valid Bitbucket version number, or 'latest' for
+      the latest public release.
+    Description: Version of Bitbucket, or 'latest' for the latest public release
     Type: String
   CatalinaOpts:
     Description: Java options passed to the JVM that runs Bitbucket.
