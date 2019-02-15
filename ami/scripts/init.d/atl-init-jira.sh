@@ -436,7 +436,7 @@ function installOBR {
         JIRA_VERSION=$(cat /media/atl/${ATL_JIRA_NAME}.version)
         PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
         atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
-        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep $JIRA_VERSION |  awk '{print $NF}')
+        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep $JIRA_VERSION |  awk '{print $NF}' | sed -n '1p')
         MPLACE_FILE=''
         if [[ -n $MPLACE_URL ]]; then
             MPLACE_REDIRECT_URL=$(curl -Ls $MPLACE_URL -o /dev/null -w %{url_effective})
