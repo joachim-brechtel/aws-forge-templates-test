@@ -26,5 +26,9 @@
     {
         "ParameterKey": "KeyName",
         "ParameterValue": "replaced-by-taskcat-override-file"
+    },
+    {
+        "ParameterKey": "CidrBlock",
+        "ParameterValue": "10.0.0.0/16"
     }
 ]
