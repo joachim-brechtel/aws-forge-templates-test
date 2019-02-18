@@ -315,9 +315,9 @@ Parameters:
     Type: String
     ConstraintDescription: Must be a valid Crowd download url
   CrowdVersion:
-    Default: 3.2.1
+    Default: 3.3.3
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
-    ConstraintDescription: Must be a valid Crowd version number, for example 3.1.0.
+    ConstraintDescription: Must be a valid Crowd version number, for example 3.3.3.
     Description: The version of Crowd to install
     Type: String
   CustomDnsName:
