@@ -25,6 +25,6 @@
     },
     {
         "ParameterKey": "CidrBlock",
-        "ParameterValue": "10.0.0.0/16"
+        "ParameterValue": "0.0.0.0/16"
     }
 ]
