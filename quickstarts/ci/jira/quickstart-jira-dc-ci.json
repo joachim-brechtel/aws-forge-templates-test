@@ -24,7 +24,11 @@
         "ParameterValue": "Provisioned IOPS"
     },
     {
-        "ParameterKey": "KeyName",
+        "ParameterKey": "KeyPairName",
         "ParameterValue": "replaced-by-taskcat-override-file"
+    },
+    {
+        "ParameterKey": "CidrBlock",
+        "ParameterValue": "0.0.0.0/0"
     }
 ]
