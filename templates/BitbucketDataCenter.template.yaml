@@ -59,6 +59,7 @@ Metadata:
           - HomeVolumeSnapshotId
           - HomeDeleteOnTermination
           - StartCollectd
+
     ParameterLabels:
       AMIOpts:
         default: AMI Options
@@ -154,10 +155,9 @@ Parameters:
     Description: Pass in any additional JVM options to tune Catalina Tomcat
     Type: String
   CidrBlock:
-    Default: '0.0.0.0/0'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-    Description: The CIDR IP range that is permitted to access the Bitbucket URL. Use 0.0.0.0/0 if you want public access from the internet.
+    Description: CIDR block allowed to access the Atlassian product. This should be set to a trusted IP range; if you want to give public access use '0.0.0.0/0'.
     MinLength: 9
     MaxLength: 18
     Type: String
@@ -258,6 +258,7 @@ Parameters:
     Description: 'Instance type for the cluster application nodes. See https://confluence.atlassian.com/x/GpdKLg for guidance'
     Type: String
   ClusterNodeMax:
+    Description: Maximum number of nodes in the cluster.
     Default: 2
     Type: Number
   ClusterNodeMin:
@@ -308,6 +309,7 @@ Parameters:
     NoEcho: true
     Type: String
   DBMultiAZ:
+    Description: Whether to provision a multi-AZ RDS instance.
     Default: true
     AllowedValues:
       - true
@@ -346,6 +348,7 @@ Parameters:
     Description: Database storage type
     Type: String
   ElasticsearchInstanceType:
+    Description: EC2 instance type for the Amazon Elasticsearch service to run on.
     Type: String
     Default: m4.xlarge.elasticsearch
     AllowedValues:
@@ -415,6 +418,7 @@ Parameters:
     Type: String
   HomeVolumeType:
     Default: Provisioned IOPS
+    Description: Bitbucket home storage type.
     AllowedValues: [General Purpose (SSD), Provisioned IOPS]
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
     Type: String
@@ -429,6 +433,7 @@ Parameters:
     MaxLength: 90
     Type: String
   StartCollectd:
+    Description: Start the 'collectd' metrics agent.
     Type: String
     Default: false
     AllowedValues: [true, false]
@@ -653,7 +658,8 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - ATL_APP_DATA_MOUNT_ENABLED=false
+                -
+                  - ATL_APP_DATA_MOUNT_ENABLED=false
                   - !Sub ["ATL_DB_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
                   - ATL_DB_NAME=bitbucket
                   - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
@@ -687,7 +693,8 @@ Resources:
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - "\n"
-                - - "[main]"
+                -
+                  - "[main]"
                   - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
                   - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
               mode: '000400'
@@ -697,7 +704,8 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - "[cfn-auto-reloader-hook]"
+                -
+                  - "[cfn-auto-reloader-hook]"
                   - triggers=post.update
                   - "path=Resources.ClusterNodeLaunchConfig.Metadata.AWS::CloudFormation::Init"
                   - !Sub
@@ -709,8 +717,9 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - if [ -f ~/.bashrc ]; then
-                  - . ~/.bashrc
+                -
+                  - if [ -f ~/.bashrc ]; then
+                  -     . ~/.bashrc
                   - fi
                   - !Sub ["export CATALINA_OPTS=\"${CatalinaOpts}\"", CatalinaOpts: !Ref CatalinaOpts]
               mode: '000644'
@@ -772,7 +781,8 @@ Resources:
         Fn::Base64:
           !Join
           - ""
-          - - "#!/bin/bash -xe\n"
+          -
+            - "#!/bin/bash -xe\n"
             - "yum update -y aws-cfn-bootstrap\n"
             - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
             - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
@@ -862,7 +872,8 @@ Resources:
           packages:
             !If
             - SetupCollectd
-            - yum:
+            -
+              yum:
                 collectd: []
                 collectd-java: []
                 collectd-generic-jmx: []
@@ -873,7 +884,8 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - ATL_ENABLED_PRODUCTS=
+                -
+                  - ATL_ENABLED_PRODUCTS=
                   - ATL_ENABLED_SHARED_HOMES=Bitbucket
                   - ATL_NGINX_ENABLED=false
                   - ATL_POSTGRES_ENABLED=false
@@ -884,7 +896,8 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - "[main]"
+                -
+                  - "[main]"
                   - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
                   - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
               mode: "000400"
@@ -894,7 +907,8 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - "[cfn-auto-reloader-hook]"
+                -
+                  - "[cfn-auto-reloader-hook]"
                   - triggers=post.update
                   - "path=Resources.FileServer.Metadata.AWS::CloudFormation::Init"
                   - !Sub
@@ -906,7 +920,8 @@ Resources:
               content:
                 !Join
                 - "\n"
-                - - "# This file was generated from the BitbucketDataCenter CloudFormation template"
+                -
+                  - "# This file was generated from the BitbucketDataCenter CloudFormation template"
                   - !Sub ["INSTANCE_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
                   - !Sub
                     - "BITBUCKET_URL=${HTTP}://${LoadBalancerDNSName}"
@@ -1045,7 +1060,8 @@ Resources:
         Fn::Base64:
           !Join
           - ""
-          - - "#!/bin/bash -xe\n"
+          -
+            - "#!/bin/bash -xe\n"
             - "yum update -y aws-cfn-bootstrap\n"
             - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
             - !Sub [" --resource FileServer --region ${Region}\n", Region: !Ref "AWS::Region"]
@@ -1178,4 +1194,3 @@ Outputs:
     Export: {
       Name: !Join ['', [!Ref 'AWS::StackName', -SGname]]
     }
-
