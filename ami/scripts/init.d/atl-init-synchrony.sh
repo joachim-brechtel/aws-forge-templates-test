@@ -55,28 +55,36 @@ function stop() {
     stopSynchrony
 }
 
+# Synchrony requires JWT keys to communicate with Confluence application. These keys are written to the config file
+# after admin will go through the setup and provide license. This function waits for the keys being available in the
+# config file.
 function waitForConfluenceConfigInSharedHome() {
     atl_log "=== BEGIN: Waiting for confluence.cfg.xml available in shared home folder ==="
     while [[ ! -f ${ATL_CONFLUENCE_SHARED_CONFIG_FILE} ]]; do
-	sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
-	atl_log "====== :   Keep waiting for ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds ======"
+	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
+	    atl_log "====== :   Keep waiting for ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds ======"
     done
 
-    # Due to the `set -e` above, xmllint failing to find the keys below (which is expected during the setup phase) will result in
-    # the whole script quitting. The quick fix for now is disable -e for now. We will need to rethink this whole script. See DCD-160 for details.
-    set +e
-    SYNCHRONY_JWT_PRIVATE_KEY=$(xmllint --nocdata --xpath '//properties/property[@name="jwt.private.key"]/text()' ${ATL_CONFLUENCE_SHARED_CONFIG_FILE}) >> ${ATL_LOG} 2>&1
-    SYNCHRONY_JWT_PUBLIC_KEY=$(xmllint --nocdata --xpath '//properties/property[@name="jwt.public.key"]/text()' ${ATL_CONFLUENCE_SHARED_CONFIG_FILE}) >> ${ATL_LOG} 2>&1
+    SYNCHRONY_JWT_PRIVATE_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.private.key') >> ${ATL_LOG} 2>&1
+    SYNCHRONY_JWT_PUBLIC_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.public.key') >> ${ATL_LOG} 2>&1
     while [[ -z ${SYNCHRONY_JWT_PRIVATE_KEY} ]]; do
-	atl_log "====== :   Could not load value for jwt.private.key will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
-	sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
-	SYNCHRONY_JWT_PRIVATE_KEY=$(echo 'cat //properties/property[@name="jwt.private.key"]/text()' | xmllint --nocdata --shell ${ATL_CONFLUENCE_SHARED_CONFIG_FILE} | sed '1d;$d')
-        SYNCHRONY_JWT_PUBLIC_KEY=$(echo 'cat //properties/property[@name="jwt.public.key"]/text()' | xmllint --nocdata --shell ${ATL_CONFLUENCE_SHARED_CONFIG_FILE} | sed '1d;$d')
+	    atl_log "====== :   Could not load value for jwt.private.key will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
+	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
+    	SYNCHRONY_JWT_PRIVATE_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.private.key') >> ${ATL_LOG} 2>&1
+        SYNCHRONY_JWT_PUBLIC_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.public.key') >> ${ATL_LOG} 2>&1
     done
-
-    set -e
 
     atl_log "=== END: Waiting for confluence.cfg.xml avalaible in shared home folder ==="
+}
+
+# To support retries these commands won't fail the script by virtue of using `--shell` option for xmllint.
+function extractJWTKeyFromConfluenceConfig {
+    local keyType=$1
+    if [[ "${keyType}" != "jwt.private.key" && "${keyType}" != "jwt.public.key" ]]; then
+        atl_log "Unexpected value for keyType - ${keyType} to extract JWT key from confluence.cfg.xml"
+        exit 1
+    fi
+    echo "cat //properties/property[@name='${keyType}']/text()" | xmllint --nocdata --shell ${ATL_CONFLUENCE_SHARED_CONFIG_FILE} | sed '1d;$d'
 }
 
 function parseSemVersion {
