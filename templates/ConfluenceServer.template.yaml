@@ -1076,7 +1076,7 @@ Resources:
                 ebsToMount=''
                 currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
                 instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
-                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
+                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
                 existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
                 deviceName="/dev/xvdb"
                 mountPoint="/var/atlassian/application-data/confluence"
