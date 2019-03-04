@@ -1076,7 +1076,7 @@ Resources:
                 ebsToMount=''
                 currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
                 instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
-                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Application,Values=${AWS::StackId} | jq .Volumes[])
+                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
                 existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
                 deviceName="/dev/xvdb"
                 mountPoint="/var/atlassian/application-data/confluence"
@@ -1084,21 +1084,21 @@ Resources:
                 if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
                   if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
                     echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
-                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=Application,Value=${AWS::StackId}}]')
+                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
                     existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
 
                     echo "Waiting for snapshot creation to finish"
                     aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
 
                     echo "Creating new EBS volume from snapshot in $currentAz"
-                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
+                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
                   else
                     echo "Existing EBS volume is in our AZ; using existing EBS"
                     ebsToMount=$existingEbs
                   fi
                 else
                   echo "Creating new EBS volume in $currentAz"
-                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${LocalHomeVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=Application,Value=${AWS::StackId}}]')
+                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${LocalHomeVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
                 fi
 
                 ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
