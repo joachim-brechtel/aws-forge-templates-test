@@ -61,20 +61,21 @@ function stop() {
 function waitForConfluenceConfigInSharedHome() {
     atl_log "=== BEGIN: Waiting for confluence.cfg.xml available in shared home folder ==="
     while [[ ! -f ${ATL_CONFLUENCE_SHARED_CONFIG_FILE} ]]; do
-	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
-	    atl_log "====== :   Keep waiting for ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds ======"
+	sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
+	atl_log "====== :   Keep waiting for ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds ======"
     done
 
-    SYNCHRONY_JWT_PRIVATE_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.private.key') >> ${ATL_LOG} 2>&1
-    SYNCHRONY_JWT_PUBLIC_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.public.key') >> ${ATL_LOG} 2>&1
-    while [[ -z ${SYNCHRONY_JWT_PRIVATE_KEY} ]]; do
-	    atl_log "====== :   Could not load value for jwt.private.key will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
-	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
+    atl_log "====== : Fetching JWT keys from Confluence config... ======"
+    while [[ -z ${SYNCHRONY_JWT_PRIVATE_KEY} || -z ${SYNCHRONY_JWT_PUBLIC_KEY} ]]; do
     	SYNCHRONY_JWT_PRIVATE_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.private.key') >> ${ATL_LOG} 2>&1
         SYNCHRONY_JWT_PUBLIC_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.public.key') >> ${ATL_LOG} 2>&1
+        if [[ -z ${SYNCHRONY_JWT_PRIVATE_KEY} || -z ${SYNCHRONY_JWT_PUBLIC_KEY} ]]; then
+	    atl_log "====== :   Could not load value for jwt.private.key will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
+	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
+        fi
     done
 
-    atl_log "=== END: Waiting for confluence.cfg.xml avalaible in shared home folder ==="
+    atl_log "=== END: Waiting for confluence.cfg.xml available in shared home folder ==="
 }
 
 # To support retries these commands won't fail the script by virtue of using `--shell` option for xmllint.
