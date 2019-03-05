@@ -70,7 +70,7 @@ function waitForConfluenceConfigInSharedHome() {
     	SYNCHRONY_JWT_PRIVATE_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.private.key') >> ${ATL_LOG} 2>&1
         SYNCHRONY_JWT_PUBLIC_KEY=$(extractJWTKeyFromConfluenceConfig 'jwt.public.key') >> ${ATL_LOG} 2>&1
         if [[ -z ${SYNCHRONY_JWT_PRIVATE_KEY} || -z ${SYNCHRONY_JWT_PUBLIC_KEY} ]]; then
-	    atl_log "====== :   Could not load value for jwt.private.key will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
+	    atl_log "====== :   Could not load value for JWT key; will wait for next ${ATL_SYNCHRONY_WAITING_CONFIG_TIME} seconds before reload ======"
 	    sleep ${ATL_SYNCHRONY_WAITING_CONFIG_TIME}
         fi
     done
