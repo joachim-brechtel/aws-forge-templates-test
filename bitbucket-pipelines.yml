@@ -1,5 +1,12 @@
 image: bashell/alpine-bash
 
+definitions:
+  scripts:
+    - script: &quickstart-cleanup
+        - S3_BUCKET_NAME=$(ls quickstarts/quickstart-atlassian-confluence/taskcat_outputs/| grep tag | sed 's/^tCaT-tag\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian\1/g')
+        - aws s3 rb s3://${S3_BUCKET_NAME} --force
+        - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
+
 pipelines:
   default:
     - step:
@@ -287,7 +294,7 @@ pipelines:
             - nc -n -w3 -z $BASTIONIP 22
       - parallel:
           - step:
-              name: Taskcat run jira
+              name: Taskcat run Jira
               image: python:3.6-alpine
               script:
                 - export QS_PROJECT_NAME=quickstart-atlassian-jira
@@ -317,14 +324,11 @@ pipelines:
                 - echo $ELB_NAME
                 - aws elb wait any-instance-in-service --load-balancer-name $ELB_NAME
                 - curl --fail ${SERVICE_URL}/status
-              after-script:
-                - S3_BUCKET_NAME=$(ls quickstarts/quickstart-atlassian-confluence/taskcat_outputs/| grep tag | sed 's/^tCaT-tag\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian\1/g')
-                - aws s3 rb s3://${S3_BUCKET_NAME} --force
-                - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
+              after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-jira/taskcat_outputs/*
           - step:
-              name: Taskcat run confluence
+              name: Taskcat run Confluence
               image: python:3.6-alpine
               script:
                 - export QS_PROJECT_NAME=quickstart-atlassian-confluence
@@ -354,14 +358,11 @@ pipelines:
                 - echo $TGARN
                 - aws elbv2 wait target-in-service --target-group-arn $TGARN
                 - curl --fail ${SERVICE_URL}/status
-              after-script:
-                - S3_BUCKET_NAME=$(ls quickstarts/quickstart-atlassian-confluence/taskcat_outputs/| grep tag | sed 's/^tCaT-tag\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian\1/g')
-                - aws s3 rb s3://${S3_BUCKET_NAME} --force
-                - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
+              after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-confluence/taskcat_outputs/*
           - step:
-              name: Taskcat run bitbucket
+              name: Taskcat run Bitbucket
               image: python:3.6-alpine
               script:
                 - export QS_PROJECT_NAME=quickstart-atlassian-bitbucket
@@ -392,9 +393,6 @@ pipelines:
                 - echo "${SERVICE_URL}"
                 - sleep 10
                 - curl --fail ${SERVICE_URL}/status
-              after-script:
-                - S3_BUCKET_NAME=$(ls quickstarts/quickstart-atlassian-confluence/taskcat_outputs/| grep tag | sed 's/^tCaT-tag\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian\1/g')
-                - aws s3 rb s3://${S3_BUCKET_NAME} --force
-                - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
+              after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-bitbucket/taskcat_outputs/*
