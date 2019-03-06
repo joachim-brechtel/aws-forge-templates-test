@@ -195,8 +195,8 @@ fi
 
 if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     echo "Updating ${ATL_PRODUCT} CloudFormation template AMI mapping(s)..."
-    TEMPLATES=$(find "${BASEDIR}/../../templates" -iname "${ATL_PRODUCT}*.template.yaml" -maxdepth 1)
-    for template in "${TEMPLATES[@]}"; do
+    TEMPLATES=`(shopt -s nocaseglob; /bin/ls ${BASEDIR}/../../templates/${ATL_PRODUCT}*.template.yaml)`
+    for template in ${TEMPLATES}; do
         for regionami in "${regionToAmi[@]}"; do
             region=$(echo "$regionami" | cut -d' ' -f1)
             ami=$(echo "$regionami" | cut -d' ' -f2)
