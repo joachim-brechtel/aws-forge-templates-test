@@ -41,7 +41,7 @@ Metadata:
           - CidrBlock
           - ExternalSubnets
           - InternalSubnets
-          - KeyName
+          - KeyPairName
           - SSLCertificateARN
           - VPC
       - Label:
@@ -83,6 +83,7 @@ Metadata:
           - TomcatProtocol
           - TomcatRedirectPort
           - TomcatScheme
+
     ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
@@ -154,7 +155,7 @@ Metadata:
         default: Jira Download URL
       JvmHeapOverride:
         default: JVM Heap Size Override
-      KeyName:
+      KeyPairName:
         default: Key Name *
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
@@ -164,6 +165,10 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      StartCollectd:
+        default: Start the collectd metrics agent
+      SubDomainName:
+        default: Subdomain for the product
       TomcatAcceptCount:
         default: Tomcat Accept Count
       TomcatConnectionTimeout:
@@ -186,6 +191,7 @@ Metadata:
         default: Tomcat protocol Scheme
       VPC:
         default: VPC *
+
 Parameters:
   AssociatePublicIpAddress:
     Default: false
@@ -197,10 +203,9 @@ Parameters:
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
-    Default: '0.0.0.0/0'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
-    Description: The CIDR IP range that is permitted to access the Confluence URL. Use 0.0.0.0/0 if you want public access from the internet.
+    Description: CIDR Block allowed to access the Atlassian product. This should be set to a trusted IP range; if you want to give public access use '0.0.0.0/0'.
     Type: String
     MinLength: 9
     MaxLength: 18
@@ -301,15 +306,18 @@ Parameters:
     Type: String
   ClusterNodeMax:
     Default: 1
+    Description: Maximum number of nodes in the cluster.
     Type: Number
   ClusterNodeMin:
     Default: 1
+    Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
   ClusterNodeVolumeSize:
     Default: 50
     Description: Size of cluster node root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   CustomDnsName:
+    Default: ""
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
@@ -382,6 +390,7 @@ Parameters:
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
   DBMultiAZ:
+    Description: Whether to provision a multi-AZ RDS instance.
     Default: true
     AllowedValues:
       - true
@@ -493,7 +502,7 @@ Parameters:
     Default: ''
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
-  KeyName:
+  KeyPairName:
     Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
@@ -521,12 +530,12 @@ Parameters:
     MaxLength: 90
     Type: String
   StartCollectd:
+    Description: Start the collectd service
     Default: true
     AllowedValues:
       - true
       - false
     ConstraintDescription: Must be 'true' or 'false'.
-    Description: Start the collectd service
     Type: String
   TomcatAcceptCount:
     Default: 10
@@ -567,7 +576,7 @@ Parameters:
     Type: String
   TomcatScheme:
     Default: http
-    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately.
+    Description: "The name of the protocol you wish to have returned, ie 'https' for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately."
     Type: String
     AllowedValues: [http, https]
   VPC:
@@ -600,6 +609,7 @@ Conditions:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
+
 Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
@@ -932,6 +942,7 @@ Mappings:
       name: jira-software
       shortdisplayname: '"Jira SW"'
       fulldisplayname: '"Atlassian Jira Software"'
+
 Resources:
   JiraClusterNodeRole:
     Type: AWS::IAM::Role
@@ -1165,7 +1176,7 @@ Resources:
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
-      KeyName: !Ref KeyName
+      KeyPairName: !Ref KeyPairName
       IamInstanceProfile: !Ref JiraClusterNodeInstanceProfile
       ImageId:
         !FindInMap
@@ -1366,6 +1377,7 @@ Resources:
     Properties:
       AliasName: !Sub "alias/${AWS::StackName}"
       TargetKeyId: !Ref EncryptionKey
+
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
