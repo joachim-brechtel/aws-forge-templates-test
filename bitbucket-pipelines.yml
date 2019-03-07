@@ -139,6 +139,7 @@ pipelines:
                 - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
                 - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
+                - aws cloudformation list-stacks  | grep -iE "Stack(Name|Status)" | cat
                 - cd ami
                 - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLJIRA\"; then touch jiraExists; fi
                 - cat ../ci-parameters-jira.json
