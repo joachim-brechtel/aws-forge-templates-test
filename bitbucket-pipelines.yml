@@ -3,9 +3,8 @@ image: bashell/alpine-bash
 definitions:
   scripts:
     - script: &quickstart-cleanup
-        - ls taskcat_outputs/
         - ls taskcat_outputs/| grep tag
-        - S3_BUCKET_NAME=$(ls taskcat_outputs/| grep tag | sed 's/^tCaT-tag-\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian-\1/g')
+        - S3_BUCKET_NAME=$(ls taskcat_outputs/| grep tag | sed 's/^tCaT-tag-\(.*\)-us-east-2-.*$/taskcat-tag-quickstart-atlassian-\1/g')
         - echo ${S3_BUCKET_NAME}
         - aws s3 rb s3://${S3_BUCKET_NAME} --force
         - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
@@ -40,7 +39,7 @@ pipelines:
               # Todo:
               # Work out what has changed in this branch using `git diff --name-only $(git merge-base master HEAD)`
               - git fetch origin master:master
-              - git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+              - git fetch origin "+refs/heads/*:refs/remotes/origin/*"VERSION_FILE_URL
               - git branch
               - git config user.email "itops-ci@atlassian.com"
               - git config user.name "Itops CI"
