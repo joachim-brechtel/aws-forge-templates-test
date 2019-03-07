@@ -38,7 +38,7 @@ pipelines:
               # Todo:
               # Work out what has changed in this branch using `git diff --name-only $(git merge-base master HEAD)`
               - git fetch origin master:master
-              - git fetch origin "+refs/heads/*:refs/remotes/origin/*"VERSION_FILE_URL
+              - git fetch origin "+refs/heads/*:refs/remotes/origin/*"
               - git branch
               - git config user.email "itops-ci@atlassian.com"
               - git config user.name "Itops CI"
