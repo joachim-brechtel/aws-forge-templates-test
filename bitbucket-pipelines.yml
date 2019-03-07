@@ -149,7 +149,8 @@ pipelines:
                 - aws s3 cp ../templates/JiraDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
                 - if [ ! -e "jiraExists" ]; then aws cloudformation create-stack --stack-name ATLJIRA --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-jira.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
-                - aws cloudformation wait stack-create-complete --stack-name ATLJIRA
+                - if [ ! -e "jiraExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATLJIRA; fi
+                - aws cloudformation describe-stacks --stack-name="ATLJIRA" | cat
                 - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLJIRA" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
                 - export ELBNAME=$(aws elb describe-load-balancers | jq '.LoadBalancerDescriptions'|jq '.[]'|jq '.LoadBalancerName'|grep ATLJIRA|tr -d '"')
                 - echo "${ELBNAME}"
