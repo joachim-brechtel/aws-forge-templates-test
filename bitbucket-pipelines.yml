@@ -67,8 +67,6 @@ pipelines:
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-backmac-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
-              - aws s3 cp quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
-              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-forge-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-forge-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-forge-for-atlassian-services.yaml
               - if [ ! -e "vpcExists" ]; then cat ci-parameters-services-stack.json | jq --arg BITBUCKET_BUILD_NUMBER "${BITBUCKET_BUILD_NUMBER}" 'map(if .ParameterKey == "QSS3KeyPrefix" then . + {"ParameterValue":$BITBUCKET_BUILD_NUMBER} else . end)' > ci-parameters-services-stack-updated.json; fi
