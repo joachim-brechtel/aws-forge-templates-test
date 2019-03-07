@@ -1,16 +1,30 @@
-[{
-  "ParameterKey": "AssociatePublicIpAddress",
-  "ParameterValue": "true"
-}, {
-  "ParameterKey": "CustomDnsName",
-  "ParameterValue": ""
-}, {
-  "ParameterKey": "DBMasterUserPassword",
-  "ParameterValue": "password1234"
-}, {
-  "ParameterKey": "DBPassword",
-  "ParameterValue": "password1234"
-}, {
-  "ParameterKey": "KeyName",
-  "ParameterValue": "WPE-GenericKeyPair-20161102"
-}]
+[
+  {
+    "ParameterKey": "AssociatePublicIpAddress",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "DBStorage",
+    "ParameterValue": "100"
+  },
+  {
+    "ParameterKey": "DBMultiAZ",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "DBMasterUserPassword",
+    "ParameterValue": "password1234"
+  },
+  {
+    "ParameterKey": "DBPassword",
+    "ParameterValue": "password1234"
+  },
+  {
+    "ParameterKey": "KeyPairName",
+    "ParameterValue": "WPE-GenericKeyPair-20161102"
+  },
+  {
+    "ParameterKey": "CidrBlock",
+    "ParameterValue": "0.0.0.0/0"
+  }
+]
