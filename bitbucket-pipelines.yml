@@ -142,6 +142,7 @@ pipelines:
                 - cd ami
                 - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLJIRA\"; then touch jiraExists; fi
                 - cat ../ci-parameters-jira.json
+                - ls -al ../quickstarts/quickstart-atlassian-jira/templates/**
                 - aws s3 cp ../quickstarts/quickstart-atlassian-jira/templates/quickstart-jira-dc.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-master.template.yaml
                 - aws s3 cp ../templates/JiraDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
@@ -169,7 +170,8 @@ pipelines:
                 - cd ami
                 - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLCONFLUENCE\"; then touch confluenceExists; fi
                 - cat ../ci-parameters-confluence.json
-                - aws s3 cp ../quickstarts/quickstart-confluence-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
+                - ls -al ../quickstarts/quickstart-atlassian-confluence/templates/**
+                - aws s3 cp ../quickstarts/quickstart-atlassian-confluence/templates/quickstart-confluence-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
                 - aws s3 cp ../templates/ConfluenceDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/ConfluenceDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/ConfluenceDataCenter.template.yaml
