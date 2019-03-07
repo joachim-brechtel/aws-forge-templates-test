@@ -103,7 +103,7 @@ pipelines:
               name: Build Crowd from quickstart
               script:
                 - apk update
-                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq openssh git
                 - pip --no-cache-dir install awscli
                 - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
                 - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
@@ -131,7 +131,7 @@ pipelines:
               name: Build Jira from quickstart
               script:
                 - apk update
-                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq openssh git
                 - pip --no-cache-dir install awscli
                 - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
                 - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
@@ -158,7 +158,7 @@ pipelines:
               name: Build CONFLUENCE from quickstart
               script:
                 - apk update
-                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq openssh git
                 - pip --no-cache-dir install awscli
                 - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
                 - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
