@@ -3,6 +3,7 @@ image: bashell/alpine-bash
 definitions:
   scripts:
     - script: &quickstart-cleanup
+        - ls -R .
         - S3_BUCKET_NAME=$(ls taskcat_outputs/| grep tag | sed 's/^tCaT-tag\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian\1/g')
         - aws s3 rb s3://${S3_BUCKET_NAME} --force
         - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
@@ -299,15 +300,7 @@ pipelines:
               script:
                 - export PRODUCT=jira
                 - scripts/pipelines-prerequisites.sh
-                - taskcat -n -c quickstarts/quickstart-atlassian-${PRODUCT}/ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-jira-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=false
-                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-jira-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
-                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
-                - echo ${SERVICE_URL}
-                - export ELB_NAME=$(aws cloudformation describe-stack-resources --stack-name "${STACK_NAME}" | jq -c '.StackResources | .[] | select(.LogicalResourceId=="LoadBalancer") | .PhysicalResourceId' | tr -d '"')
-                - echo ${ELB_NAME}
-                - aws elb wait any-instance-in-service --load-balancer-name $ELB_NAME
-                - sleep 10
-                - curl --fail ${SERVICE_URL}/status
+                - scripts/pipelines-run-taskcat.sh
               after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-jira/taskcat_outputs/*
@@ -317,14 +310,7 @@ pipelines:
               script:
                 - export PRODUCT=confluence
                 - scripts/pipelines-prerequisites.sh
-                - taskcat -n -c quickstarts/quickstart-atlassian-${PRODUCT}/ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-confluence-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=false
-                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-confluence-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
-                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
-                - echo ${SERVICE_URL}
-                - export TGARN=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ConfluenceTargetGroupARN")|.OutputValue'|tr -d '"')
-                - echo $TGARN
-                - aws elbv2 wait target-in-service --target-group-arn $TGARN
-                - curl --fail ${SERVICE_URL}/status
+                - scripts/pipelines-run-taskcat.sh
               after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-confluence/taskcat_outputs/*
@@ -334,15 +320,7 @@ pipelines:
               script:
                 - export PRODUCT=bitbucket
                 - scripts/pipelines-prerequisites.sh
-                - taskcat -n -c quickstarts/quickstart-atlassian-${PRODUCT}/ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-bitbucket-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=false
-                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-bitbucket-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
-                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
-                - export ELB_NAME=$(aws cloudformation describe-stack-resources --stack-name "${STACK_NAME}" | jq -c '.StackResources | .[] | select(.LogicalResourceId=="LoadBalancer") | .PhysicalResourceId' | tr -d '"')
-                - echo ${ELB_NAME}
-                - aws elb wait any-instance-in-service --load-balancer-name $ELB_NAME
-                - echo ${SERVICE_URL}
-                - sleep 10
-                - curl --fail ${SERVICE_URL}/status
+                - scripts/pipelines-run-taskcat.sh
               after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-bitbucket/taskcat_outputs/*
