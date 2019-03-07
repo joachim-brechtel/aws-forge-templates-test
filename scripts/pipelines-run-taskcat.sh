@@ -1,10 +1,11 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 case $PRODUCT in
     jira|bitbucket|confluence) echo "Running tasckat test for ${PRODUCT}"  ;;
     *) echo '$PRODUCT variable contains unexpected value:' ${PRODUCT} && exit 1 ;;
 esac
 
+# Identifier for the run (used for tagging AWS resources)
 RUN_ID="tcat-${PRODUCT}-${BITBUCKET_BUILD_NUMBER}"
 
 taskcat -n -c quickstarts/quickstart-atlassian-${PRODUCT}/ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=${RUN_ID} -t override_periodic_cleanup=false

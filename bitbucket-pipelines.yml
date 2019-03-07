@@ -3,9 +3,8 @@ image: bashell/alpine-bash
 definitions:
   scripts:
     - script: &quickstart-cleanup
-        - ls taskcat_outputs/| grep tag
-        - S3_BUCKET_NAME=$(ls taskcat_outputs/| grep tag | sed 's/^tCaT-tag-\(.*\)-us-east-2-.*$/taskcat-tag-quickstart-atlassian-\1/g')
-        - echo ${S3_BUCKET_NAME}
+        - S3_BUCKET_NAME=$(ls taskcat_outputs/| grep tag | sed "s/^tCaT-tag-\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian-\1/g")
+        - echo "Deleting S3 bucket [${S3_BUCKET_NAME}]"
         - aws s3 rb s3://${S3_BUCKET_NAME} --force
         - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
 
