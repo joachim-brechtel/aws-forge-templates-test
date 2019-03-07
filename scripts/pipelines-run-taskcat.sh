@@ -24,7 +24,7 @@ else
     aws elb wait any-instance-in-service --load-balancer-name $LOAD_BALANCER
 fi
 
-# As a minimum, we need to get check the /status endpoint
+# As a minimum, we need to check the `/status` endpoint
 echo ${LOAD_BALANCER}
 sleep 10
 curl --fail ${SERVICE_URL}/status
