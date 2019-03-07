@@ -10,4 +10,4 @@ if [[ ! -z "$CI_TASKCAT_USER_GITHUB_PRIVATE_KEY" ]] ; then
     ssh-add ~/.ssh/github_id_rsa
 fi
 
-chmod 744 ./scripts/bootstrap && ./scripts/bootstrap --no-recurse
+chmod 744 ./scripts/bootstrap && ./scripts/bootstrap --sync-only
