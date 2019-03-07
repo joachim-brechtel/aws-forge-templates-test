@@ -144,7 +144,7 @@ pipelines:
                 - cat ../ci-parameters-jira.json
                 - ls -al ../quickstarts/quickstart-atlassian-jira/templates/**
                 - aws s3 cp ../quickstarts/quickstart-atlassian-jira/templates/quickstart-jira-dc.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml
-                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-master.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml
                 - aws s3 cp ../templates/JiraDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
                 - if [ ! -e "jiraExists" ]; then aws cloudformation create-stack --stack-name ATLJIRA --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-jira.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
