@@ -4,9 +4,9 @@
 
 set -e
 
-if [[ "$1" == "--sync-only" ]]; then
+if [[ "$1" == "--init" ]]; then
     echo "synchronizing registered submodules\n"
-    git submodule sync
+    git submodule update --init
 elif [[ "$1" == "--no-recurse" ]]; then
     echo "Updating submodules non recursively\n"
     git submodule update --init --remote
