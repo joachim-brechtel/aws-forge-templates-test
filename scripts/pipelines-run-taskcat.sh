@@ -23,10 +23,3 @@ fi
 echo ${LOAD_BALANCER}
 sleep 10
 curl --fail ${SERVICE_URL}/status
-
-
-
-
-                - echo $LOAD_BALANCER
-                - aws elbv2 wait target-in-service --target-group-arn $LOAD_BALANCER
-                - curl --fail ${SERVICE_URL}/status
