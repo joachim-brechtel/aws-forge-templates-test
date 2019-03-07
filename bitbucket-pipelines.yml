@@ -139,7 +139,6 @@ pipelines:
                 - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
                 - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
-                - aws cloudformation list-stacks --stack-status-filter "CREATE_COMPLETE" "UPDATE_COMPLETE" | grep -iE "Stack(Name|Status)" | cat
                 - cd ami
                 - if aws cloudformation list-stacks --stack-status-filter "CREATE_COMPLETE" "UPDATE_COMPLETE" | grep StackName|grep \"ATLJIRA\"; then touch jiraExists; fi
                 - cat ../ci-parameters-jira.json
@@ -178,7 +177,7 @@ pipelines:
                 - aws s3 cp ../templates/ConfluenceDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/ConfluenceDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/ConfluenceDataCenter.template.yaml
                 - if [ ! -e "confluenceExists" ]; then aws cloudformation create-stack --stack-name ATLCONFLUENCE --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-confluence.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
-                - aws cloudformation wait stack-create-complete --stack-name ATLCONFLUENCE
+                - if [ ! -e "confluenceExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATLCONFLUENCE; fi
                 - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLCONFLUENCE" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
                 - echo $SERVICEURL
                 - export TGARN=$(aws cloudformation describe-stacks --stack-name="ATLCONFLUENCE" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ConfluenceTargetGroupARN")|.OutputValue'|tr -d '"')
