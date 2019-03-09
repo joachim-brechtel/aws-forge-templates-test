@@ -460,3 +460,71 @@ function atl_configureThreadHeapScripts {
     atl_log "Adding product to j2ee_tools_commons.sh"
     sed -i "s|{{ run_user }}|${ATL_ENABLED_PRODUCTS}|" /usr/local/bin/j2ee_tools_common.sh >> "${ATL_LOG}" 2>&1
 }
+
+function atl_curlfile() {
+    URLTOCURL=$1
+    echo "trying to retrieve installer from ${URLTOCURL}"
+    if ! curl -L -f --silent "${URLTOCURL}" \
+        -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+    then
+        local ERROR_MESSAGE="Could not download ${LC_PRODUCT} installer from ${URLTOCURL} "
+        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
+        return 9
+    fi
+}
+
+function atl_downloadFromWac {
+    WACDOWNLOADURL="https://www.atlassian.com/software/${LC_PRODUCT}/downloads/binary/atlassian-${PRODUCTCOMPONENT}-${PRODUCT_VERSION}${INSTALLERSUFFIX}"
+    atl_curlfile $WACDOWNLOADURL
+}
+
+function atl_downloadFromPublicS3 {
+    PUBLICS3URL="https://s3.amazonaws.com/downloads-public-us-east-1/software/${LC_PRODUCT}/downloads/atlassian-${PRODUCTCOMPONENT}-${PRODUCT_VERSION}${INSTALLERSUFFIX}"
+    atl_curlfile $PUBLICS3URL
+}
+
+function atl_downloadFromPrivateS3 {
+    PRIVATES3URL="https://s3.amazonaws.com/atlassian-software/releases/${PRODUCTCOMPONENT}/atlassian-${PRODUCTCOMPONENT}-${PRODUCT_VERSION}${INSTALLERSUFFIX}"
+    atl_curlfile $PRIVATES3URL
+}
+
+function atl_downloadInstaller {
+set -x
+    LC_PRODUCT=$(echo "${ATL_DB_NAME}"| tr '[:upper:]' '[:lower:]')
+    UC_PRODUCT=$(echo "${ATL_DB_NAME}"| tr '[:lower:]' '[:upper:]')
+    MPAC_LATEST_ENDPOINT="https://marketplace.atlassian.com/rest/2/applications/${LC_PRODUCT}/versions/latest"
+    LATEST_PRODUCT_VERSION=$(curl --silent "${MPAC_LATEST_ENDPOINT}" | jq -r '.version')
+    atl_log "${ATL_LOG_HEADER} Most recent version of ${UC_PRODUCT} on Atlassian Marketplace is ${VERSION_FILE_URL}"
+    VERSION_VAR=$(echo "ATL_${UC_PRODUCT}_VERSION")
+    eval "PRODUCT_VERSION=\${$VERSION_VAR}"
+    if [ "${PRODUCT_VERSION}" = "latest" ];then
+        PRODUCT_VERSION=$LATEST_PRODUCT_VERSION
+    fi
+    # if a product version was passed on the cloudformation template, use that as override
+    if [[ -n $requestedVersion ]] && [ $requestedVersion != "latest" ]; then
+      echo $requestedVersion > $(atl_tempDir)/version
+      PRODUCT_VERSION=$requestedVersion
+    fi
+    INSTALLERSUFFIX='-x64.bin'
+    if [ $LC_PRODUCT = 'crowd' ]; then
+        INSTALLERSUFFIX=".tar.gz"
+    fi
+    PRODUCTCOMPONENT="${LC_PRODUCT}"
+    if [ ${LC_PRODUCT} = "jira" ]; then
+        PRODUCTCOMPONENT="${ATL_JIRA_NAME}"
+    fi
+    atl_log "${ATL_LOG_HEADER} Requested version of ${UC_PRODUCT} for this stack is ${PRODUCT_VERSION}"
+    ALTURL_VAR=$(echo "ATL_${UC_PRODUCT}_INSTALLER_DOWNLOAD_URL")
+    eval "ATL_PRODUCT_INSTALLER_ALTERNATE_URL=\${$ALTURL_VAR}"
+    if atl_curlfile $ATL_PRODUCT_INSTALLER_ALTERNATE_URL; then
+        atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from URL provided on template - ${ATL_PRODUCT_INSTALLER_ALTERNATE_URL}"
+    elif atl_downloadFromWac; then
+        atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from WAC "
+    elif atl_downloadFromPublicS3; then
+        atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from Atlassian Public S3"
+    elif atl_downloadFromPublicS3; then
+        atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from Atlassian Private S3"
+    else
+        atl_log "${ATL_LOG_HEADER} Installer download for version ${UC_PRODUCT} is ${VERSION_FILE_URL}"
+    fi
+}
