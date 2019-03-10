@@ -500,11 +500,12 @@ set -x
     if [ "${PRODUCT_VERSION}" = "latest" ];then
         PRODUCT_VERSION=$LATEST_PRODUCT_VERSION
     fi
+
     # if a product version was passed on the cloudformation template, use that as override
     if [[ -n $requestedVersion ]] && [ $requestedVersion != "latest" ]; then
-      echo $requestedVersion > $(atl_tempDir)/version
       PRODUCT_VERSION=$requestedVersion
     fi
+    echo "${PRODUCT_VERSION}" > $(atl_tempDir)/version
     INSTALLERSUFFIX='-x64.bin'
     if [ $LC_PRODUCT = 'crowd' ]; then
         INSTALLERSUFFIX=".tar.gz"
@@ -516,6 +517,8 @@ set -x
     atl_log "${ATL_LOG_HEADER} Requested version of ${UC_PRODUCT} for this stack is ${PRODUCT_VERSION}"
     ALTURL_VAR=$(echo "ATL_${UC_PRODUCT}_INSTALLER_DOWNLOAD_URL")
     eval "ATL_PRODUCT_INSTALLER_ALTERNATE_URL=\${$ALTURL_VAR}"
+
+    # unsure if we fail to install from the custom installer location if we want to continue to pull from the regular installer locations or not ?
     if atl_curlfile $ATL_PRODUCT_INSTALLER_ALTERNATE_URL; then
         atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from URL provided on template - ${ATL_PRODUCT_INSTALLER_ALTERNATE_URL}"
     elif atl_downloadFromWac; then
