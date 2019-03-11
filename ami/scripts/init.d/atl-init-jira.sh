@@ -298,35 +298,7 @@ function restoreInstaller {
 function downloadInstaller {
     local ATL_LOG_HEADER="[downloadInstaller]: "
 
-    local VERSION_FILE_URL="https://marketplace.atlassian.com/rest/2/applications/jira/versions/latest"
-
-    atl_log "${ATL_LOG_HEADER} Downloading installer description from ${VERSION_FILE_URL}"
-    local JIRA_VERSION=$(curl --silent "${VERSION_FILE_URL}" | jq -r '.version')
-    echo "${JIRA_VERSION}" > $(atl_tempDir)/version
-
-    if [ -z "$JIRA_VERSION" ]
-    then
-        local ERROR_MESSAGE="Could not download installer description from ${VERSION_FILE_URL} - aborting installation"
-        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
-        atl_fatal_error "${ERROR_MESSAGE}"
-    fi
-
-    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
-    # if a jira version was passed on the cloudformation template, use that instead
-    if [[ -n $requestedVersion ]] && [ $requestedVersion != "latest" ]; then
-      echo $requestedVersion > $(atl_tempDir)/version
-      local JIRA_VERSION=$requestedVersion
-    fi
-    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
-    local JIRA_INSTALLER_URL="${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}"
-    # if a jira download_url was passed on the cloudformation template, use that instead
-    if [[ -n $ATL_JIRA_INSTALLER_DOWNLOAD_URL ]]; then
-      local JIRA_INSTALLER_URL=$ATL_JIRA_INSTALLER_DOWNLOAD_URL
-    fi
-
-    atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
-    if ! curl -L -f --silent "${JIRA_INSTALLER_URL}" \
-        -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+    if ! atl_downloadInstaller;
     then
         local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from ${ATL_JIRA_RELEASES_S3_URL} - aborting installation"
         atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
@@ -436,7 +408,7 @@ function installOBR {
         JIRA_VERSION=$(cat /media/atl/${ATL_JIRA_NAME}.version)
         PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
         atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
-        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep $JIRA_VERSION |  awk '{print $NF}' | sed -n '1p')
+        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep -F $JIRA_VERSION |  awk '{print $NF}' | sed -n '1p')
         MPLACE_FILE=''
         if [[ -n $MPLACE_URL ]]; then
             MPLACE_REDIRECT_URL=$(curl -Ls $MPLACE_URL -o /dev/null -w %{url_effective})
