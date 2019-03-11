@@ -1176,7 +1176,7 @@ Resources:
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
-      KeyPairName: !Ref KeyPairName
+      KeyName: !Ref KeyPairName
       IamInstanceProfile: !Ref JiraClusterNodeInstanceProfile
       ImageId:
         !FindInMap
