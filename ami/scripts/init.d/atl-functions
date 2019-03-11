@@ -473,6 +473,11 @@ function atl_curlfile() {
     fi
 }
 
+function atl_downloadFromWacBackend {
+    WACDOWNLOADURL="https://s3-us-west-2.amazonaws.com/downloads-public-primary-us-west-2/software/${LC_PRODUCT}/downloads/atlassian-${PRODUCTCOMPONENT}-${PRODUCT_VERSION}${INSTALLERSUFFIX}"
+    atl_curlfile $WACDOWNLOADURL
+}
+
 function atl_downloadFromWac {
     WACDOWNLOADURL="https://www.atlassian.com/software/${LC_PRODUCT}/downloads/binary/atlassian-${PRODUCTCOMPONENT}-${PRODUCT_VERSION}${INSTALLERSUFFIX}"
     atl_curlfile $WACDOWNLOADURL
@@ -521,6 +526,8 @@ set -x
     # unsure if we fail to install from the custom installer location if we want to continue to pull from the regular installer locations or not ?
     if atl_curlfile $ATL_PRODUCT_INSTALLER_ALTERNATE_URL; then
         atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from URL provided on template - ${ATL_PRODUCT_INSTALLER_ALTERNATE_URL}"
+    elif atl_downloadFromWacBackend; then
+        atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from WAC Backend"
     elif atl_downloadFromWac; then
         atl_log "${ATL_LOG_HEADER} Version ${PRODUCT_VERSION} of ${UC_PRODUCT} was downloaded from WAC "
     elif atl_downloadFromPublicS3; then
