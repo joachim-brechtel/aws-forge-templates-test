@@ -1,5 +1,13 @@
 image: bashell/alpine-bash
 
+definitions:
+  scripts:
+    - script: &quickstart-cleanup
+        - S3_BUCKET_NAME=$(ls taskcat_outputs/| grep tag | sed "s/^tCaT-tag-\(.*\)-${CI_DEFAULT_REGION}-.*$/taskcat-tag-quickstart-atlassian-\1/g")
+        - echo "Deleting S3 bucket [${S3_BUCKET_NAME}]"
+        - aws s3 rb s3://${S3_BUCKET_NAME} --force
+        - aws cloudformation delete-stack --stack-name ${STACK_NAME} --region ${CI_DEFAULT_REGION}
+
 pipelines:
   default:
     - step:
@@ -287,102 +295,32 @@ pipelines:
             - nc -n -w3 -z $BASTIONIP 22
       - parallel:
           - step:
-              name: Taskcat run jira
+              name: Taskcat run Jira
               image: python:3.6-alpine
               script:
-                - export QS_PROJECT_NAME=quickstart-atlassian-jira
-                - apk update
-                - apk --no-cache add jq openssh git groff curl
-                - pip --no-cache-dir install awscli taskcat
-                - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
-                - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
-                - aws configure set default.region ${CI_DEFAULT_REGION}
-                - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
-                - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
-                - mkdir -p ~/.ssh
-                - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
-                - (umask  077 ; echo ${CI_TASKCAT_USER_GITHUB_PRIVATE_KEY} | base64 -d > ~/.ssh/id_rsa)
-                - eval "$(ssh-agent)"
-                - ssh-add ~/.ssh/id_rsa
-                - chmod 744 ./scripts/bootstrap && ./scripts/bootstrap --no-recurse
-                - cd quickstarts
-                - cp -r ./ci/jira/* ./${QS_PROJECT_NAME}/ci/
-                - cd ${QS_PROJECT_NAME}
-                - echo "[{\"ParameterKey\":\"KeyPairName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
-                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-jira-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=false
-                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-jira-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
-                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
-                - echo "${SERVICE_URL}"
-                - export ELB_NAME=$(aws cloudformation describe-stack-resources --stack-name "${STACK_NAME}" | jq -c '.StackResources | .[] | select(.LogicalResourceId=="LoadBalancer") | .PhysicalResourceId' | tr -d '"')
-                - echo $ELB_NAME
-                - aws elb wait any-instance-in-service --load-balancer-name $ELB_NAME
-                - curl --fail ${SERVICE_URL}/status
+                - export PRODUCT=jira
+                - scripts/pipelines-prerequisites.sh
+                - scripts/pipelines-run-taskcat.sh
+              after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-jira/taskcat_outputs/*
           - step:
-              name: Taskcat run confluence
+              name: Taskcat run Confluence
               image: python:3.6-alpine
               script:
-                - export QS_PROJECT_NAME=quickstart-atlassian-confluence
-                - apk update
-                - apk --no-cache add jq openssh git groff curl
-                - pip --no-cache-dir install awscli taskcat
-                - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
-                - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
-                - aws configure set default.region ${CI_DEFAULT_REGION}
-                - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
-                - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
-                - mkdir -p ~/.ssh
-                - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
-                - (umask  077 ; echo ${CI_TASKCAT_USER_GITHUB_PRIVATE_KEY} | base64 -d > ~/.ssh/id_rsa)
-                - eval "$(ssh-agent)"
-                - ssh-add ~/.ssh/id_rsa
-                - chmod 744 ./scripts/bootstrap && ./scripts/bootstrap --no-recurse
-                - cd quickstarts
-                - cp -r ./ci/confluence/* ./${QS_PROJECT_NAME}/ci/
-                - cd ${QS_PROJECT_NAME}
-                - echo "[{\"ParameterKey\":\"KeyPairName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
-                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-confluence-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=false
-                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-confluence-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
-                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
-                - echo "${SERVICE_URL}"
-                - export TGARN=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ConfluenceTargetGroupARN")|.OutputValue'|tr -d '"')
-                - echo $TGARN
-                - aws elbv2 wait target-in-service --target-group-arn $TGARN
-                - curl --fail ${SERVICE_URL}/status
+                - export PRODUCT=confluence
+                - scripts/pipelines-prerequisites.sh
+                - scripts/pipelines-run-taskcat.sh
+              after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-confluence/taskcat_outputs/*
           - step:
-              name: Taskcat run bitbucket
+              name: Taskcat run Bitbucket
               image: python:3.6-alpine
               script:
-                - export QS_PROJECT_NAME=quickstart-atlassian-bitbucket
-                - apk update
-                - apk --no-cache add jq openssh git groff curl
-                - pip --no-cache-dir install awscli taskcat
-                - aws configure set default.aws_secret_access_key ${TASKCAT_SECRET_ACCESS_KEY}
-                - aws configure set default.aws_access_key_id ${TASKCAT_ACCESS_KEY_ID}
-                - aws configure set default.region ${CI_DEFAULT_REGION}
-                - export AWS_SECRET_KEY=${TASKCAT_SECRET_ACCESS_KEY}
-                - export AWS_ACCESS_KEY=${TASKCAT_ACCESS_KEY_ID}
-                - mkdir -p ~/.ssh
-                - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
-                - (umask  077 ; echo ${CI_TASKCAT_USER_GITHUB_PRIVATE_KEY} | base64 -d > ~/.ssh/id_rsa)
-                - eval "$(ssh-agent)"
-                - ssh-add ~/.ssh/id_rsa
-                - chmod 744 ./scripts/bootstrap && ./scripts/bootstrap --no-recurse
-                - cd quickstarts
-                - cp -r ./ci/bitbucket/* ./${QS_PROJECT_NAME}/ci/
-                - cd ${QS_PROJECT_NAME}
-                - echo "[{\"ParameterKey\":\"KeyPairName\",\"ParameterValue\":\"$TASKCAT_KEYPAIR_NAME\"}]" > ci/taskcat_project_override.json
-                - taskcat -n -c ci/taskcat-ci.yml -t taskcat-ci-run=true -t taskcat-ci-run-id=tcat-bitbucket-${BITBUCKET_BUILD_NUMBER} -t override_periodic_cleanup=false
-                - export STACK_NAME=$(aws cloudformation describe-stacks  | jq -c --arg build_tag_id "tcat-bitbucket-${BITBUCKET_BUILD_NUMBER}" '.Stacks | map( select( any(.Tags[]; .Key=="taskcat-ci-run-id" and .Value == $build_tag_id))) | .[0] | .StackName' | tr -d '"')
-                - export SERVICE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq -c '.Stacks | .[].Outputs | .[] | select(.OutputKey=="ServiceURL") | .OutputValue' | tr -d '"')
-                - export ELB_NAME=$(aws cloudformation describe-stack-resources --stack-name "${STACK_NAME}" | jq -c '.StackResources | .[] | select(.LogicalResourceId=="LoadBalancer") | .PhysicalResourceId' | tr -d '"')
-                - echo $ELB_NAME
-                - aws elb wait any-instance-in-service --load-balancer-name $ELB_NAME
-                - echo "${SERVICE_URL}"
-                - sleep 10
-                - curl --fail ${SERVICE_URL}/status
+                - export PRODUCT=bitbucket
+                - scripts/pipelines-prerequisites.sh
+                - scripts/pipelines-run-taskcat.sh
+              after-script: *quickstart-cleanup
               artifacts:
                 - quickstarts/quickstart-atlassian-bitbucket/taskcat_outputs/*
