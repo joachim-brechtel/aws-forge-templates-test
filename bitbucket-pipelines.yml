@@ -35,6 +35,7 @@ pipelines:
               - mkdir -p ~/.ssh
               - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
               - (umask  077 ; echo $CI_BB_PRIVKEY | base64 -d > ~/.ssh/id_rsa)
+              - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
               # Todo:
               # Work out what has changed in this branch using `git diff --name-only $(git merge-base master HEAD)`
               - git fetch origin master:master
@@ -74,8 +75,6 @@ pipelines:
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-backmac-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
-              - aws s3 cp quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
-              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-forge-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-forge-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-forge-for-atlassian-services.yaml
               - if [ ! -e "vpcExists" ]; then cat ci-parameters-services-stack.json | jq --arg BITBUCKET_BUILD_NUMBER "${BITBUCKET_BUILD_NUMBER}" 'map(if .ParameterKey == "QSS3KeyPrefix" then . + {"ParameterValue":$BITBUCKET_BUILD_NUMBER} else . end)' > ci-parameters-services-stack-updated.json; fi
@@ -112,7 +111,7 @@ pipelines:
               name: Build Crowd from quickstart
               script:
                 - apk update
-                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq openssh git
                 - pip --no-cache-dir install awscli
                 - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
                 - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
@@ -140,22 +139,25 @@ pipelines:
               name: Build Jira from quickstart
               script:
                 - apk update
-                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq openssh git
                 - pip --no-cache-dir install awscli
                 - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
                 - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
                 - aws configure set default.region ${CI_DEFAULT_REGION}
                 - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
                 - cd ami
-                - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLJIRA\"; then touch jiraExists; fi
+                - if aws cloudformation list-stacks --stack-status-filter "CREATE_COMPLETE" "UPDATE_COMPLETE" | grep StackName|grep \"ATLJIRA\"; then touch jiraExists; fi
                 - cat ../ci-parameters-jira.json
-                - aws s3 cp ../quickstarts/quickstart-jira-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-master.template.yaml
-                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-master.template.yaml
+                - ls -al ../quickstarts/quickstart-atlassian-jira/templates/**
+                - aws s3 cp ../quickstarts/quickstart-atlassian-jira/templates/quickstart-jira-dc.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml
+                - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml
                 - aws s3 cp ../templates/JiraDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/JiraDataCenter.template.yaml
-                - if [ ! -e "jiraExists" ]; then aws cloudformation create-stack --stack-name ATLJIRA --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-master.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-jira.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
-                - aws cloudformation wait stack-create-complete --stack-name ATLJIRA
+                - if [ ! -e "jiraExists" ]; then aws cloudformation create-stack --stack-name ATLJIRA --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-jira-dc.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-jira.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
+                - if [ ! -e "jiraExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATLJIRA; fi
+                - aws cloudformation describe-stacks --stack-name="ATLJIRA" | cat
                 - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLJIRA" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
                 - export ELBNAME=$(aws elb describe-load-balancers | jq '.LoadBalancerDescriptions'|jq '.[]'|jq '.LoadBalancerName'|grep ATLJIRA|tr -d '"')
                 - echo "${ELBNAME}"
@@ -166,22 +168,24 @@ pipelines:
               name: Build CONFLUENCE from quickstart
               script:
                 - apk update
-                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq
+                - apk --no-cache add python py-pip py-setuptools ca-certificates curl groff less jq openssh git
                 - pip --no-cache-dir install awscli
                 - aws configure set default.aws_secret_access_key ${CI_SECRET_ACCESS_KEY}
                 - aws configure set default.aws_access_key_id ${CI_ACCESS_KEY_ID}
                 - aws configure set default.region ${CI_DEFAULT_REGION}
                 - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
+                - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
                 - cd ami
                 - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLCONFLUENCE\"; then touch confluenceExists; fi
                 - cat ../ci-parameters-confluence.json
-                - aws s3 cp ../quickstarts/quickstart-confluence-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
+                - ls -al ../quickstarts/quickstart-atlassian-confluence/templates/**
+                - aws s3 cp ../quickstarts/quickstart-atlassian-confluence/templates/quickstart-confluence-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
                 - aws s3 cp ../templates/ConfluenceDataCenter.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/ConfluenceDataCenter.template.yaml
                 - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/templates/ConfluenceDataCenter.template.yaml
                 - if [ ! -e "confluenceExists" ]; then aws cloudformation create-stack --stack-name ATLCONFLUENCE --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://../ci-parameters-confluence.json --tags "Key=Name,Value=ITOPS-CI" "Key=service_name,Value=ITOPS-CI" "Key=business_unit,Value=${BUSINESS_UNIT}" "Key=resource_owner,Value=${RESOURCE_OWNER}"; fi
-                - aws cloudformation wait stack-create-complete --stack-name ATLCONFLUENCE
+                - if [ ! -e "confluenceExists" ]; then aws cloudformation wait stack-create-complete --stack-name ATLCONFLUENCE; fi
                 - export SERVICEURL=$(aws cloudformation describe-stacks --stack-name="ATLCONFLUENCE" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ServiceURL")|.OutputValue'|tr -d '"')
                 - echo $SERVICEURL
                 - export TGARN=$(aws cloudformation describe-stacks --stack-name="ATLCONFLUENCE" | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="ConfluenceTargetGroupARN")|.OutputValue'|tr -d '"')

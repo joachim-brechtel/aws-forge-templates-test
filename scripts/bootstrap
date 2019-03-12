@@ -4,13 +4,15 @@
 
 set -e
 
-
-if [ "$1" == "--no-recurse" ]; then
-        echo "Updating submodules non recursively\n"
-        git submodule update --init --remote
+if [[ "$1" == "--init" ]]; then
+    echo "synchronizing registered submodules\n"
+    git submodule update --init
+elif [[ "$1" == "--no-recurse" ]]; then
+    echo "Updating submodules non recursively\n"
+    git submodule update --init --remote
 else
-        echo "Updating submodules recursively\n"
-        git submodule update --init --remote --recursive
+    echo "Updating submodules recursively\n"
+    git submodule update --init --remote --recursive
 fi
 
 git submodule status
