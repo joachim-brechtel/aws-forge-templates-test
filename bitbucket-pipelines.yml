@@ -282,21 +282,15 @@ pipelines:
             - if [ -z "$MASTERSTACK" ]; then export MASTERSTACK="ATL";fi
             - echo $MASTERSTACK
             - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep "\"${MASTERSTACK}\""; then touch vpcExists; fi
-            - ls
-            # S3 COPY
-            - aws s3 cp quickstarts/quickstart-vpc-for-atlassian-services.yaml s3://quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml
-            - aws s3 cp quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-bastion-for-atlassian-services.yaml
-            # Validate Template
-            - aws cloudformation validate-template --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml
-            - aws cloudformation validate-template --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-bastion-for-atlassian-services.yaml
-            # Won't run as parameters do not match. Won't fix - Will use taskcat to setup VPC and bastion with submodules
-            - if [ ! -e "vpcExists" ]; then aws --debug cloudformation create-stack --stack-name "${MASTERSTACK}" --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-vpc-stack.json --tags "Key=Name,Value=taskcat-ci-user" "Key=service_name,Value=taskcat-ci-user" "Key=business_unit,Value=Engineering:Server" "Key=resource_owner,Value=abrokes"; fi
-            - if [ ! -e "vpcExists" ]; then aws --debug cloudformation wait stack-create-complete --stack-name "${MASTERSTACK}"; fi
-            # is bastion listening for ssh ?
-            - export BASTIONSTACK=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | jq '.StackSummaries'|jq -r '.[]|select(.StackName | contains("Bastion"))|.StackName')
-            - export BASTIONIP=$(aws cloudformation describe-stacks --stack-name=$BASTIONSTACK | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="BastionPubIp")|.OutputValue'|tr -d '"')
-            - echo $BASTIONIP
-            - nc -n -w3 -z $BASTIONIP 22
+#            # S3 COPY
+#            - aws s3 cp quickstarts/quickstart-vpc-for-atlassian-services.yaml s3://quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml
+#            - aws s3 cp quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-bastion-for-atlassian-services.yaml
+#            # Validate Template
+#            - aws cloudformation validate-template --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml
+#            - aws cloudformation validate-template --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-bastion-for-atlassian-services.yaml
+#            # Won't run as parameters do not match. Won't fix - Will use taskcat to setup VPC and bastion with submodules
+#            - if [ ! -e "vpcExists" ]; then aws --debug cloudformation create-stack --stack-name "${MASTERSTACK}" --template-url https://s3.amazonaws.com/quickstart-taskcat-ci/quickstarts/${BITBUCKET_BUILD_NUMBER}/quickstart-vpc-for-atlassian-services.yaml --capabilities CAPABILITY_IAM --on-failure DELETE --parameters  file://ci-parameters-vpc-stack.json --tags "Key=Name,Value=taskcat-ci-user" "Key=service_name,Value=taskcat-ci-user" "Key=business_unit,Value=Engineering:Server" "Key=resource_owner,Value=abrokes"; fi
+#            - if [ ! -e "vpcExists" ]; then aws --debug cloudformation wait stack-create-complete --stack-name "${MASTERSTACK}"; fi
       - parallel:
           - step:
               name: Taskcat run Jira
