@@ -499,7 +499,7 @@ set -x
     UC_PRODUCT=$(echo "${ATL_DB_NAME}"| tr '[:lower:]' '[:upper:]')
     MPAC_LATEST_ENDPOINT="https://marketplace.atlassian.com/rest/2/applications/${LC_PRODUCT}/versions/latest"
     LATEST_PRODUCT_VERSION=$(curl --silent "${MPAC_LATEST_ENDPOINT}" | jq -r '.version')
-    atl_log "${ATL_LOG_HEADER} Most recent version of ${UC_PRODUCT} on Atlassian Marketplace is ${VERSION_FILE_URL}"
+    atl_log "${ATL_LOG_HEADER} Most recent version of ${UC_PRODUCT} on Atlassian Marketplace is ${LATEST_PRODUCT_VERSION}"
     VERSION_VAR=$(echo "ATL_${UC_PRODUCT}_VERSION")
     eval "PRODUCT_VERSION=\${$VERSION_VAR}"
     if [ "${PRODUCT_VERSION}" = "latest" ];then
