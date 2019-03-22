@@ -11,6 +11,7 @@ Metadata:
           default: Confluence setup
         Parameters:
           - ConfluenceVersion
+          - LocalHomeVolumeSize
       - Label:
           default: Deployment information
         Parameters:
@@ -19,7 +20,6 @@ Metadata:
           default: Instance parameters
         Parameters:
           - InstanceType
-          - InstanceVolumeSize
       - Label:
           default: Database
         Parameters:
@@ -133,8 +133,6 @@ Metadata:
         default: Route 53 Hosted Zone (optional)
       InstanceType:
         default: EC2 instance type
-      InstanceVolumeSize:
-        default: EC2 volume size
       InternalSubnets:
         default: Internal subnets *
       JvmHeapOverrideConfluence:
@@ -149,6 +147,8 @@ Metadata:
         default: Git repo for local-ansible
       LocalAnsibleGitSshKeyName:
         default: Git SSH key name for local-ansible
+      LocalHomeVolumeSize:
+        default: Confluence Home EBS volume size
       MailEnabled:
         default: Enable App to Process Email
       SSLCertificateARN:
@@ -440,10 +440,6 @@ Parameters:
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the application server.
     Type: String
-  InstanceVolumeSize:
-    Default: 200
-    Description: Size of root volume in Gb (note - size based upon Application indexes x 4)
-    Type: Number
   InternalSubnets:
     Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
@@ -478,6 +474,10 @@ Parameters:
     Default: ''
     Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
+  LocalHomeVolumeSize:
+    Default: 200
+    Description: Size of Confluence Home EBS volume in Gb (note - size based upon Application indexes x 4). This param is ONLY used for new/initial deployments and changing this value WILL NOT resize an existing EBS for this stack.
+    Type: Number
   MailEnabled:
     AllowedValues:
       - true
@@ -834,52 +834,52 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-014a2b4cee98776ed
+      HVM64: ami-0d5e41b15d04a006b
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-05877a464abb373e3
+      HVM64: ami-0c03fa401f1d346d4
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-089323993c9b0a6b1
+      HVM64: ami-008f3f5243cbb9563
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-044544135e0236d49
+      HVM64: ami-066630c868848cf4e
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-05fcf371763b2abe0
+      HVM64: ami-0bc38442d145b1ec3
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-03c101b9aeb396b25
+      HVM64: ami-0d36406f53ad1e0f0
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-077c24ffa7fb0f400
+      HVM64: ami-0e70a334347cae36b
       HVMG2: NOT_SUPPORTED
     eu-north-1:
-      HVM64: ami-0b533cc3ee31130e6
+      HVM64: ami-0d39adfcaa130ece7
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-088e8a47d74119ce8
+      HVM64: ami-00e6ec99cbb5d8fea
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-0bfa6aed73df67983
+      HVM64: ami-08ed09d41758c8558
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-08c02e0fdd70685ee
+      HVM64: ami-00a25c9e19182b2ca
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0e90b21d5da87ee1a
+      HVM64: ami-05bc007fe8d983fcd
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0420c4f9d96a55763
+      HVM64: ami-0920319447ff3036f
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-05b2f76e617521ffd
+      HVM64: ami-0c8c2f95df87176f4
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0db2eec8b0cd07966
+      HVM64: ami-0d832098429d638b8
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-014d0c703c898c713
+      HVM64: ami-06956deb56bc6bde7
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceServerRole:
@@ -901,8 +901,18 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Action:
+                - 'ec2:AttachVolume'
+                - 'ec2:CreateSnapshot'
+                - 'ec2:CreateTags'
+                - 'ec2:CreateVolume'
+                - 'ec2:DeleteSnapshot'
+                - 'ec2:DeleteTags'
+                - 'ec2:DeleteVolume'
                 - 'ec2:DescribeInstances'
                 - 'ec2:DescribeSecurityGroups'
+                - 'ec2:DescribeSnapshotAttribute'
+                - 'ec2:DescribeSnapshots'
+                - 'ec2:DescribeVolumes'
                 Effect: Allow
                 Resource: ['*']
               - Action: ['s3:ListBucket']
@@ -952,9 +962,6 @@ Resources:
           PropagateAtLaunch: true
   ConfluenceServerLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
-    DependsOn:
-      - EFSMountAz1
-      - EFSMountAz2
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
@@ -1061,6 +1068,80 @@ Resources:
               mode: "000400"
               owner: root
               group: root
+            /tmp/bootstrap_confluence_home:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
+
+                set -xe
+
+                ebsToMount=''
+                currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
+                instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
+                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
+                existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
+                deviceName="/dev/xvdb"
+                mountPoint="/var/atlassian/application-data/confluence"
+
+                if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
+                  if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
+                    echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
+                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
+                    existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
+
+                    echo "Waiting for snapshot creation to finish"
+                    aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
+
+                    echo "Creating new EBS volume from snapshot in $currentAz"
+                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                  else
+                    echo "Existing EBS volume is in our AZ; using existing EBS"
+                    ebsToMount=$existingEbs
+                  fi
+                else
+                  echo "Creating new EBS volume in $currentAz"
+                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${LocalHomeVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                fi
+
+                ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
+
+                echo "Waiting for EBS to be available"
+                aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
+
+                echo "Attaching EBS volume to this instance"
+                aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
+
+                echo "Waiting..."
+                aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
+
+                echo "Checking OS for device availablity"
+                until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
+                  sleep 2
+                done
+
+                echo "Checking EBS for existing filesystem"
+                if [[ ! $(blkid $deviceName) ]]; then
+                  echo "No filesystem found; creating ext4 filesystem"
+                  mkfs -t ext4 $deviceName
+                fi
+
+                echo "Creating mount point"
+                mkdir -p $mountPoint
+
+                echo "Adding to fstab"
+                echo "UUID=$(blkid -o value -s UUID $deviceName)  $mountPoint  ext4  defaults,nofail  0  2" >> /etc/fstab
+
+                echo "Mounting EBS"
+                mount -a
+
+                if [[ -n $existingEbsSnapshotId ]]; then
+                  echo "Deleting old EBS snapshot and volume"
+                  aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
+                  aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
+                fi
+              mode: "000750"
+              owner: root
+              group: root
             /tmp/bootstrap_local_ansible:
               content: !Sub |
                 #!/usr/bin/env bash
@@ -1085,20 +1166,9 @@ Resources:
               owner: root
               group: root
           commands:
-            010_make_mount_point:
-              command: mkdir -p /media/atl
-            020_ensure_efs_utils:
-              command: yum install -y amazon-efs-utils
-              ignoreErrors: false
-            021_add_efs_mount:
-              command: !Sub "echo \"${ElasticFileSystem}:/ /media/atl efs defaults,_netdev 0 0\" >>/etc/fstab"
-              ignoreErrors: false
-            030_mount_all:
-              command: mount -a
-              ignoreErrors: true
-            040_make_shared_home_dir:
-              command: mkdir -p /media/atl/confluence/shared-home
-            050_bootstrap_local_ansible:
+            010_bootstrap_confluence_home:
+              command: /tmp/bootstrap_confluence_home > /var/log/bootstrap_confluence_home.log 2>&1
+            020_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
@@ -1117,7 +1187,10 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref InstanceVolumeSize
+            VolumeSize: 100
+        - DeviceName: /dev/xvdb
+          Ebs: {}
+          NoDevice: true
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1139,39 +1212,6 @@ Resources:
           yum update -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ConfluenceServerGroup --region ${AWS::Region}
-# Elastic file system
-# EFS isn't available in all AWS regions; check https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/ to ensure your target region is supported
-  ElasticFileSystem:
-    Type: AWS::EFS::FileSystem
-    Properties:
-      FileSystemTags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}/shared-files"
-        - Key: Application
-          Value: !Ref AWS::StackId
-  EFSMountAz1:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups: [!Ref SecurityGroup]
-      SubnetId: !Select [0, !Ref InternalSubnets]
-  EFSMountAz2:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref ElasticFileSystem
-      SecurityGroups: [!Ref SecurityGroup]
-      SubnetId: !Select [1, !Ref InternalSubnets]
-  EFSCname:
-    Type: AWS::Route53::RecordSet
-    Condition: UseHostedZone
-    Properties:
-      HostedZoneName: !Ref HostedZone
-      Comment: Route53 cname for the efs
-      Name: !Sub "${AWS::StackName}.efs.${HostedZone}"
-      Type: CNAME
-      TTL: '900'
-      ResourceRecords:
-        - !Sub "${ElasticFileSystem}.efs.${AWS::Region}.amazonaws.com."
 # Database
   DB:
     Type: AWS::RDS::DBInstance
@@ -1367,14 +1407,6 @@ Outputs:
     Condition: UseDatabaseEncryption
     Description: The alias of the encryption key created for RDS
     Value: !Ref EncryptionKeyAlias
-  EFSCname:
-    Description: The cname of the EFS
-    Value: !If
-      - UseHostedZone
-      - !Ref EFSCname
-      - !Ref ElasticFileSystem
-    Export:
-      Name: !Sub "${AWS::StackName}-EFSCname"
   ConfluenceTargetGroupARN:
     Description: The name of the load balancer for Confluence Server
     Value: !Ref ConfluenceServerTargetGroup

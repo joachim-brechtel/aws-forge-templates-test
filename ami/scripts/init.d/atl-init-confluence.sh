@@ -7,7 +7,7 @@ set -e
 
 trap 'atl_error ${LINENO}' ERR
 
-if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
+if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" == "xtrue" ]]; then
     ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER="${ATL_HAZELCAST_NETWORK_AWS_HOST_HEADER:-"ec2.${ATL_HAZELCAST_NETWORK_AWS_IAM_REGION}.amazonaws.com"}"
 fi
 
@@ -90,13 +90,21 @@ CATALINA_OPTS="\${CATALINA_OPTS} -Djava.net.preferIPv4Stack=true"
 CATALINA_OPTS="\${CATALINA_OPTS} -Djira.executor.threadpool.size=16"
 CATALINA_OPTS="\${CATALINA_OPTS} -Datlassian.event.thread_pool_configuration.queue_size=4096"
 CATALINA_OPTS="\${CATALINA_OPTS} -Dshare.group.email.mapping=atlassian-all:atlassian-all@atlassian.com,atlassian-staff:atlassian-staff@atlassian.com"
-CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.hazelcast.max.no.heartbeat.seconds=60"
 CATALINA_OPTS="\${CATALINA_OPTS} -Datlassian.plugins.enable.wait=300"
-CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.node.name=${_ATL_PRIVATE_IPV4}"
 CATALINA_OPTS="\${CATALINA_OPTS} -Dsynchrony.service.url=${ATL_SYNCHRONY_SERVICE_URL} -Dsynchrony.proxy.enabled=false ${ATL_CATALINA_OPTS}"
 
 export CATALINA_OPTS
 EOT
+
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" == "xtrue" ]]; then
+        cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${ATL_CONFLUENCE_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.hazelcast.max.no.heartbeat.seconds=60"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dconfluence.cluster.node.name=${_ATL_PRIVATE_IPV4}"
+
+export CATALINA_OPTS
+EOT
+    fi
+
    atl_log "=== END: service configureConfluenceEnvironmentVariables ==="
 }
 
@@ -134,13 +142,6 @@ function configureSharedHome {
             atl_log "Chown on contents of shared home failed most likley because this is a new cluster or instance and no contents yet exist, moving on"
         fi
         su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}\" \"${ATL_CONFLUENCE_SHARED_HOME}\"" >> "${ATL_LOG}" 2>&1
-        if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]]; then
-            mkdir -p "${CONFLUENCE_SHARED}"/{backups,attachments,imgEffects,thumbnails}
-            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/backups\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/attachments\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/imgEffects\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-            su "${ATL_CONFLUENCE_USER}" -c "ln -fs \"${CONFLUENCE_SHARED}/thumbnails\" \"${ATL_CONFLUENCE_HOME}\"" >> "${ATL_LOG}" 2>&1
-        fi
     else
         atl_log "No mountpoint for shared home exists."
     fi
@@ -150,7 +151,9 @@ function configureSharedHome {
 function configureConfluenceHome {
     atl_log "Configuring ${ATL_CONFLUENCE_HOME}"
     mkdir -p "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
-    configureSharedHome
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" == "xtrue" ]]; then
+        configureSharedHome
+    fi
     atl_log "Setting ownership of ${ATL_CONFLUENCE_HOME} to '${ATL_CONFLUENCE_USER}' user"
     chown -R -H "${ATL_CONFLUENCE_USER}":"${ATL_CONFLUENCE_USER}" "${ATL_CONFLUENCE_HOME}" >> "${ATL_LOG}" 2>&1
     atl_log "Done configuring ${ATL_CONFLUENCE_HOME}"
@@ -159,7 +162,6 @@ function configureConfluenceHome {
 function configureDbProperties {
 
     local LOCAL_CFG_XML="${ATL_CONFLUENCE_HOME}/confluence.cfg.xml"
-    local SHARED_CFG_XML="${ATL_APP_DATA_MOUNT}/${ATL_CONFLUENCE_SERVICE_NAME}/shared-home/confluence.cfg.xml"
 
     declare -A SERVER_PROPS=(
         ["hibernate.connection.driver_class"]="${ATL_JDBC_DRIVER}"
@@ -174,20 +176,16 @@ function configureDbProperties {
         ["hibernate.c3p0.validate"]="${ATL_DB_VALIDATE}"
         ["hibernate.c3p0.preferredTestQuery"]="select version();"
         ["hibernate.c3p0.acquire_increment"]="${ATL_DB_ACQUIREINCREMENT}"
-        ["shared-home"]="${ATL_CONFLUENCE_SHARED_HOME}"
     )
 
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]] && [[ -f "${SHARED_CFG_XML}" ]] && grep "setupStep>complete" "${SHARED_CFG_XML}" >> "${ATL_LOG}" 2>&1; then
-        # Confluence Server doesn't really use the shared-home config at all, but we want it to for resiliency/recovery in a cloud environment
-        # Hence, if this run isn't for Data Center and we find a completed config in the shared-home, we'll grab it and update it with any new/updated values
-        atl_log "Found complete Confluence Server config in shared-home; restoring configuration"
-        su "${ATL_CONFLUENCE_USER}" -c "cp -fpv \"${SHARED_CFG_XML}\" \"${LOCAL_CFG_XML}\"" >> "${ATL_LOG}" 2>&1
-        atl_log "Editing restored confluence.cfg.xml with updated configuration options"
+    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]] && [[ -f "${LOCAL_CFG_XML}" ]] && grep "setupStep>complete" "${LOCAL_CFG_XML}" >> "${ATL_LOG}" 2>&1; then
+        # Confluence Server uses an additional EBS volume for local-home, but if we find a completed XML config, we'll need to update it
+        atl_log "Found existing Confluence Server config in local-home; editing confluence.cfg.xml with updated configuration options"
         for PROP in "${!SERVER_PROPS[@]}"; do
             xmlstarlet edit --inplace --update "/confluence-configuration/properties/property[@name='${PROP}']" --value "${SERVER_PROPS[${PROP}]}" "${LOCAL_CFG_XML}"
         done
     else
-        # Otherwise, consider this a "new install" and we'll create the configuration from scratch
+        # Otherwise, consider this a new install (or Data Center node) and we'll create the configuration from scratch
         atl_log "Configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB settings"
         local PRODUCT_CONFIG_NAME="confluence"
         local CONFLUENCE_SETUP_STEP="setupstart"
@@ -212,7 +210,7 @@ EOT
             echo "    <property name=\"${PROP}\">${SERVER_PROPS[${PROP}]}</property>" | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
         done
 
-        if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" = "xtrue" ]]; then
+        if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" == "xtrue" ]]; then
             cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
     <property name="confluence.cluster">true</property>
     <property name="confluence.cluster.home">${ATL_CONFLUENCE_SHARED_HOME}</property>
@@ -224,6 +222,7 @@ EOT
     <property name="confluence.cluster.join.type">aws</property>
     <property name="confluence.cluster.name">${ATL_AWS_STACK_NAME}</property>
     <property name="confluence.cluster.ttl">1</property>
+    <property name="shared-home">${ATL_CONFLUENCE_SHARED_HOME}</property>
 EOT
         fi
         cat <<EOT | su "${ATL_CONFLUENCE_USER}" -c "tee -a \"${LOCAL_CFG_XML}\"" > /dev/null
@@ -233,16 +232,6 @@ EOT
 
         su "${ATL_CONFLUENCE_USER}" -c "chmod 600 \"${LOCAL_CFG_XML}\"" >> "${ATL_LOG}" 2>&1
         atl_log "Done configuring ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} to use the ${ATL_CONFLUENCE_SHORT_DISPLAY_NAME} DB role ${ATL_CONFLUENCE_DB_USER}"
-    fi
-
-    if [[ "x${ATL_CONFLUENCE_DATA_CENTER}" != "xtrue" ]]; then
-        local WATCHER_SCRIPT="/opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh"
-        if [[ -x ${WATCHER_SCRIPT} ]]; then
-            atl_log "Starting filewatcher to copy Confluence Server config to shared-home on-edit"
-            WATCHED_FILE=${LOCAL_CFG_XML} FILE_DEST=${SHARED_CFG_XML} LOG_FILE=${ATL_LOG} ${WATCHER_SCRIPT} >> "${ATL_LOG}" 2>&1 &
-        else
-            atl_log "Script for monitoring Confluence Server configuration changes is not available; config will not persist"
-        fi
     fi
 }
 

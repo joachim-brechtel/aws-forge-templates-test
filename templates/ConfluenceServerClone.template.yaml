@@ -19,7 +19,6 @@ Metadata:
           default: Instance parameters
         Parameters:
           - InstanceType
-          - InstanceVolumeSize
       - Label:
           default: Database
         Parameters:
@@ -136,8 +135,6 @@ Metadata:
         default: Route 53 Hosted Zone (optional)
       InstanceType:
         default: EC2 instance type
-      InstanceVolumeSize:
-        default: EC2 volume size
       InternalSubnets:
         default: Internal subnets *
       JvmHeapOverrideConfluence:
@@ -441,10 +438,6 @@ Parameters:
     ConstraintDescription: Must be an EC2 instance type from the selection list
     Description: Instance type for the application server.
     Type: String
-  InstanceVolumeSize:
-    Default: 200
-    Description: Size of root volume in GB (note - size based upon Application indexes x 4)
-    Type: Number
   InternalSubnets:
     Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
@@ -833,52 +826,52 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-014a2b4cee98776ed
+      HVM64: ami-0d5e41b15d04a006b
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-05877a464abb373e3
+      HVM64: ami-0c03fa401f1d346d4
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-089323993c9b0a6b1
+      HVM64: ami-008f3f5243cbb9563
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-044544135e0236d49
+      HVM64: ami-066630c868848cf4e
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-05fcf371763b2abe0
+      HVM64: ami-0bc38442d145b1ec3
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-03c101b9aeb396b25
+      HVM64: ami-0d36406f53ad1e0f0
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-077c24ffa7fb0f400
+      HVM64: ami-0e70a334347cae36b
       HVMG2: NOT_SUPPORTED
     eu-north-1:
-      HVM64: ami-0b533cc3ee31130e6
+      HVM64: ami-0d39adfcaa130ece7
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-088e8a47d74119ce8
+      HVM64: ami-00e6ec99cbb5d8fea
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-0bfa6aed73df67983
+      HVM64: ami-08ed09d41758c8558
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-08c02e0fdd70685ee
+      HVM64: ami-00a25c9e19182b2ca
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0e90b21d5da87ee1a
+      HVM64: ami-05bc007fe8d983fcd
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0420c4f9d96a55763
+      HVM64: ami-0920319447ff3036f
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-05b2f76e617521ffd
+      HVM64: ami-0c8c2f95df87176f4
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0db2eec8b0cd07966
+      HVM64: ami-0d832098429d638b8
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-014d0c703c898c713
+      HVM64: ami-06956deb56bc6bde7
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceServerRole:
@@ -900,8 +893,18 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Action:
+                - 'ec2:AttachVolume'
+                - 'ec2:CreateSnapshot'
+                - 'ec2:CreateTags'
+                - 'ec2:CreateVolume'
+                - 'ec2:DeleteSnapshot'
+                - 'ec2:DeleteTags'
+                - 'ec2:DeleteVolume'
                 - 'ec2:DescribeInstances'
                 - 'ec2:DescribeSecurityGroups'
+                - 'ec2:DescribeSnapshotAttribute'
+                - 'ec2:DescribeSnapshots'
+                - 'ec2:DescribeVolumes'
                 Effect: Allow
                 Resource: ['*']
               - Action: ['s3:ListBucket']
@@ -951,8 +954,6 @@ Resources:
           PropagateAtLaunch: true
   ConfluenceServerLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
-    DependsOn:
-      - NFSServer
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
@@ -1059,6 +1060,80 @@ Resources:
               mode: "000400"
               owner: root
               group: root
+            /tmp/bootstrap_confluence_home:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
+
+                set -xe
+
+                ebsToMount=''
+                currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
+                instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
+                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
+                existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
+                deviceName="/dev/xvdb"
+                mountPoint="/var/atlassian/application-data/confluence"
+
+                if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
+                  if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
+                    echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
+                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
+                    existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
+
+                    echo "Waiting for snapshot creation to finish"
+                    aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
+
+                    echo "Creating new EBS volume from snapshot in $currentAz"
+                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                  else
+                    echo "Existing EBS volume is in our AZ; using existing EBS"
+                    ebsToMount=$existingEbs
+                  fi
+                else
+                  echo "Restoring new EBS volume from snapshot in $currentAz"
+                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "${EBSSnapshotId}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                fi
+
+                ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
+
+                echo "Waiting for EBS to be available"
+                aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
+
+                echo "Attaching EBS volume to this instance"
+                aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
+
+                echo "Waiting..."
+                aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
+
+                echo "Checking OS for device availablity"
+                until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
+                  sleep 2
+                done
+
+                echo "Checking EBS for existing filesystem"
+                if [[ ! $(blkid $deviceName) ]]; then
+                  echo "No filesystem found; creating ext4 filesystem"
+                  mkfs -t ext4 $deviceName
+                fi
+
+                echo "Creating mount point"
+                mkdir -p $mountPoint
+
+                echo "Adding to fstab"
+                echo "UUID=$(blkid -o value -s UUID $deviceName)  $mountPoint  ext4  defaults,nofail  0  2" >> /etc/fstab
+
+                echo "Mounting EBS"
+                mount -a
+
+                if [[ -n $existingEbsSnapshotId ]]; then
+                  echo "Deleting old EBS snapshot and volume"
+                  aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
+                  aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
+                fi
+              mode: "000750"
+              owner: root
+              group: root
             /tmp/bootstrap_local_ansible:
               content: !Sub |
                 #!/usr/bin/env bash
@@ -1083,16 +1158,9 @@ Resources:
               owner: root
               group: root
           commands:
-            010_make_mount_point:
-              command: mkdir -p /media/atl
-            020_add_nfs_mount:
-              command: !Sub "echo ${NFSServer.PrivateIp}:/nfs /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >> /etc/fstab"
-            030_mount_all:
-              command: mount -a
-              ignoreErrors: true
-            040_make_shared_home_dir:
-              command: mkdir -p /media/atl/confluence/shared-home
-            050_bootstrap_local_ansible:
+            010_bootstrap_confluence_home:
+              command: /tmp/bootstrap_confluence_home > /var/log/bootstrap_confluence_home.log 2>&1
+            020_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
@@ -1102,16 +1170,14 @@ Resources:
                 files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
               collectd:
                 !If [DoCollectd, {enabled: true, ensureRunning: true}, !Ref 'AWS::NoValue']
-              rpcbind:
-                enabled: true
-                ensureRunning: true
-                packages:
-                  yum: [nfs-utils]
     Properties:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: !Ref InstanceVolumeSize
+            VolumeSize: 100
+        - DeviceName: /dev/xvdb
+          Ebs: {}
+          NoDevice: true
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1133,105 +1199,6 @@ Resources:
           yum update -y aws-cfn-bootstrap
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ConfluenceServerLaunchConfig --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ConfluenceServerGroup --region ${AWS::Region}
-# Elastic file system
-  EBSRestoreVol:
-    Type: AWS::EC2::Volume
-    Properties:
-      AvailabilityZone: !Sub "${AWS::Region}a"
-      SnapshotId: !Ref EBSSnapshotId
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName} Confluence DR shared-home volume"
-        - Key: Application
-          Value: !Ref AWS::StackId
-      VolumeType: gp2
-  NFSServer:
-    Type: 'AWS::EC2::Instance'
-    Metadata:
-      'AWS::CloudFormation::Init':
-        config:
-          files:
-            /tmp/nfs:
-              content: >-
-                IwojIERlZmluZSB3aGljaCBwcm90b2NvbCB2ZXJzaW9ucyBtb3VudGQgCiMgd2lsbCBhZHZlcnRpc2UuIFRoZSB2YWx1ZXMgYXJlICJubyIgb3IgInllcyIKIyB3aXRoIHllcyBiZWluZyB0aGUgZGVmYXVsdAojTU9VTlREX05GU19WMj0ibm8iCiNNT1VOVERfTkZTX1YzPSJubyIKIwojCiMgUGF0aCB0byByZW1vdGUgcXVvdGEgc2VydmVyLiBTZWUgcnF1b3RhZCg4KQojUlFVT1RBRD0iL3Vzci9zYmluL3JwYy5ycXVvdGFkIgojIFBvcnQgcnF1b3RhZCBzaG91bGQgbGlzdGVuIG9uLgojUlFVT1RBRF9QT1JUPTg3NQojIE9wdGluYWwgb3B0aW9ucyBwYXNzZWQgdG8gcnF1b3RhZAojUlBDUlFVT1RBRE9QVFM9IiIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBpbi1rZXJuZWwgbG9ja2QKI0xPQ0tEQVJHPQojIFRDUCBwb3J0IHJwYy5sb2NrZCBzaG91bGQgbGlzdGVuIG9uLgpMT0NLRF9UQ1BQT1JUPTMyODAzCiMgVURQIHBvcnQgcnBjLmxvY2tkIHNob3VsZCBsaXN0ZW4gb24uCkxPQ0tEX1VEUFBPUlQ9MzI3NjkKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMubmZzZC4gU2VlIHJwYy5uZnNkKDgpCiMgVHVybiBvZmYgdjIgYW5kIHYzIHByb3RvY29sIHN1cHBvcnQKI1JQQ05GU0RBUkdTPSItTiAyIC1OIDMiCiMgVHVybiBvZmYgdjQgcHJvdG9jb2wgc3VwcG9ydAojUlBDTkZTREFSR1M9Ii1OIDQiCiMgTnVtYmVyIG9mIG5mcyBzZXJ2ZXIgcHJvY2Vzc2VzIHRvIGJlIHN0YXJ0ZWQuCiMgVGhlIGRlZmF1bHQgaXMgOC4gCiNSUENORlNEQ09VTlQ9OAojIFN0b3AgdGhlIG5mc2QgbW9kdWxlIGZyb20gYmVpbmcgcHJlLWxvYWRlZAojTkZTRF9NT0RVTEU9Im5vbG9hZCIKIyBTZXQgVjQgZ3JhY2UgcGVyaW9kIGluIHNlY29uZHMKI05GU0RfVjRfR1JBQ0U9OTAKIwojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5tb3VudGQuIFNlZSBycGMubW91bnRkKDgpCiNSUENNT1VOVERPUFRTPSIiCiMgUG9ydCBycGMubW91bnRkIHNob3VsZCBsaXN0ZW4gb24uCk1PVU5URF9QT1JUPTg5MgojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdGF0ZC4gU2VlIHJwYy5zdGF0ZCg4KQojU1RBVERBUkc9IiIKIyBQb3J0IHJwYy5zdGF0ZCBzaG91bGQgbGlzdGVuIG9uLgojU1RBVERfUE9SVD02NjIKIyBPdXRnb2luZyBwb3J0IHN0YXRkIHNob3VsZCB1c2VkLiBUaGUgZGVmYXVsdCBpcyBwb3J0CiMgaXMgcmFuZG9tCiNTVEFURF9PVVRHT0lOR19QT1JUPTIwMjAKIyBTcGVjaWZ5IGNhbGxvdXQgcHJvZ3JhbSAKI1NUQVREX0hBX0NBTExPVVQ9Ii91c3IvbG9jYWwvYmluL2ZvbyIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMuaWRtYXBkLiBTZWUgcnBjLmlkbWFwZCg4KQojUlBDSURNQVBEQVJHUz0iIgojCiMgU2V0IHRvIHR1cm4gb24gU2VjdXJlIE5GUyBtb3VudHMuIAojU0VDVVJFX05GUz0ieWVzIgojIE9wdGlvbmFsIGFyZ3VtZW50cyBwYXNzZWQgdG8gcnBjLmdzc2QuIFNlZSBycGMuZ3NzZCg4KQojUlBDR1NTREFSR1M9IiIKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdmNnc3NkLiBTZWUgcnBjLnN2Y2dzc2QoOCkKI1JQQ1NWQ0dTU0RBUkdTPSIiCiMKIyBUbyBlbmFibGUgUkRNQSBzdXBwb3J0IG9uIHRoZSBzZXJ2ZXIgYnkgc2V0dGluZyB0aGlzIHRvCiMgdGhlIHBvcnQgdGhlIHNlcnZlciBzaG91bGQgbGlzdGVuIG9uCiNSRE1BX1BPUlQ9MjAwNDkgCg==
-          commands:
-            010_make_mount_point:
-              command: mkdir /nfs
-              ignoreErrors: false
-            020_add_nfs_mount:
-              command:
-                echo "/dev/xvdk   /nfs        ext4    defaults        0   2" >> /etc/fstab
-              ignoreErrors: false
-            030_mount_nfs:
-              command: mount /nfs
-            040_fix_exports:
-              command: echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            045_check_exports:
-              command: cat /etc/exports
-            050_restart_nfs:
-              command: service nfs restart
-          services:
-            sysvinit:
-              nfs:
-                enabled: true
-                ensureRunning: true
-          packages:
-            yum:
-              nfs-utils: []
-    Properties:
-      AvailabilityZone: !Sub "${AWS::Region}a"
-      ImageId:
-        !FindInMap
-          - AWSRegionArch2AMI
-          - !Ref "AWS::Region"
-          - !FindInMap
-              - AWSInstanceType2Arch
-              - !Ref InstanceType
-              - Arch
-      InstanceType: !Ref InstanceType
-      KeyName: !Ref KeyName
-      NetworkInterfaces:
-        - GroupSet:
-            - !Ref SecurityGroup
-          AssociatePublicIpAddress: false
-          DeviceIndex: '0'
-          DeleteOnTermination: true
-          SubnetId: !Select [0, !Ref InternalSubnets]
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -v
-          yum update -y
-          yum install aws-cfn-bootstrap -y
-          # download data and install file
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource NFSServer --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
-          echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-          base64 -d /tmp/nfs > /etc/sysconfig/nfs
-          exportfs -av
-          /sbin/service rpcbind restart
-          /sbin/service nfs restart
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource NFSServer --region ${AWS::Region}
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName} DR NFS Node"
-        - Key: service_name
-          Value: !Ref AWS::StackName
-      Volumes:
-        - VolumeId: !Ref EBSRestoreVol
-          Device: /dev/xvdk
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT20M
-  NFSR53name:
-    Type: AWS::Route53::RecordSet
-    Condition: UseHostedZone
-    Properties:
-      HostedZoneName: !Ref HostedZone
-      Comment: Route53 A rec for the NFS
-      Name: !Sub "${AWS::StackName}.efs.${HostedZone}"
-      Type: A
-      TTL: '900'
-      ResourceRecords:
-        - !GetAtt NFSServer.PrivateIp
 # Database
   DB:
     Type: AWS::RDS::DBInstance
@@ -1389,9 +1356,6 @@ Outputs:
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [DoSSL, 'https', 'http']
         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
-  NFSR53name:
-    Description: The DR NFS name
-    Value: !If [ UseHostedZone, !Sub "${AWS::StackName}.nfs.${HostedZone}", '']
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup

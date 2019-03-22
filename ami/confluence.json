@@ -182,13 +182,6 @@
     "inline": "sudo mkdir -p /opt/atlassian/bin && sudo mv /tmp/atl-update-host-name.sh /opt/atlassian/bin/atl-update-host-name.sh && sudo chmod +x /opt/atlassian/bin/atl-update-host-name.sh && sudo chown root:root /opt/atlassian/bin/atl-update-host-name.sh"
   }, {
     "type": "file",
-    "source": "scripts/bin/atl-start-confluence-server-config-filewatcher.sh",
-    "destination": "/tmp/atl-start-confluence-server-config-filewatcher.sh"
-  }, {
-    "type": "shell",
-    "inline": "sudo mkdir -p /opt/atlassian/bin && sudo mv /tmp/atl-start-confluence-server-config-filewatcher.sh /opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh && sudo chmod +x /opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh && sudo chown root:root /opt/atlassian/bin/atl-start-confluence-server-config-filewatcher.sh"
-  }, {
-    "type": "file",
     "source": "scripts/init.d/atl-init-10-volume.sh",
     "destination": "/tmp/atl-init-10-volume.sh"
   }, {
