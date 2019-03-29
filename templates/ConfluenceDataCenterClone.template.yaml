@@ -215,7 +215,6 @@ Parameters:
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   AutologinCookieAge:
-    Default: ''
     Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
@@ -534,10 +533,8 @@ Parameters:
     Type: String
   SubDomainName:
     Description: Leave this field blank to use your stack name as the sub-domain.
-    Default: ''
     Type: String
   SSLCertificateARN:
-    Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
     MaxLength: 90
@@ -680,7 +677,6 @@ Parameters:
     Description: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
     Type: String
   TomcatContextPath:
-    Default: ''
     AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
     Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String

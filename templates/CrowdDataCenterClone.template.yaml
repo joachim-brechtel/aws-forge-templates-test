@@ -324,7 +324,6 @@ Parameters:
     Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
     Type: Number
   CrowdDownloadUrl:
-    Default: ''
     Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
     ConstraintDescription: Must be a valid Crowd download url
@@ -490,7 +489,6 @@ Parameters:
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   JvmHeapOverride:
-    Default: ''
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
@@ -512,7 +510,6 @@ Parameters:
     Description: Enable mail processing and sending
     Type: String
   SSLCertificateARN:
-    Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
     MaxLength: 90
@@ -541,7 +538,6 @@ Parameters:
     Description: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
     Type: String
   TomcatContextPath:
-    Default: ''
     AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
     Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String

@@ -196,7 +196,6 @@ Parameters:
     MinLength: 9
     MaxLength: 18
   ConfluenceDownloadUrl:
-    Default: ''
     Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
     ConstraintDescription: "Must be a valid Confluence download url from version 6.1.x or higher. Find valid versions at https://confluence.atlassian.com/display/DOC/Confluence+Release+Notes"
@@ -207,7 +206,6 @@ Parameters:
     Description: The version of Confluence to install
     Type: String
   CustomDnsName:
-    Default: ''
     Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the public IP address.'
     Type: String
   DBInstanceClass:
@@ -452,11 +450,9 @@ Parameters:
     Description: Subnets (two or more) where your EC2 instance and other internal infrastructure will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   JvmHeapOverrideConfluence:
-    Default: ''
     Description: Override the default amount of memory to allocate to the Confluence JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   JvmHeapOverrideSynchrony:
-    Default: ''
     Description: Override the default amount of memory to allocate to the Synchrony JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
@@ -486,11 +482,9 @@ Parameters:
     Description: Enable mail processing and sending
     Type: String
   SubDomainName:
-    Default: ''
     Description: Leave this field blank to use your stack name as the sub-domain.
     Type: String
   SSLCertificateARN:
-    Default: ''
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
     MaxLength: 90
@@ -519,7 +513,6 @@ Parameters:
     Description: The number of milliseconds this Connector will wait, after accepting a connection, for the request URI line to be presented
     Type: String
   TomcatContextPath:
-    Default: ''
     AllowedPattern: '^(\/[A-z_\-0-9\.]+)?$'
     Description: The context path of this web application, which is matched against the beginning of each request URI to select the appropriate web application for processing. If used, must include leading "/"
     Type: String
