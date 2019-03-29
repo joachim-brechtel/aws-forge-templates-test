@@ -30,8 +30,8 @@ Metadata:
           - DBMasterUserPassword
           - DBMultiAZ
           - DBPassword
+          - DBReadReplicaInstanceClass
           - DBStorage
-          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
@@ -55,6 +55,7 @@ Metadata:
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
+          - StorageEncrypted
       - Label:
           default: Application Tuning (Optional)
         Parameters:
@@ -125,14 +126,14 @@ Metadata:
         default: DB Pool Maximum Size
       DBPoolMinSize:
         default: DB Pool Minimum Size
+      DBReadReplicaInstanceClass:
+        default: Read Replica Instance Class
       DBRemoveAbandoned:
         default: DB Remove Abandoned?
       DBRemoveAbandonedTimeout:
         default: DB Remove Abandoned Timeout
       DBStorage:
         default: Database storage
-      DBStorageEncrypted:
-        default: Database encryption
       DBStorageType:
         default: Database storage type
       DBTestOnBorrow:
@@ -161,6 +162,8 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      StorageEncrypted:
+        default: Encryption
       TomcatAcceptCount:
         default: Tomcat Accept Count
       TomcatConnectionTimeout:
@@ -191,7 +194,6 @@ Parameters:
     Description: Controls if the EC2 instances are assigned a public IP address
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -248,6 +250,12 @@ Parameters:
       - m5.4xlarge
       - m5.12xlarge
       - m5.24xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5a.12xlarge
+      - m5a.24xlarge
       - m5d.large
       - m5d.xlarge
       - m5d.2xlarge
@@ -266,6 +274,12 @@ Parameters:
       - r5.4xlarge
       - r5.12xlarge
       - r5.24xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5a.12xlarge
+      - r5a.24xlarge
       - r5d.large
       - r5d.xlarge
       - r5d.2xlarge
@@ -287,7 +301,6 @@ Parameters:
       - x1e.4xlarge
       - x1e.8xlarge
       - x1e.16xlarge
-      - x1e.32xlarge
       - z1d.large
       - z1d.xlarge
       - z1d.2xlarge
@@ -302,14 +315,12 @@ Parameters:
     Type: Number
   ClusterNodeMin:
     Default: 1
-    Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
   ClusterNodeVolumeSize:
     Default: 50
     Description: Size of cluster node root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   CrowdDownloadUrl:
-    Default: ''
     ConstraintDescription: Must be a valid Crowd download url
     Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
@@ -320,7 +331,6 @@ Parameters:
     Description: The version of Crowd to install
     Type: String
   CustomDnsName:
-    Default: ''
     Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBInstanceClass:
@@ -415,6 +425,32 @@ Parameters:
     Default: 20
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
+  DBReadReplicaInstanceClass:
+    Default: none
+    Description: Select an instance class for a read replica DB (will not be used by application; intended for third-party/read-only access). Note that enabling this will require brief downtime for your database if Multi-AZ is not enabled!
+    AllowedValues:
+      - none
+      - db.m4.large
+      - db.m4.xlarge
+      - db.m4.2xlarge
+      - db.m4.4xlarge
+      - db.m4.10xlarge
+      - db.m4.16xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.t2.medium
+      - db.t2.large
+      - db.t2.xlarge
+      - db.t2.2xlarge
+      - db.t3.medium
+      - db.t3.large
+      - db.t3.xlarge
+      - db.t3.2xlarge
+    Type: String
   DBRemoveAbandoned:
     Default: true
     Description: Flag to remove abandoned database connections if they exceed the Removed Abandoned Timeout
@@ -427,13 +463,6 @@ Parameters:
     Default: 20
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
-  DBStorageEncrypted:
-    Default: false
-    AllowedValues:
-      - true
-      - false
-    Description: Whether or not to encrypt the database
-    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -465,17 +494,14 @@ Parameters:
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
-    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
-    Default: ''
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InternalSubnets:
-    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
@@ -484,16 +510,13 @@ Parameters:
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
-    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
   LocalAnsibleGitRepo:
-    Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String
   LocalAnsibleGitSshKeyName:
-    Default: ''
     Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
   MailEnabled:
@@ -517,6 +540,13 @@ Parameters:
       - false
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
+    Type: String
+  StorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database and the local storage on the EC2 nodes. EFS encryption is coming soon.
     Type: String
   TomcatAcceptCount:
     Default: 10
@@ -561,7 +591,6 @@ Parameters:
     Type: String
     AllowedValues: [http, https]
   VPC:
-    Default: ''
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
     Type: AWS::EC2::VPC::Id
@@ -572,6 +601,8 @@ Conditions:
     !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
+  DoCreateReadReplica:
+    !Not [!Equals [!Ref DBReadReplicaInstanceClass, 'none']]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
@@ -584,10 +615,14 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
-  UseDatabaseEncryption:
-    !Equals [!Ref DBStorageEncrypted, true]
+  UseEncryption:
+    !Equals [!Ref StorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
+  UseHostedZoneAndDoCreateReadReplica:
+    !And
+      - !Condition DoCreateReadReplica
+      - !Condition UseHostedZone
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
 Mappings:
@@ -718,6 +753,24 @@ Mappings:
     m5.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    m5a.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    m5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
       Jvmheap: 5120m
@@ -770,6 +823,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     r5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r5d.large:
@@ -833,9 +904,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     x1e.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    x1e.32xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     z1d.large:
@@ -969,7 +1037,6 @@ Resources:
       - EFSMountAz1
       - EFSMountAz2
     Metadata:
-      Comment: ''
       AWS::CloudFormation::Init:
         config:
           packages:
@@ -993,7 +1060,7 @@ Resources:
                   -
                     - !If [SSLScheme, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Sub ["ATL_AWS_STACK_NAME=${StackName}", StackName: !Ref "AWS::StackName"]
-                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true', ''] }]
+                    - !Sub ["ATL_CATALINA_OPTS=\"${CatalinaOpts} ${MailOpts}\"", { CatalinaOpts: !Ref CatalinaOpts, MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true ', ''] }]
                     - !Sub ["ATL_CROWD_INSTALLER_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
                     - !Sub ["ATL_CROWD_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
                     - !Sub ["ATL_DB_HOST=${DBEndpointAddress}", DBEndpointAddress: !GetAtt DB.Endpoint.Address]
@@ -1136,7 +1203,9 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
+            Encrypted: !If [UseEncryption, true, false]
             VolumeSize: !Ref ClusterNodeVolumeSize
+            VolumeType: gp2
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1193,7 +1262,7 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the efs
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']]
+      Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
       Type: CNAME
       TTL: '900'
       ResourceRecords:
@@ -1203,18 +1272,19 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       AllocatedStorage: !Ref DBStorage
-      BackupRetentionPeriod: '0'
+      BackupRetentionPeriod: !If [DoCreateReadReplica, '1', '0']
+      CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
       EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
-      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
-      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
+      StorageEncrypted: !If [UseEncryption, !Ref StorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1238,6 +1308,29 @@ Resources:
       TTL: '900'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
+  DBReplica:
+    Condition: DoCreateReadReplica
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: !Ref DBReadReplicaInstanceClass
+      DBInstanceIdentifier: !Sub "${AWS::StackName}-replica"
+      SourceDBInstanceIdentifier: !Ref DB
+      StorageType: gp2
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName} Crowd PostgreSQL Read Replica Database"
+      VPCSecurityGroups: [!Ref SecurityGroup]
+  DBReadReplicaCname:
+    Condition: UseHostedZoneAndDoCreateReadReplica
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZone
+      Comment: Route53 cname for the RDS read replica
+      Name: !Sub "${AWS::StackName}.db-replica.${HostedZone}"
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt DBReplica.Endpoint.Address
 # Loadbalancer
   LoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -1271,7 +1364,7 @@ Resources:
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
         Timeout: '29'
-        Interval: '3'
+        Interval: '30'
         UnhealthyThreshold: '2'
         HealthyThreshold: '2'
       Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
@@ -1325,7 +1418,7 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
   EncryptionKey:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     DeletionPolicy: Retain
     Type: AWS::KMS::Key
     Properties:
@@ -1343,7 +1436,7 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName} Encryption Key"
   EncryptionKeyAlias:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     Type: AWS::KMS::Alias
     Properties:
       AliasName: !Sub "alias/${AWS::StackName}"
@@ -1386,9 +1479,16 @@ Outputs:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
   DBEncryptionKey:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     Description: The alias of the encryption key created for RDS
     Value: !Ref EncryptionKeyAlias
+  DBReplicaEndpointAddress:
+    Condition: DoCreateReadReplica
+    Description: The endpoint for the read replica
+    Value: !If
+      - UseHostedZone
+      - !Ref DBReadReplicaCname
+      - !GetAtt DBReplica.Endpoint.Address
   EFSCname:
     Description: The cname of the EFS
     Value: !If

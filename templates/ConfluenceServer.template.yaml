@@ -29,7 +29,6 @@ Metadata:
           - DBMultiAZ
           - DBPassword
           - DBStorage
-          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
@@ -55,6 +54,7 @@ Metadata:
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
+          - StorageEncrypted
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
@@ -121,8 +121,6 @@ Metadata:
         default: DB Acquire Increment
       DBStorage:
         default: Database storage
-      DBStorageEncrypted:
-        default: Database encryption
       DBStorageType:
         default: Database storage type
       DeployEnvironment:
@@ -153,6 +151,8 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      StorageEncrypted:
+        default: Encryption
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       TomcatAcceptCount:
@@ -183,7 +183,6 @@ Parameters:
     Description: Sets the Rememberme (autologin) cookie age length in seconds
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
@@ -255,7 +254,6 @@ Parameters:
     MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
-    Default: 'ChangeME'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database admin account password.
@@ -271,7 +269,6 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: 'chaNGEmE'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
     Description: Database user account password.
@@ -315,13 +312,6 @@ Parameters:
     Default: 10
     Description: Database allocated storage size, in gigabytes (GB)
     Type: Number
-  DBStorageEncrypted:
-    Default: false
-    AllowedValues:
-      - true
-      - false
-    Description: Whether or not to encrypt the database
-    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -341,12 +331,10 @@ Parameters:
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
-    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
-    Default: ''
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
@@ -393,6 +381,12 @@ Parameters:
       - m5.4xlarge
       - m5.12xlarge
       - m5.24xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5a.12xlarge
+      - m5a.24xlarge
       - m5d.large
       - m5d.xlarge
       - m5d.2xlarge
@@ -411,6 +405,12 @@ Parameters:
       - r5.4xlarge
       - r5.12xlarge
       - r5.24xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5a.12xlarge
+      - r5a.24xlarge
       - r5d.large
       - r5d.xlarge
       - r5d.2xlarge
@@ -430,7 +430,6 @@ Parameters:
       - x1e.4xlarge
       - x1e.8xlarge
       - x1e.16xlarge
-      - x1e.32xlarge
       - z1d.large
       - z1d.xlarge
       - z1d.2xlarge
@@ -441,7 +440,6 @@ Parameters:
     Description: Instance type for the application server.
     Type: String
   InternalSubnets:
-    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your EC2 instance and other internal infrastructure will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
@@ -454,7 +452,6 @@ Parameters:
     Description: Override the default amount of memory to allocate to the Synchrony JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyName:
-    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
@@ -467,11 +464,9 @@ Parameters:
     Description: Controls if the load balancer is assigned a public IP address
     Type: String
   LocalAnsibleGitRepo:
-    Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String
   LocalAnsibleGitSshKeyName:
-    Default: ''
     Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
   LocalHomeVolumeSize:
@@ -503,6 +498,13 @@ Parameters:
       - false
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
+    Type: String
+  StorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database, the shared_home, and the local storage on the EC2 nodes.
     Type: String
   TomcatAcceptCount:
     Default: 10
@@ -547,7 +549,6 @@ Parameters:
     Type: String
     AllowedValues: [http, https]
   VPC:
-    Default: ''
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
     Type: AWS::EC2::VPC::Id
@@ -572,8 +573,8 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
-  UseDatabaseEncryption:
-    !Equals [!Ref DBStorageEncrypted, true]
+  UseEncryption:
+    !Equals [!Ref StorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UseSubDomainName:
@@ -700,6 +701,24 @@ Mappings:
     m5.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    m5a.large:
+      Arch: HVM64
+      Jvmheap: 4096m
+    m5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
       Jvmheap: 4096m
@@ -752,6 +771,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     r5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r5d.large:
@@ -809,9 +846,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     x1e.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    x1e.32xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     z1d.large:
@@ -1069,76 +1103,83 @@ Resources:
               owner: root
               group: root
             /tmp/bootstrap_confluence_home:
-              content: !Sub |
-                #!/usr/bin/env bash
-                # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
+              content: !Sub
+                - |
+                  #!/usr/bin/env bash
+                  # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
 
-                set -xe
+                  set -xe
 
-                ebsToMount=''
-                currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
-                instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
-                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
-                existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
-                deviceName="/dev/xvdb"
-                mountPoint="/var/atlassian/application-data/confluence"
-
-                if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
-                  if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
-                    echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
-                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
-                    existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
-
-                    echo "Waiting for snapshot creation to finish"
-                    aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
-
-                    echo "Creating new EBS volume from snapshot in $currentAz"
-                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
-                  else
-                    echo "Existing EBS volume is in our AZ; using existing EBS"
-                    ebsToMount=$existingEbs
+                  ebsToMount=''
+                  currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
+                  instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
+                  existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
+                  existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
+                  deviceName="/dev/xvdb"
+                  mountPoint="/var/atlassian/application-data/confluence"
+                  useEncryption="--no-encrypted"
+                  if [[ ${StorageEncrypted} == "true" ]]; then
+                    useEncryption="--encrypted"
                   fi
-                else
-                  echo "Creating new EBS volume in $currentAz"
-                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${LocalHomeVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
-                fi
 
-                ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
+                  if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
+                    if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
+                      echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
+                      existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
+                      existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
 
-                echo "Waiting for EBS to be available"
-                aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
+                      echo "Waiting for snapshot creation to finish"
+                      aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
 
-                echo "Attaching EBS volume to this instance"
-                aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
+                      echo "Creating new EBS volume from snapshot in $currentAz"
+                      ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 "$useEncryption" --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                    else
+                      echo "Existing EBS volume is in our AZ; using existing EBS"
+                      ebsToMount=$existingEbs
+                    fi
+                  else
+                    echo "Creating new EBS volume in $currentAz"
+                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --size "${LocalHomeVolumeSize}" --availability-zone "$currentAz" --volume-type gp2 "$useEncryption" --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                  fi
 
-                echo "Waiting..."
-                aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
+                  ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
 
-                echo "Checking OS for device availablity"
-                until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
-                  sleep 2
-                done
+                  echo "Waiting for EBS to be available"
+                  aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
 
-                echo "Checking EBS for existing filesystem"
-                if [[ ! $(blkid $deviceName) ]]; then
-                  echo "No filesystem found; creating ext4 filesystem"
-                  mkfs -t ext4 $deviceName
-                fi
+                  echo "Attaching EBS volume to this instance"
+                  aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
 
-                echo "Creating mount point"
-                mkdir -p $mountPoint
+                  echo "Waiting..."
+                  aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
 
-                echo "Adding to fstab"
-                echo "UUID=$(blkid -o value -s UUID $deviceName)  $mountPoint  ext4  defaults,nofail  0  2" >> /etc/fstab
+                  echo "Checking OS for device availablity"
+                  until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
+                    sleep 2
+                  done
 
-                echo "Mounting EBS"
-                mount -a
+                  echo "Checking EBS for existing filesystem"
+                  if [[ ! $(blkid $deviceName) ]]; then
+                    echo "No filesystem found; creating ext4 filesystem"
+                    mkfs -t ext4 $deviceName
+                  fi
 
-                if [[ -n $existingEbsSnapshotId ]]; then
-                  echo "Deleting old EBS snapshot and volume"
-                  aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
-                  aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
-                fi
+                  echo "Creating mount point"
+                  mkdir -p $mountPoint
+
+                  echo "Adding to fstab"
+                  echo "UUID=$(blkid -o value -s UUID $deviceName)  $mountPoint  ext4  defaults,nofail  0  2" >> /etc/fstab
+
+                  echo "Mounting EBS"
+                  mount -a
+
+                  if [[ -n $existingEbsSnapshotId ]]; then
+                    echo "Deleting old EBS snapshot and volume"
+                    aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
+                    aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
+                  fi
+
+                  echo "EBS mount complete"
               mode: "000750"
               owner: root
               group: root
@@ -1187,7 +1228,9 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
+            Encrypted: !If [UseEncryption, true, false]
             VolumeSize: 100
+            VolumeType: gp2
         - DeviceName: /dev/xvdb
           Ebs: {}
           NoDevice: true
@@ -1223,11 +1266,11 @@ Resources:
       Engine: postgres
       EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
-      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
-      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
+      StorageEncrypted: !If [UseEncryption, !Ref StorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1344,7 +1387,7 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
   EncryptionKey:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     DeletionPolicy: Retain
     Type: AWS::KMS::Key
     Properties:
@@ -1362,7 +1405,7 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName} Encryption Key"
   EncryptionKeyAlias:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     Type: AWS::KMS::Alias
     Properties:
       AliasName: !Sub "alias/${AWS::StackName}"
@@ -1404,7 +1447,7 @@ Outputs:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
   DBEncryptionKey:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     Description: The alias of the encryption key created for RDS
     Value: !Ref EncryptionKeyAlias
   ConfluenceTargetGroupARN:

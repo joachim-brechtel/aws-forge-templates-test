@@ -34,8 +34,8 @@ Metadata:
           - DBMasterUserPassword
           - DBMultiAZ
           - DBPassword
+          - DBReadReplicaInstanceClass
           - DBStorage
-          - DBStorageEncrypted
           - DBStorageType
       - Label:
           default: Networking
@@ -61,6 +61,7 @@ Metadata:
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
+          - StorageEncrypted
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
@@ -135,8 +136,6 @@ Metadata:
         default: DB Preferred Test Query
       DBStorage:
         default: Database storage
-      DBStorageEncrypted:
-        default: Database encryption
       DBStorageType:
         default: Database storage type
       DBTimeout:
@@ -165,6 +164,8 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      StorageEncrypted:
+        default: Encryption
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       SynchronyClusterNodeMax:
@@ -195,7 +196,6 @@ Metadata:
         default: Tomcat protocol Scheme
       VPC:
         default: VPC *
-
 Parameters:
   AssociatePublicIpAddress:
     Default: false
@@ -208,7 +208,6 @@ Parameters:
     Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
-    Default: ''
     Description: Pass in any additional JVM options to tune Catalina Tomcat
     Type: String
   CidrBlock:
@@ -264,6 +263,12 @@ Parameters:
       - m5.4xlarge
       - m5.12xlarge
       - m5.24xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5a.12xlarge
+      - m5a.24xlarge
       - m5d.large
       - m5d.xlarge
       - m5d.2xlarge
@@ -282,6 +287,12 @@ Parameters:
       - r5.4xlarge
       - r5.12xlarge
       - r5.24xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5a.12xlarge
+      - r5a.24xlarge
       - r5d.large
       - r5d.xlarge
       - r5d.2xlarge
@@ -303,7 +314,6 @@ Parameters:
       - x1e.4xlarge
       - x1e.8xlarge
       - x1e.16xlarge
-      - x1e.32xlarge
       - z1d.large
       - z1d.xlarge
       - z1d.2xlarge
@@ -331,10 +341,9 @@ Parameters:
       - none
       - synchrony-local
       - synchrony-separate-nodes
-    Description: Collaborative Editing can be off, run locallly on the Confluence nodes (leave 1 GB heap free for Synchrony), or run on a separately autoscaled group of nodes.
+    Description: Collaborative Editing can be off, run locally on the Confluence nodes (leave 1 GB heap free for Synchrony), or run on a separately autoscaled group of nodes.
     Type: String
   ConfluenceDownloadUrl:
-    Default: ''
     Description: This parameter is used to download a custom Confluence version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
     ConstraintDescription: "Must be a valid Confluence download url from version 6.1.x or higher. Find valid versions at https://confluence.atlassian.com/display/DOC/Confluence+Release+Notes"
@@ -388,7 +397,7 @@ Parameters:
     Type: String
   DBIops:
     Default: 1000
-    ConstraintDescription: Must be in the range 1000 - 30000.
+    ConstraintDescription: Must be in the range 1000 - 30000
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00.'
     MinValue: 1000
     MaxValue: 30000
@@ -435,7 +444,7 @@ Parameters:
     Type: String
   DBMaxStatements:
     Default: 0
-    Description: "The size of c3p0's global PreparedStatement cache. It controls the total number of Statements cached, for all Connections. If set, it should be a fairly large number, as each pooled Connection requires its own, distinct flock of cached statements."
+    Description: The size of c3p0's global PreparedStatement cache. It controls the total number of Statements cached, for all Connections. If set, it should be a fairly large number, as each pooled Connection requires its own, distinct flock of cached statements.
     Type: String
   DBValidate:
     Default: false
@@ -449,17 +458,32 @@ Parameters:
     Default: 1
     Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
+  DBReadReplicaInstanceClass:
+    Default: none
+    Description: Select an instance class for a read replica DB (will not be used by the application; intended for third-party/read-only access). Note that enabling this will require brief downtime for your database if Multi-AZ is not enabled!
+    AllowedValues:
+      - none
+      - db.m4.large
+      - db.m4.xlarge
+      - db.m4.2xlarge
+      - db.m4.4xlarge
+      - db.m4.10xlarge
+      - db.m4.16xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.t2.medium
+      - db.t2.large
+      - db.t2.xlarge
+      - db.t2.2xlarge
+    Type: String
   DBStorage:
     Default: 10
     Description: Database allocated storage size, in gigabytes (GB). If you choose Provisioned IOPS, storage should be between 100 and 6144
     Type: Number
-  DBStorageEncrypted:
-    Default: false
-    AllowedValues:
-      - true
-      - false
-    Description: Whether or not to encrypt the database
-    Type: String
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
@@ -539,6 +563,13 @@ Parameters:
       - false
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
+    Type: String
+  StorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the database and the local storage on the EC2 nodes. EFS encryption is coming soon.
     Type: String
   SynchronyClusterNodeMax:
     Description: Maximum number of Synchrony cluster nodes
@@ -633,7 +664,6 @@ Parameters:
       - x1e.4xlarge
       - x1e.8xlarge
       - x1e.16xlarge
-      - x1e.32xlarge
       - z1d.large
       - z1d.xlarge
       - z1d.2xlarge
@@ -686,11 +716,9 @@ Parameters:
     Type: String
     AllowedValues: [http, https]
   VPC:
-    Default: ''
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
     Type: AWS::EC2::VPC::Id
-
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
@@ -698,6 +726,8 @@ Conditions:
     !Not [!Equals [!Ref MailEnabled, true]]
   DoCollectd:
     !Equals [!Ref StartCollectd, true]
+  DoCreateReadReplica:
+    !Not [!Equals [!Ref DBReadReplicaInstanceClass, 'none']]
   DoSetDBMasterUserPassword:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
@@ -712,10 +742,14 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
-  UseDatabaseEncryption:
-    !Equals [!Ref DBStorageEncrypted, true]
+  UseEncryption:
+    !Equals [!Ref StorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
+  UseHostedZoneAndDoCreateReadReplica:
+    !And
+      - !Condition DoCreateReadReplica
+      - !Condition UseHostedZone
   UsePublicIp:
     !Equals [!Ref AssociatePublicIpAddress, 'true']
   UseSubDomainName:
@@ -853,6 +887,24 @@ Mappings:
     m5.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    m5a.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    m5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
       Jvmheap: 5120m
@@ -905,6 +957,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     r5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r5d.large:
@@ -968,9 +1038,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     x1e.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    x1e.32xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     z1d.large:
@@ -1040,7 +1107,6 @@ Mappings:
     us-west-2:
       HVM64: ami-06956deb56bc6bde7
       HVMG2: NOT_SUPPORTED
-
 Resources:
   ConfluenceClusterNodeRole:
     Type: AWS::IAM::Role
@@ -1288,7 +1354,9 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
+            Encrypted: !If [UseEncryption, true, false]
             VolumeSize: !Ref ClusterNodeVolumeSize
+            VolumeType: gp2
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1380,6 +1448,8 @@ Resources:
         - Key: environment
           Value: Production
           PropagateAtLaunch: true
+      TerminationPolicies:
+        - OldestInstance
   SynchronyClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Condition: UseSynchronyAutoScalingGroup
@@ -1427,7 +1497,7 @@ Resources:
                     - !Sub ["ATL_LOCALANSIBLE_SSHKEYNAME=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitSshKeyName]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_SYNCHRONY_MEMORY=-Xmx${AtlJvmHeapSynchrony}", AtlJvmHeapSynchrony: !If [OverrideHeapSynchrony, !Ref 'JvmHeapOverrideSynchrony', '2g']]
-                    - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]]}]
+                    - !Sub ["ATL_SYNCHRONY_SERVICE_URL=${Protocol}://${LoadBalancerName}/synchrony", {Protocol: !If [SSLScheme, "https", "http"], LoadBalancerName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname,  !Sub ["${HTTP}://${LoadBalancerDNSName}", {HTTP: !If [SSLScheme, 'https', 'http'], LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]}]]]}]
                     - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_CONFLUENCE_DATA_CENTER=true"
                     - "ATL_DB_NAME=confluence"
@@ -1437,6 +1507,7 @@ Resources:
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
                     - "ATL_JDBC_USER=atlconfluence"
                     - "ATL_NGINX_ENABLED=false"
+                    - "ATL_NODE_TYPE=synchrony"
                     - "ATL_POSTGRES_ENABLED=false"
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
@@ -1652,17 +1723,19 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       AllocatedStorage: !Ref DBStorage
+      BackupRetentionPeriod: !If [DoCreateReadReplica, '1', '0']
+      CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
       EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
-      KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
-      StorageEncrypted: !If [UseDatabaseEncryption, !Ref DBStorageEncrypted, !Ref 'AWS::NoValue']
+      StorageEncrypted: !If [UseEncryption, !Ref StorageEncrypted, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1684,6 +1757,29 @@ Resources:
       TTL: '900'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
+  DBReplica:
+    Condition: DoCreateReadReplica
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: !Ref DBReadReplicaInstanceClass
+      DBInstanceIdentifier: !Sub "${AWS::StackName}-replica"
+      SourceDBInstanceIdentifier: !Ref DB
+      StorageType: gp2
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName} Confluence PostgreSQL Read Replica Database"
+      VPCSecurityGroups: [!Ref SecurityGroup]
+  DBReadReplicaCname:
+    Condition: UseHostedZoneAndDoCreateReadReplica
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref HostedZone
+      Comment: Route53 cname for the RDS read replica
+      Name: !Sub "${AWS::StackName}.db-replica.${HostedZone}"
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt DBReplica.Endpoint.Address
 # Loadbalancer
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -1839,7 +1935,7 @@ Resources:
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
   EncryptionKey:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     DeletionPolicy: Retain
     Type: AWS::KMS::Key
     Properties:
@@ -1857,12 +1953,11 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName} Encryption Key"
   EncryptionKeyAlias:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     Type: AWS::KMS::Alias
     Properties:
       AliasName: !Sub "alias/${AWS::StackName}"
       TargetKeyId: !Ref EncryptionKey
-
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -1901,9 +1996,16 @@ Outputs:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
   DBEncryptionKey:
-    Condition: UseDatabaseEncryption
+    Condition: UseEncryption
     Description: The alias of the encryption key created for RDS
     Value: !Ref EncryptionKeyAlias
+  DBReplicaEndpointAddress:
+    Condition: DoCreateReadReplica
+    Description: The endpoint for the read replica
+    Value: !If
+      - UseHostedZone
+      - !Ref DBReadReplicaCname
+      - !GetAtt DBReplica.Endpoint.Address
   EFSCname:
     Description: The cname of the EFS
     Value: !If

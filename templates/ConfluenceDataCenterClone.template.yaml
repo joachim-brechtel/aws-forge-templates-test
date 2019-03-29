@@ -64,6 +64,7 @@ Metadata:
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
+          - StorageEncrypted
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
@@ -168,6 +169,8 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      StorageEncrypted:
+        default: Encryption
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       SynchronyClusterNodeMax:
@@ -266,6 +269,12 @@ Parameters:
       - m5.4xlarge
       - m5.12xlarge
       - m5.24xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5a.12xlarge
+      - m5a.24xlarge
       - m5d.large
       - m5d.xlarge
       - m5d.2xlarge
@@ -284,6 +293,12 @@ Parameters:
       - r5.4xlarge
       - r5.12xlarge
       - r5.24xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5a.12xlarge
+      - r5a.24xlarge
       - r5d.large
       - r5d.xlarge
       - r5d.2xlarge
@@ -305,7 +320,6 @@ Parameters:
       - x1e.4xlarge
       - x1e.8xlarge
       - x1e.16xlarge
-      - x1e.32xlarge
       - z1d.large
       - z1d.xlarge
       - z1d.2xlarge
@@ -331,7 +345,7 @@ Parameters:
       - none
       - synchrony-local
       - synchrony-separate-nodes
-    Description: Collaborative Editing can be off, run locallly on the confluence nodes (leave 1gb heap free for syncrony), or run on a separately autoscaled group of nodes.
+    Description: Collaborative Editing can be off, run locally on the confluence nodes (leave 1gb heap free for syncrony), or run on a separately autoscaled group of nodes.
     Type: String
   ConfluenceDownloadUrl:
     Default: ''
@@ -401,7 +415,7 @@ Parameters:
     MaxLength: 128
     Type: String
   DBMultiAZ:
-    Default: true
+    Default: false
     AllowedValues:
       - true
       - false
@@ -476,39 +490,31 @@ Parameters:
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
   ExternalSubnets:
-    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
-    Default: ''
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
   InternalSubnets:
-    Default: ''
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
   JvmHeapOverride:
-    Default: ''
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   JvmHeapOverrideSynchrony:
-    Default: ''
     Description: Override the default amount of memory to allocate to the JVM for Synchrony, for your instance type - set size in meg or gig e.g. 1024m or 1g.
     Type: String
   KeyName:
-    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
   LocalAnsibleGitRepo:
-    Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String
   LocalAnsibleGitSshKeyName:
-    Default: ''
     Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
   MailEnabled:
@@ -536,6 +542,13 @@ Parameters:
       - false
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
+    Type: String
+  StorageEncrypted:
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: Whether or not to encrypt the local storage on the EC2 nodes. The database and file system will be encrypted if the snapshots are of encrypted services.
     Type: String
   SynchronyClusterNodeMax:
     Default: 1
@@ -589,6 +602,12 @@ Parameters:
       - m5.4xlarge
       - m5.12xlarge
       - m5.24xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5a.12xlarge
+      - m5a.24xlarge
       - m5d.large
       - m5d.xlarge
       - m5d.2xlarge
@@ -607,6 +626,12 @@ Parameters:
       - r5.4xlarge
       - r5.12xlarge
       - r5.24xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5a.12xlarge
+      - r5a.24xlarge
       - r5d.large
       - r5d.xlarge
       - r5d.2xlarge
@@ -628,7 +653,6 @@ Parameters:
       - x1e.4xlarge
       - x1e.8xlarge
       - x1e.16xlarge
-      - x1e.32xlarge
       - z1d.large
       - z1d.xlarge
       - z1d.2xlarge
@@ -681,7 +705,6 @@ Parameters:
     Type: String
     AllowedValues: [http, https]
   VPC:
-    Default: ''
     ConstraintDescription: Must be the ID of a VPC.
     Description: Virtual Private Cloud
     Type: AWS::EC2::VPC::Id
@@ -706,6 +729,8 @@ Conditions:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
+  UseEncryption:
+    !Equals [!Ref StorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UsePublicIp:
@@ -842,6 +867,24 @@ Mappings:
     m5.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
+    m5a.large:
+      Arch: HVM64
+      Jvmheap: 5120m
+    m5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    m5a.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
     m5d.large:
       Arch: HVM64
       Jvmheap: 5120m
@@ -894,6 +937,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     r5.24xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.large:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.12xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    r5a.24xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     r5d.large:
@@ -957,9 +1018,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     x1e.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    x1e.32xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     z1d.large:
@@ -1101,6 +1159,8 @@ Resources:
         - Key: Cluster
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
+      TerminationPolicies:
+        - OldestInstance
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
@@ -1276,7 +1336,9 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
+            Encrypted: !If [UseEncryption, true, false]
             VolumeSize: !Ref ClusterNodeVolumeSize
+            VolumeType: gp2
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1422,6 +1484,7 @@ Resources:
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
                     - "ATL_JDBC_USER=atlconfluence"
                     - "ATL_NGINX_ENABLED=false"
+                    - "ATL_NODE_TYPE=synchrony"
                     - "ATL_POSTGRES_ENABLED=false"
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
@@ -1615,6 +1678,37 @@ Resources:
             /tmp/nfs:
               content: >-
                 IwojIERlZmluZSB3aGljaCBwcm90b2NvbCB2ZXJzaW9ucyBtb3VudGQgCiMgd2lsbCBhZHZlcnRpc2UuIFRoZSB2YWx1ZXMgYXJlICJubyIgb3IgInllcyIKIyB3aXRoIHllcyBiZWluZyB0aGUgZGVmYXVsdAojTU9VTlREX05GU19WMj0ibm8iCiNNT1VOVERfTkZTX1YzPSJubyIKIwojCiMgUGF0aCB0byByZW1vdGUgcXVvdGEgc2VydmVyLiBTZWUgcnF1b3RhZCg4KQojUlFVT1RBRD0iL3Vzci9zYmluL3JwYy5ycXVvdGFkIgojIFBvcnQgcnF1b3RhZCBzaG91bGQgbGlzdGVuIG9uLgojUlFVT1RBRF9QT1JUPTg3NQojIE9wdGluYWwgb3B0aW9ucyBwYXNzZWQgdG8gcnF1b3RhZAojUlBDUlFVT1RBRE9QVFM9IiIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBpbi1rZXJuZWwgbG9ja2QKI0xPQ0tEQVJHPQojIFRDUCBwb3J0IHJwYy5sb2NrZCBzaG91bGQgbGlzdGVuIG9uLgpMT0NLRF9UQ1BQT1JUPTMyODAzCiMgVURQIHBvcnQgcnBjLmxvY2tkIHNob3VsZCBsaXN0ZW4gb24uCkxPQ0tEX1VEUFBPUlQ9MzI3NjkKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMubmZzZC4gU2VlIHJwYy5uZnNkKDgpCiMgVHVybiBvZmYgdjIgYW5kIHYzIHByb3RvY29sIHN1cHBvcnQKI1JQQ05GU0RBUkdTPSItTiAyIC1OIDMiCiMgVHVybiBvZmYgdjQgcHJvdG9jb2wgc3VwcG9ydAojUlBDTkZTREFSR1M9Ii1OIDQiCiMgTnVtYmVyIG9mIG5mcyBzZXJ2ZXIgcHJvY2Vzc2VzIHRvIGJlIHN0YXJ0ZWQuCiMgVGhlIGRlZmF1bHQgaXMgOC4gCiNSUENORlNEQ09VTlQ9OAojIFN0b3AgdGhlIG5mc2QgbW9kdWxlIGZyb20gYmVpbmcgcHJlLWxvYWRlZAojTkZTRF9NT0RVTEU9Im5vbG9hZCIKIyBTZXQgVjQgZ3JhY2UgcGVyaW9kIGluIHNlY29uZHMKI05GU0RfVjRfR1JBQ0U9OTAKIwojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5tb3VudGQuIFNlZSBycGMubW91bnRkKDgpCiNSUENNT1VOVERPUFRTPSIiCiMgUG9ydCBycGMubW91bnRkIHNob3VsZCBsaXN0ZW4gb24uCk1PVU5URF9QT1JUPTg5MgojCiMKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdGF0ZC4gU2VlIHJwYy5zdGF0ZCg4KQojU1RBVERBUkc9IiIKIyBQb3J0IHJwYy5zdGF0ZCBzaG91bGQgbGlzdGVuIG9uLgojU1RBVERfUE9SVD02NjIKIyBPdXRnb2luZyBwb3J0IHN0YXRkIHNob3VsZCB1c2VkLiBUaGUgZGVmYXVsdCBpcyBwb3J0CiMgaXMgcmFuZG9tCiNTVEFURF9PVVRHT0lOR19QT1JUPTIwMjAKIyBTcGVjaWZ5IGNhbGxvdXQgcHJvZ3JhbSAKI1NUQVREX0hBX0NBTExPVVQ9Ii91c3IvbG9jYWwvYmluL2ZvbyIKIwojCiMgT3B0aW9uYWwgYXJndW1lbnRzIHBhc3NlZCB0byBycGMuaWRtYXBkLiBTZWUgcnBjLmlkbWFwZCg4KQojUlBDSURNQVBEQVJHUz0iIgojCiMgU2V0IHRvIHR1cm4gb24gU2VjdXJlIE5GUyBtb3VudHMuIAojU0VDVVJFX05GUz0ieWVzIgojIE9wdGlvbmFsIGFyZ3VtZW50cyBwYXNzZWQgdG8gcnBjLmdzc2QuIFNlZSBycGMuZ3NzZCg4KQojUlBDR1NTREFSR1M9IiIKIyBPcHRpb25hbCBhcmd1bWVudHMgcGFzc2VkIHRvIHJwYy5zdmNnc3NkLiBTZWUgcnBjLnN2Y2dzc2QoOCkKI1JQQ1NWQ0dTU0RBUkdTPSIiCiMKIyBUbyBlbmFibGUgUkRNQSBzdXBwb3J0IG9uIHRoZSBzZXJ2ZXIgYnkgc2V0dGluZyB0aGlzIHRvCiMgdGhlIHBvcnQgdGhlIHNlcnZlciBzaG91bGQgbGlzdGVuIG9uCiNSRE1BX1BPUlQ9MjAwNDkgCg==
+            /etc/atl:
+              content:
+                'Fn::Join':
+                  - "\n"
+                  -
+                    - !Sub "ATL_AWS_STACK_NAME=${AWS::StackName}"
+                    - !Sub "ATL_ENVIRONMENT=${DeployEnvironment}"
+                    - "ATL_NODE_TYPE=nfs"
+            /tmp/bootstrap_local_ansible:
+              content: !Sub |
+                #!/usr/bin/env bash
+                # bootstrap any local-ansible repo that is passed in on this template
+
+                localansiblerepopath=/home/localansible
+                gitkeylocation=/root/.ssh/gitkey
+
+                # ensure awscli is up to date
+                pip install --upgrade awscli
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitSshKeyName}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                echo -e $gitkey > $gitkeylocation
+                chmod 600 $gitkeylocation
+                export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                mkdir -p $localansiblerepopath
+                cd $localansiblerepopath
+                git clone "${LocalAnsibleGitRepo}"
+                cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                chmod 750 /usr/local/bin/local-ansible-run
+              mode: "000750"
+              owner: root
+              group: root
           commands:
             010_make_mount_point:
               command: mkdir /nfs
@@ -1631,6 +1725,8 @@ Resources:
               command: cat /etc/exports
             050_restart_nfs:
               command: service nfs restart
+            090_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
           services:
             sysvinit:
               nfs:
@@ -1641,6 +1737,7 @@ Resources:
               nfs-utils: []
     Properties:
       AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
+      IamInstanceProfile: !Ref ConfluenceClusterNodeInstanceProfile
       ImageId:
         !FindInMap
           - AWSRegionArch2AMI
