@@ -142,7 +142,7 @@ Metadata:
         default: JVM Heap Size Override for Confluence
       JvmHeapOverrideSynchrony:
         default: JVM Heap Size Override for Synchrony
-      KeyName:
+      KeyPairName:
         default: Key Name *
       LoadBalancerScheme:
         default: Load Balancer Scheme
@@ -455,7 +455,7 @@ Parameters:
   JvmHeapOverrideSynchrony:
     Description: Override the default amount of memory to allocate to the Synchrony JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
-  KeyName:
+  KeyPairName:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
@@ -1225,7 +1225,7 @@ Resources:
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
-      KeyName: !Ref KeyName
+      KeyName: !Ref KeyPairName
       IamInstanceProfile: !Ref ConfluenceServerInstanceProfile
       ImageId:
         !FindInMap

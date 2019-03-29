@@ -525,6 +525,14 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LoadBalancerScheme:
+    Default: internet-facing
+    AllowedValues:
+      - internet-facing
+      - internal
+    ConstraintDescription: Must be 'internet-facing' or 'internal'.
+    Description: Controls if the load balancer is assigned a public IP address
+    Type: String
   LocalAnsibleGitRepo:
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String

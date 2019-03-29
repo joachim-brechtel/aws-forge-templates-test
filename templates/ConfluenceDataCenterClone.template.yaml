@@ -1764,7 +1764,7 @@ Resources:
               - !Ref ClusterNodeInstanceType
               - Arch
       InstanceType: !Ref ClusterNodeInstanceType
-      KeyName: !Ref KeyName
+      KeyName: !Ref KeyPairName
       NetworkInterfaces:
         - GroupSet:
             - !Ref SecurityGroup

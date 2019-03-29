@@ -158,7 +158,7 @@ Metadata:
         default: Jira Download URL
       JvmHeapOverride:
         default: JVM Heap Size Override
-      KeyName:
+      KeyPairName:
         default: Key Name *
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
@@ -504,7 +504,7 @@ Parameters:
   JvmHeapOverride:
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
-  KeyName:
+  KeyPairName:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
@@ -1220,7 +1220,7 @@ Resources:
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
-      KeyName: !Ref KeyName
+      KeyName: !Ref KeyPairName
       IamInstanceProfile: !Ref JiraClusterNodeInstanceProfile
       ImageId:
         !FindInMap
@@ -1334,7 +1334,7 @@ Resources:
               - !Ref ClusterNodeInstanceType
               - Arch
       InstanceType: !Ref ClusterNodeInstanceType
-      KeyName: !Ref KeyName
+      KeyName: !Ref KeyPairName
       NetworkInterfaces:
         - GroupSet:
             - !Ref SecurityGroup
