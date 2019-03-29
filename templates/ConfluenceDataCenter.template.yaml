@@ -1,5 +1,5 @@
 ---
-# Bring up diffs between this file and the BitbucketDataCenter.template, and JiraDataCenter.template.
+# Bring up diffs between this file and the BitbucketDataCenter.template, JiraDataCenter.template, and CrowdDataCenter.template.
 # As a rule, we should work to minimize our diffs between these files as best we can, so that future changes are easy to make across all supported CloudFormation templates.
 # Using YAML as our file format will allow us to put a block comment at the top of the file saying exactly this.
 AWSTemplateFormatVersion: 2010-09-09
@@ -40,7 +40,7 @@ Metadata:
       - Label:
           default: Networking
         Parameters:
-          - AssociatePublicIpAddress
+          - LoadBalancerScheme
           - CidrBlock
           - ExternalSubnets
           - InternalSubnets
@@ -67,8 +67,6 @@ Metadata:
         Parameters:
           - TomcatContextPath
           - CatalinaOpts
-          - JvmHeapOverride
-          - JvmHeapOverrideSynchrony
           - DBPoolMaxSize
           - DBPoolMinSize
           - DBTimeout
@@ -77,6 +75,8 @@ Metadata:
           - DBValidate
           - DBPreferredTestQuery
           - DBAcquireIncrement
+          - JvmHeapOverride
+          - JvmHeapOverrideSynchrony
           - MailEnabled
           - TomcatAcceptCount
           - TomcatConnectionTimeout
@@ -88,8 +88,6 @@ Metadata:
           - TomcatRedirectPort
           - TomcatScheme
     ParameterLabels:
-      AssociatePublicIpAddress:
-        default: Assign public IP
       AutologinCookieAge:
         default: Remember Me cookie expiry
       CatalinaOpts:
@@ -158,6 +156,8 @@ Metadata:
         default: Synchrony Heap Size Override
       KeyPairName:
         default: Key Name *
+      LoadBalancerScheme:
+        default: Load Balancer Scheme
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
       LocalAnsibleGitSshKeyName:
@@ -201,12 +201,6 @@ Metadata:
       VPC:
         default: VPC *
 Parameters:
-  AssociatePublicIpAddress:
-    Default: false
-    AllowedValues: [true, false]
-    ConstraintDescription: Must be 'true' or 'false'.
-    Description: Controls if the EC2 instances are assigned a public IP address
-    Type: String
   AutologinCookieAge:
     Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
@@ -214,6 +208,7 @@ Parameters:
     Description: Pass in any additional JVM options to tune Catalina Tomcat
     Type: String
   CidrBlock:
+    Default: '0.0.0.0/0'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
     Description: CIDR block allowed to access the Atlassian product. This should be set to a trusted IP range; if you want to give public access use '0.0.0.0/0'.
@@ -357,7 +352,7 @@ Parameters:
     Description: The version of Confluence to install
     Type: String
   CustomDnsName:
-    Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
+    Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBAcquireIncrement:
     Default: 1
@@ -621,6 +616,12 @@ Parameters:
       - m5.4xlarge
       - m5.12xlarge
       - m5.24xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5a.12xlarge
+      - m5a.24xlarge
       - m5d.large
       - m5d.xlarge
       - m5d.2xlarge
@@ -639,6 +640,12 @@ Parameters:
       - r5.4xlarge
       - r5.12xlarge
       - r5.24xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5a.12xlarge
+      - r5a.24xlarge
       - r5d.large
       - r5d.xlarge
       - r5d.2xlarge
@@ -745,8 +752,6 @@ Conditions:
     !And
       - !Condition DoCreateReadReplica
       - !Condition UseHostedZone
-  UsePublicIp:
-    !Equals [!Ref AssociatePublicIpAddress, 'true']
   UseSubDomainName:
     !Not [!Equals [!Ref SubDomainName, '']]
   UseSynchronyAutoScalingGroup:
@@ -1187,20 +1192,16 @@ Resources:
       AWS::CloudFormation::Init:
         config:
           packages:
-            !If
-              - DoCollectd
-              - yum:
-                  collectd: []
+            yum:
+              !If
+                - DoCollectd
+                - collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-              - !Ref "AWS::NoValue"
           files:
             /etc/atl:
-              mode: "000640"
-              owner: root
-              group: root
               content:
                 !Join
                   - "\n"
@@ -1261,14 +1262,14 @@ Resources:
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
+              mode: "000640"
+              owner: root
+              group: root
             /etc/cfn/cfn-hup.conf:
-              content:
-                !Join
-                  - "\n"
-                  -
-                    - "[main]"
-                    - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
-                    - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
+              content: !Sub |
+                [main]
+                region=${AWS::Region}
+                stack=${AWS::StackName}
               mode: "000400"
               owner: root
               group: root
@@ -1349,7 +1350,6 @@ Resources:
                 packages:
                   yum: [nfs-utils]
     Properties:
-      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -1751,7 +1751,7 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the RDS
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
+      Name: !Sub "${AWS::StackName}.db.${HostedZone}"
       Type: CNAME
       TTL: '900'
       ResourceRecords:
@@ -1786,7 +1786,7 @@ Resources:
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
           Value: '300'
-      Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
+      Scheme: !Ref LoadBalancerScheme
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
@@ -1839,6 +1839,7 @@ Resources:
   MainTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
       Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
       VpcId: !Ref VPC
@@ -1847,7 +1848,7 @@ Resources:
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: '200'
-      HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
+      HealthCheckPath: !If [UseContextPath, !Sub "${TomcatContextPath}/status", '/status']
       HealthCheckPort: !Ref TomcatDefaultConnectorPort
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
@@ -1923,7 +1924,7 @@ Resources:
           Description: 'Confluence Collaborative Editing (Synchrony)'
       Tags:
         - Key: Name
-          Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
+          Value: !Sub "${AWS::StackName} sg"
       VpcId: !Ref VPC
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -1988,9 +1989,8 @@ Outputs:
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
-    }
+    Export:
+      Name: !Sub "${AWS::StackName}-SGname"
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
@@ -2011,9 +2011,8 @@ Outputs:
       - UseHostedZone
       - !Ref EFSCname
       - !Ref ElasticFileSystem
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-EFSCname']]
-      }
+    Export:
+      Name: !Sub "${AWS::StackName}-EFSCname"
   ConfluenceTargetGroupARN:
     Description: The name of the load balancer of Confluence cluster nodes
     Value: !Ref MainTargetGroup
