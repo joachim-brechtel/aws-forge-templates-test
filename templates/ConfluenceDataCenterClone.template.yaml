@@ -38,7 +38,7 @@ Metadata:
       - Label:
           default: Networking
         Parameters:
-          - AssociatePublicIpAddress
+          - LoadBalancerScheme
           - CidrBlock
           - ExternalSubnets
           - InternalSubnets
@@ -70,8 +70,6 @@ Metadata:
         Parameters:
           - TomcatContextPath
           - CatalinaOpts
-          - JvmHeapOverride
-          - JvmHeapOverrideSynchrony
           - DBPoolMaxSize
           - DBPoolMinSize
           - DBTimeout
@@ -80,6 +78,8 @@ Metadata:
           - DBValidate
           - DBPreferredTestQuery
           - DBAcquireIncrement
+          - JvmHeapOverride
+          - JvmHeapOverrideSynchrony
           - MailEnabled
           - TomcatAcceptCount
           - TomcatConnectionTimeout
@@ -91,8 +91,6 @@ Metadata:
           - TomcatRedirectPort
           - TomcatScheme
     ParameterLabels:
-      AssociatePublicIpAddress:
-        default: Assign public IP
       AutologinCookieAge:
         default: Remember Me cookie expiry
       CatalinaOpts:
@@ -165,6 +163,8 @@ Metadata:
         default: Synchrony Heap Size Override
       KeyPairName:
         default: Key Name *
+      LoadBalancerScheme:
+        default: Load Balancer Scheme
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
       LocalAnsibleGitSshKeyName:
@@ -208,12 +208,6 @@ Metadata:
       VPC:
         default: VPC *
 Parameters:
-  AssociatePublicIpAddress:
-    Default: false
-    AllowedValues: [true, false]
-    ConstraintDescription: Must be 'true' or 'false'.
-    Description: Controls if the EC2 instances are assigned a public IP address
-    Type: String
   AutologinCookieAge:
     Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
@@ -365,7 +359,7 @@ Parameters:
     Description: The version of Confluence to install
     Type: String
   CustomDnsName:
-    Description: 'Use custom existing DNS name for your Data Center instance. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
+    Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
   DBAcquireIncrement:
     Default: 1
@@ -460,6 +454,11 @@ Parameters:
     Default: 20
     Description: The minimum number of idle database connections that are kept open at any time
     Type: String
+  DBSnapshotName:
+    ConstraintDescription: Must be a valid RDS snapshot Name
+    Default: "look this up in RDS at DR region"
+    Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
+    Type: String
   DBStorage:
     Default: 10
     Description: Database allocated storage size, in gigabytes (GB). If you choose Provisioned IOPS, storage should be between 100 and 6144
@@ -517,6 +516,14 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LoadBalancerScheme:
+    Default: internet-facing
+    AllowedValues:
+      - internet-facing
+      - internal
+    ConstraintDescription: Must be 'internet-facing' or 'internal'.
+    Description: Controls if the load balancer is assigned a public IP address
+    Type: String
   LocalAnsibleGitRepo:
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String
@@ -1179,20 +1186,16 @@ Resources:
       AWS::CloudFormation::Init:
         config:
           packages:
-            !If
-              - DoCollectd
-              - yum:
-                  collectd: []
+            yum:
+              !If
+                - DoCollectd
+                - collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-              - !Ref "AWS::NoValue"
           files:
             /etc/atl:
-              mode: "000640"
-              owner: root
-              group: root
               content:
                 !Join
                   - "\n"
@@ -1253,14 +1256,14 @@ Resources:
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases/confluence"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
+              mode: "000640"
+              owner: root
+              group: root
             /etc/cfn/cfn-hup.conf:
-              content:
-                !Join
-                  - "\n"
-                  -
-                    - "[main]"
-                    - !Sub ["region=${Region}", Region: !Ref "AWS::Region"]
-                    - !Sub ["stack=${StackId}", StackId: !Ref "AWS::StackId"]
+              content: !Sub |
+                [main]
+                region=${AWS::Region}
+                stack=${AWS::StackName}
               mode: "000400"
               owner: root
               group: root
@@ -1854,7 +1857,7 @@ Resources:
     Properties:
       HostedZoneName: !Ref HostedZone
       Comment: Route53 cname for the RDS
-      Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
+      Name: !Sub "${AWS::StackName}.db.${HostedZone}"
       Type: CNAME
       TTL: '900'
       ResourceRecords:
@@ -1866,7 +1869,7 @@ Resources:
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
           Value: '300'
-      Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
+      Scheme: !Ref LoadBalancerScheme
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
@@ -1919,6 +1922,7 @@ Resources:
   MainTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
       Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
       VpcId: !Ref VPC
@@ -1927,7 +1931,7 @@ Resources:
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: '200'
-      HealthCheckPath: !If [UseContextPath, !Join ['', [!Ref 'TomcatContextPath', '/status']], '/status']
+      HealthCheckPath: !If [UseContextPath, !Sub "${TomcatContextPath}/status", '/status']
       HealthCheckPort: !Ref TomcatDefaultConnectorPort
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
@@ -2003,7 +2007,7 @@ Resources:
           Description: 'Confluence Collaborative Editing (Synchrony)'
       Tags:
         - Key: Name
-          Value: !Join [' ', [!Ref "AWS::StackName", 'sg']]
+          Value: !Sub "${AWS::StackName} sg"
       VpcId: !Ref VPC
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -2044,9 +2048,8 @@ Outputs:
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
-    }
+    Export:
+      Name: !Sub "${AWS::StackName}-SGname"
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
