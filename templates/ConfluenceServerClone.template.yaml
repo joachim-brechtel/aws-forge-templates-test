@@ -85,7 +85,7 @@ Metadata:
           - TomcatScheme
     ParameterLabels:
       AutologinCookieAge:
-        default: Rememberme cookie age
+        default: Remember Me cookie expiry
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
@@ -96,12 +96,18 @@ Metadata:
         default: Version *
       CustomDnsName:
         default: Existing DNS name (optional)
+      DBAcquireIncrement:
+          default: DB Acquire Increment
+      DBIdleTestPeriod:
+        default: DB Idle Test Period
       DBInstanceClass:
         default: Database instance class
       DBIops:
         default: RDS Provisioned IOPS
       DBMasterUserPassword:
         default: Master (admin) password *
+      DBMaxStatements:
+        default: DB Max Statements
       DBMultiAZ:
         default: Enable RDS Multi-AZ deployment
       DBPassword:
@@ -110,22 +116,16 @@ Metadata:
         default: DB Pool Maximum Size
       DBPoolMinSize:
         default: DB Pool Minimum Size
-      DBTimeout:
-        default: DB Timeout
-      DBIdleTestPeriod:
-        default: DB Idle Test Period
-      DBMaxStatements:
-        default: DB Max Statements
-      DBValidate:
-        default: DB Validate
       DBPreferredTestQuery:
         default: DB Preferred Test Query
-      DBAcquireIncrement:
-        default: DB Acquire Increment
       DBSnapshotName:
         default: Database snapshot name to restore
       DBStorageType:
         default: Database storage type
+      DBTimeout:
+        default: DB Timeout
+      DBValidate:
+        default: DB Validate
       DeployEnvironment:
         default: Deployment Environment
       EBSSnapshotId:
@@ -154,6 +154,8 @@ Metadata:
         default: Enable App to Process Email
       SSLCertificateARN:
         default: SSL Certificate ARN
+      StartCollectd:
+        default: Start the collectd metrics agent
       StorageEncrypted:
         default: Encryption
       SubDomainName:
@@ -182,10 +184,10 @@ Metadata:
         default: VPC *
 Parameters:
   AutologinCookieAge:
-    Description: Sets the Rememberme (autologin) cookie age length in seconds
+    Description: Sets the Remember Me (autologin) cookie expiry length in seconds. If blank this defaults to 1 year.
     Type: String
   CatalinaOpts:
-    Description: Pass in any additional jvm options to tune Catalina
+    Description: Pass in any additional JVM options to tune Catalina Tomcat
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
@@ -207,6 +209,14 @@ Parameters:
     Type: String
   CustomDnsName:
     Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the public IP address.'
+    Type: String
+  DBAcquireIncrement:
+    Default: 1
+    Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
+    Type: String
+  DBIdleTestPeriod:
+    Default: 100
+    Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
     Type: String
   DBInstanceClass:
     Default: db.t2.medium
@@ -248,21 +258,26 @@ Parameters:
     Type: String
   DBIops:
     Default: 1000
-    ConstraintDescription: 'Must be in the range 1000 - 30000'
-    Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
+    ConstraintDescription: Must be in the range 1000 - 30000
+    Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00.'
     MinValue: 1000
     MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Description: Database admin account password.
-    NoEcho: True
+    Description: Password for the master ('postgres') account.
     MinLength: 8
     MaxLength: 128
+    NoEcho: true
+    Type: String
+  DBMaxStatements:
+    Default: 0
+    Description: The size of c3p0's global PreparedStatement cache. It controls the total number of Statements cached, for all Connections. If set, it should be a fairly large number, as each pooled Connection requires its own, distinct flock of cached statements.
     Type: String
   DBMultiAZ:
-    Default: false
+    Description: Whether to provision a multi-AZ RDS instance.
+    Default: true
     AllowedValues:
       - true
       - false
@@ -276,6 +291,10 @@ Parameters:
     MaxLength: 128
     NoEcho: true
     Type: String
+  DBPreferredTestQuery:
+    Default: 'select version();'
+    Description: The query that will be executed for all connection tests
+    Type: String
   DBPoolMaxSize:
     Default: 60
     Description: The maximum number of database connections that can be opened at any time
@@ -283,30 +302,6 @@ Parameters:
   DBPoolMinSize:
     Default: 20
     Description: The minimum number of idle database connections that are kept open at any time
-    Type: String
-  DBTimeout:
-    Default: 30
-    Description: Number of seconds that Connections in excess of minPoolSize should be permitted to remain idle in the pool before being culled
-    Type: String
-  DBIdleTestPeriod:
-    Default: 100
-    Description: If greater than 0, this is the frequency (in seconds) that c3po will test all idle, pooled but unchecked-out connections.
-    Type: String
-  DBMaxStatements:
-    Default: 0
-    Description: The size of c3p0's global PreparedStatement cache. It controls the total number of Statements cached, for all Connections. If set, it should be a fairly large number, as each pooled Connection requires its own, distinct flock of cached statements.
-    Type: String
-  DBValidate:
-    Default: false
-    Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
-    Type: String
-  DBPreferredTestQuery:
-    Default: 'select version();'
-    Description: The query that will be executed for all connection tests
-    Type: String
-  DBAcquireIncrement:
-    Default: 1
-    Description: Determines how many connections at a time c3p0 will try to acquire when the pool is exhausted
     Type: String
   DBSnapshotName:
     Default: "look this up in RDS at DR region"
@@ -320,6 +315,14 @@ Parameters:
       - Provisioned IOPS
     ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
     Description: Database storage type
+    Type: String
+  DBTimeout:
+    Default: 30
+    Description: Number of seconds that Connections in excess of minPoolSize should be permitted to remain idle in the pool before being culled
+    Type: String
+  DBValidate:
+    Default: false
+    Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
     Type: String
   DeployEnvironment:
     Default: stg
@@ -542,7 +545,7 @@ Parameters:
     Type: String
   TomcatScheme:
     Default: http
-    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately.
+    Description: "The name of the protocol you wish to have returned, ie 'https' for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately."
     Type: String
     AllowedValues: [http, https]
   VPC:
@@ -972,6 +975,13 @@ Resources:
                     - !Sub '${AWS::StackName} sg'
                 Effect: Allow
                 Resource: ['*']
+        - PolicyName: !Sub '${AWS::StackName}-ansible-custom-policy'
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action: ['iam:ListRolePolicies', 'iam:GetRolePolicy']
+                Effect: Allow
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-JiraClusterNodeRole*'
   ConfluenceServerInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -1209,9 +1219,16 @@ Resources:
               cfn-hup:
                 enabled: true
                 ensureRunning: true
-                files: [/etc/cfn/cfn-hup.conf, /etc/cfn/hooks.d/cfn-auto-reloader.conf]
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
               collectd:
                 !If [DoCollectd, {enabled: true, ensureRunning: true}, !Ref 'AWS::NoValue']
+              rpcbind:
+                enabled: true
+                ensureRunning: true
+                packages:
+                  yum: [nfs-utils]
     Properties:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
