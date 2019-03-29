@@ -39,7 +39,7 @@ Metadata:
           - CidrBlock
           - ExternalSubnets
           - InternalSubnets
-          - KeyName
+          - KeyPairName
           - SSLCertificateARN
           - VPC
       - Label:
