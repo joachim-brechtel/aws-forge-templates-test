@@ -758,8 +758,6 @@ Conditions:
     !Not [!Equals [!Ref SubDomainName, '']]
   UseSynchronyAutoScalingGroup:
     !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
-  GovCloudCondition:
-    !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
 Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
