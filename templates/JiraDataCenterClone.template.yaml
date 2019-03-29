@@ -1560,9 +1560,8 @@ Outputs:
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
-    Export: {
-      Name: !Join ['', [!Ref 'AWS::StackName', '-SGname']]
-    }
+    Export:
+      Name: !Sub "${AWS::StackName} -SGname"
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
