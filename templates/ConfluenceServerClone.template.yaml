@@ -1230,6 +1230,7 @@ Resources:
                 packages:
                   yum: [nfs-utils]
     Properties:
+      AssociatePublicIpAddress: false
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
