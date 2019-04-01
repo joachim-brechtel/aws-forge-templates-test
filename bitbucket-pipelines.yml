@@ -119,7 +119,7 @@ pipelines:
                 - export AWS_SECRET_KEY=${CI_SECRET_ACCESS_KEY}
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
                 - cd ami
-                - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLCROWD\"; then touch crowdExists; fi
+                - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep \"ATLCROWD\"; then touch crowdExists; fi
                 - export VPC=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="VPCID")|.OutputValue'|tr -d '"')
                 - export PUBSUB=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="PublicSubnets")|.OutputValue'|tr -d '"')
                 - export PRISUB=$(aws cloudformation describe-stacks --stack-name=ATL | jq '.Stacks[0].Outputs'|jq '.[] | select(.OutputKey=="PrivateSubnets")|.OutputValue'|tr -d '"')
@@ -177,7 +177,7 @@ pipelines:
                 - export AWS_ACCESS_KEY=${CI_ACCESS_KEY_ID}
                 - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
                 - cd ami
-                - if aws cloudformation list-stacks --stack-status-filter="CREATE_COMPLETE" | grep StackName|grep \"ATLCONFLUENCE\"; then touch confluenceExists; fi
+                - if aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE | grep StackName|grep \"ATLCONFLUENCE\"; then touch confluenceExists; fi
                 - cat ../ci-parameters-confluence.json
                 - ls -al ../quickstarts/quickstart-atlassian-confluence/templates/**
                 - aws s3 cp ../quickstarts/quickstart-atlassian-confluence/templates/quickstart-confluence-master.template.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-confluence-master.template.yaml
