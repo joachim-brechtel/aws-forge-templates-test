@@ -66,7 +66,6 @@ Metadata:
           - DBIdleTestPeriod
           - DBMaxStatements
           - DBValidate
-          - DBPreferredTestQuery
           - DBAcquireIncrement
           - JvmHeapOverrideConfluence
           - JvmHeapOverrideSynchrony
@@ -115,8 +114,6 @@ Metadata:
         default: DB Max Statements
       DBValidate:
         default: DB Validate
-      DBPreferredTestQuery:
-        default: DB Preferred Test Query
       DBAcquireIncrement:
         default: DB Acquire Increment
       DBStorage:
@@ -302,10 +299,6 @@ Parameters:
   DBValidate:
     Default: false
     Description: If true, a connection test will be performed at every connection checkout to verify that the connection is valid
-    Type: String
-  DBPreferredTestQuery:
-    Default: 'select version();'
-    Description: The query that will be executed for all connection tests
     Type: String
   DBAcquireIncrement:
     Default: 1
@@ -1010,7 +1003,6 @@ Resources:
                     - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
                     - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
-                    - !Sub ["ATL_DB_PREFERREDTESTQUERY=\"${DBPreferredTestQuery}\"", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
                     - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
                     - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
