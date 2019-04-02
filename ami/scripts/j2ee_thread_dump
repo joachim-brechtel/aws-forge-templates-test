@@ -35,7 +35,7 @@ WAITTIME=5
 for (( f=1 ; f <= $ITERATIONS ; f++ ))
 do
   echo "Grabbing thread dump ${f} of ${ITERATIONS}"
-  timestamp='date +%s'
+  timestamp=`date +%s`
   top -b -H -p  ${SERVICE_PID} -n 1 > "${ANALYSIS_DIR}/CPU-USAGE-DUMP-${f}.${timestamp}.txt"
   if [ "$LOGNAME" = "$PROCUSER" ] ; then
       jstack -l ${SERVICE_PID} > "${ANALYSIS_DIR}/THREAD-DUMP-${f}.${timestamp}.txt"
