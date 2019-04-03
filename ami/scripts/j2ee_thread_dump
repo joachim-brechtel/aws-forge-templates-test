@@ -35,12 +35,11 @@ WAITTIME=5
 for (( f=1 ; f <= $ITERATIONS ; f++ ))
 do
   echo "Grabbing thread dump ${f} of ${ITERATIONS}"
-  timestamp=`date +%s`
-  top -b -H -p  ${SERVICE_PID} -n 1 > "${ANALYSIS_DIR}/CPU-USAGE-DUMP-${f}.${timestamp}.txt"
+  top -b -H -p  ${SERVICE_PID} -n 1 > ${ANALYSIS_DIR}/CPU-USAGE-DUMP-${f}.txt
   if [ "$LOGNAME" = "$PROCUSER" ] ; then
-      jstack -l ${SERVICE_PID} > "${ANALYSIS_DIR}/THREAD-DUMP-${f}.${timestamp}.txt"
+      jstack -l ${SERVICE_PID} > ${ANALYSIS_DIR}/THREAD-DUMP-${f}.txt
   else
-      sudo -u $PROCUSER jstack -l ${SERVICE_PID} > "${ANALYSIS_DIR}/THREAD-DUMP-${f}.${timestamp}.txt"
+      sudo -u $PROCUSER jstack -l ${SERVICE_PID} > ${ANALYSIS_DIR}/THREAD-DUMP-${f}.txt
   fi
   (( f < ${ITERATIONS} )) && fancywait ${WAITTIME}
 done
