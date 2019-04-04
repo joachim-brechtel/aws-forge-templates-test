@@ -73,7 +73,6 @@ Metadata:
           - DBIdleTestPeriod
           - DBMaxStatements
           - DBValidate
-          - DBPreferredTestQuery
           - DBAcquireIncrement
           - JvmHeapOverride
           - JvmHeapOverrideSynchrony
@@ -130,8 +129,6 @@ Metadata:
         default: DB Pool Maximum Size
       DBPoolMinSize:
         default: DB Pool Minimum Size
-      DBPreferredTestQuery:
-        default: DB Preferred Test Query
       DBReadReplicaInstanceClass:
         default: Read Replica Instance Class
       DBStorage:
@@ -1231,7 +1228,6 @@ Resources:
                     - !Sub ["ATL_DB_POOLMAXSIZE=${DBPoolMaxSize}", DBPoolMaxSize: !Ref DBPoolMaxSize]
                     - !Sub ["ATL_DB_POOLMINSIZE=${DBPoolMinSize}", DBPoolMinSize: !Ref DBPoolMinSize]
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
-                    - !Sub ["ATL_DB_PREFERREDTESTQUERY=\"${DBPreferredTestQuery}\"", DBPreferredTestQuery: !Ref DBPreferredTestQuery]
                     - !Sub ["ATL_DB_TIMEOUT=${DBTimeout}", DBTimeout: !Ref DBTimeout]
                     - !Sub ["ATL_DB_VALIDATE=${DBValidate}", DBValidate: !Ref DBValidate]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
