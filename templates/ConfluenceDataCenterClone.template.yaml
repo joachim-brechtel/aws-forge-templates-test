@@ -439,10 +439,6 @@ Parameters:
     MaxLength: 128
     NoEcho: true
     Type: String
-  DBPreferredTestQuery:
-    Default: 'select version();'
-    Description: The query that will be executed for all connection tests
-    Type: String
   DBPoolMaxSize:
     Default: 60
     Description: The maximum number of database connections that can be opened at any time
