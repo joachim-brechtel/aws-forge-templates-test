@@ -1102,79 +1102,78 @@ Resources:
               owner: root
               group: root
             /tmp/bootstrap_confluence_home:
-              content: !Sub
-                - |
-                  #!/usr/bin/env bash
-                  # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
+              content: !Sub |
+                #!/usr/bin/env bash
+                # confluence server doesn't persist the home directory, so we'll do it manually via a reusable EBS
 
-                  set -xe
+                set -xe
 
-                  ebsToMount=''
-                  currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
-                  instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
-                  existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
-                  existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
-                  deviceName="/dev/xvdb"
-                  mountPoint="/var/atlassian/application-data/confluence"
+                ebsToMount=''
+                currentAz=$(curl http://instance-data/latest/meta-data/placement/availability-zone)
+                instanceId=$(curl http://instance-data/latest/meta-data/instance-id)
+                existingEbs=$(aws --region=${AWS::Region} ec2 describe-volumes --filters Name=tag:Name,Values=*local-home Name=tag:stack_id,Values=${AWS::StackId} | jq .Volumes[])
+                existingEbsVolumeId=$(echo "$existingEbs" | jq -r .VolumeId)
+                deviceName="/dev/xvdb"
+                mountPoint="/var/atlassian/application-data/confluence"
 
-                  if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
-                    if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
-                      echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
-                      existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
-                      existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
+                if [[ -n "$(echo "$existingEbs" | jq length)" ]]; then
+                  if [[ "$(echo "$existingEbs" | jq -r .AvailabilityZone)" != "$currentAz" ]]; then
+                    echo "Existing EBS volume isn't in our AZ; creating snapshot to restore volume in $currentAz"
+                    existingEbsSnapshot=$(aws --region=${AWS::Region} ec2 create-snapshot --volume-id "$existingEbsVolumeId" --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=${AWS::StackName} local-home temp snapshot},{Key=stack_id,Value=${AWS::StackId}}]')
+                    existingEbsSnapshotId=$(echo "$existingEbsSnapshot" | jq -r .SnapshotId)
 
-                      echo "Waiting for snapshot creation to finish"
-                      aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
+                    echo "Waiting for snapshot creation to finish"
+                    aws --region=${AWS::Region} ec2 wait snapshot-completed --snapshot-ids "$existingEbsSnapshotId"
 
-                      echo "Creating new EBS volume from snapshot in $currentAz"
-                      ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
-                    else
-                      echo "Existing EBS volume is in our AZ; using existing EBS"
-                      ebsToMount=$existingEbs
-                    fi
+                    echo "Creating new EBS volume from snapshot in $currentAz"
+                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "$existingEbsSnapshotId" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
                   else
-                    echo "Restoring new EBS volume from snapshot in $currentAz"
-                    ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "${EBSSnapshotId}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                    echo "Existing EBS volume is in our AZ; using existing EBS"
+                    ebsToMount=$existingEbs
                   fi
+                else
+                  echo "Restoring new EBS volume from snapshot in $currentAz"
+                  ebsToMount=$(aws --region=${AWS::Region} ec2 create-volume --snapshot-id "${EBSSnapshotId}" --availability-zone "$currentAz" --volume-type gp2 --tag-specifications 'ResourceType=volume,Tags=[{Key=Name,Value=${AWS::StackName} Confluence Server local-home},{Key=stack_id,Value=${AWS::StackId}}]')
+                fi
 
-                  ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
+                ebsToMountVolumeId=$(echo "$ebsToMount" | jq -r .VolumeId)
 
-                  echo "Waiting for EBS to be available"
-                  aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
+                echo "Waiting for EBS to be available"
+                aws --region=${AWS::Region} ec2 wait volume-available --volume-ids "$ebsToMountVolumeId"
 
-                  echo "Attaching EBS volume to this instance"
-                  aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
+                echo "Attaching EBS volume to this instance"
+                aws --region=${AWS::Region} ec2 attach-volume --volume-id "$ebsToMountVolumeId" --instance-id "$instanceId" --device "$deviceName"
 
-                  echo "Waiting..."
-                  aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
+                echo "Waiting..."
+                aws --region=${AWS::Region} ec2 wait volume-in-use --volume-ids "$ebsToMountVolumeId"
 
-                  echo "Checking OS for device availablity"
-                  until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
-                    sleep 2
-                  done
+                echo "Checking OS for device availablity"
+                until [[ $(file -bsL $deviceName) != "cannot open"* ]]; do
+                  sleep 2
+                done
 
-                  echo "Checking EBS for existing filesystem"
-                  if [[ ! $(blkid $deviceName) ]]; then
-                    echo "No filesystem found; creating ext4 filesystem"
-                    mkfs -t ext4 $deviceName
-                  fi
+                echo "Checking EBS for existing filesystem"
+                if [[ ! $(blkid $deviceName) ]]; then
+                  echo "No filesystem found; creating ext4 filesystem"
+                  mkfs -t ext4 $deviceName
+                fi
 
-                  echo "Creating mount point"
-                  mkdir -p $mountPoint
+                echo "Creating mount point"
+                mkdir -p $mountPoint
 
-                  echo "Adding to fstab"
-                  echo "UUID=$(blkid -o value -s UUID $deviceName)  $mountPoint  ext4  defaults,nofail  0  2" >> /etc/fstab
+                echo "Adding to fstab"
+                echo "UUID=$(blkid -o value -s UUID $deviceName)  $mountPoint  ext4  defaults,nofail  0  2" >> /etc/fstab
 
-                  echo "Mounting EBS"
-                  mount -a
+                echo "Mounting EBS"
+                mount -a
 
-                  if [[ -n $existingEbsSnapshotId ]]; then
-                    echo "Deleting old EBS snapshot and volume"
-                    aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
-                    aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
-                  fi
+                if [[ -n $existingEbsSnapshotId ]]; then
+                  echo "Deleting old EBS snapshot and volume"
+                  aws --region=${AWS::Region} ec2 delete-snapshot --snapshot-id "$existingEbsSnapshotId"
+                  aws --region=${AWS::Region} ec2 delete-volume --volume-id "$existingEbsVolumeId"
+                fi
 
-                  echo "EBS mount complete"
+                echo "EBS mount complete"
               mode: "000750"
               owner: root
               group: root
