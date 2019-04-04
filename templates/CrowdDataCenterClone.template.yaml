@@ -195,7 +195,6 @@ Metadata:
       VPC:
         default: VPC *
 Parameters:
-    Type: String
   CatalinaOpts:
     Description: Pass in any additional JVM options to tune Catalina Tomcat
     Type: String

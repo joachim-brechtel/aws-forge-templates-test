@@ -134,10 +134,6 @@ Metadata:
         default: DB Pool Maximum Size
       DBPoolMinSize:
         default: DB Pool Minimum Size
-      DBReadReplicaInstanceClass:
-        default: Read Replica Instance Class
-      DBStorage:
-        default: Database storage
       DBStorageType:
         default: Database storage type
       DBTimeout:
@@ -452,10 +448,6 @@ Parameters:
     Default: "look this up in RDS at DR region"
     Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
     Type: String
-  DBStorage:
-    Default: 10
-    Description: Database allocated storage size, in gigabytes (GB). If you choose Provisioned IOPS, storage should be between 100 and 6144
-    Type: Number
   DBStorageType:
     Default: General Purpose (SSD)
     AllowedValues:
