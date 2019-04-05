@@ -730,8 +730,6 @@ Conditions:
     !Equals [!Ref StorageEncrypted, true]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
-  UsePublicIp:
-    !Equals [!Ref AssociatePublicIpAddress, 'true']
   UseSubDomainName:
     !Not [!Equals [!Ref SubDomainName, '']]
   UseSynchronyAutoScalingGroup:

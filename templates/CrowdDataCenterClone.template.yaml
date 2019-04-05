@@ -1452,7 +1452,7 @@ Resources:
         Interval: '30'
         UnhealthyThreshold: '2'
         HealthyThreshold: '2'
-      Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
+      Scheme: !Ref LoadBalancerScheme
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
