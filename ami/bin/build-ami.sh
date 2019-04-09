@@ -40,7 +40,7 @@ do
     case $OPTION in
         h)
             usage
-            exit 1
+            exit 0
             ;;
         p)
             ATL_PRODUCT="${OPTARG}"
