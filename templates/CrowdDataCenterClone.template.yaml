@@ -1038,6 +1038,7 @@ Resources:
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
+                - !Ref "AWS::NoValue"
           files:
             /etc/atl:
               content:
@@ -1535,7 +1536,7 @@ Outputs:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName} -SGname"
+      Name: !Sub "${AWS::StackName}-SGname"
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
