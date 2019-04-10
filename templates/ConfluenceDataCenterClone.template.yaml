@@ -421,7 +421,7 @@ Parameters:
     Type: String
   DBMultiAZ:
     Description: Whether to provision a multi-AZ RDS instance.
-    Default: true
+    Default: false
     AllowedValues:
       - true
       - false
