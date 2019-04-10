@@ -3,32 +3,23 @@
 
 set -e
 
-TMP_DIR=$(mktemp -d -t atlaws.XXXXXX)
-echo "TMP_DIR = ${TMP_DIR}"
-PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
-# comment out the trap if you want the debug output to persist after the run
-trap "rm -rf ${TMP_DIR}" EXIT
-
-BASEDIR=$(dirname "$0")
-DEBUG_MODE=
-source "${BASEDIR}/atl-aws-functions.sh"
-
 function usage {
 # -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
     cat << EOF
-usage: $0 options
+usage: $0 [options]
 
 This script generates an Atlassian AMI with Packer.
 
 OPTIONS:
-   -p The product to build an AMI for. If not supplied 'Bitbucket' is assumed
-   -r The AWS region to use. If not supplied, the AWS_REGION environment variable must be set
-   -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
-   -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
-   -c Whether to copy the AMI to other AWS regions. Defaults to false
-   -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
-   -P make AMI public
-   -d debug mode
+    -p  The product to build an AMI for. If not supplied 'Bitbucket' is assumed
+    -r  The AWS region to use. If not supplied, the AWS_REGION environment variable must be set
+    -v  The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
+    -s  The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
+    -c  Whether to copy the AMI to other AWS regions. Defaults to false
+    -u  Whether to update the CloudFormation templates' AMI mappings. Defaults to false
+    -P  Make AMI public
+    -d  Debug mode
+    -h  Print usage
 EOF
 }
 
@@ -39,17 +30,17 @@ function err_usage {
     exit 1
 }
 
-export AWS_LINUX_VERSION="2018.03"
 COPY_AMIS=
 UPDATE_CLOUDFORMATION=
-ATL_PRODUCT="Bitbucket"
+ATL_PRODUCT=Bitbucket
+DEBUG_MODE=
 
 while getopts ":dhPr:cv:s:p:ub:o:" OPTION
 do
     case $OPTION in
         h)
             usage
-            exit 1
+            exit 0
             ;;
         p)
             ATL_PRODUCT="${OPTARG}"
@@ -131,17 +122,27 @@ if [[ -z "${AWS_SECRET_KEY:-$AWS_SECRET_ACCESS_KEY}" ]]; then
     err_usage "AWS_SECRET_KEY and AWS_SECRET_ACCESS_KEY env var not defined"
 fi
 
+BASEDIR=$(dirname "$0")
+source "${BASEDIR}/atl-aws-functions.sh"
+
 DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION" "$AWS_LINUX_VERSION")
 BASE_AMI="${BASE_AMI:-$DEFAULT_BASE_AMI}"
 if [[ -z "${BASE_AMI}" ]]; then
     err_usage "BASE_AMI env var not defined and no mapping found to fall back on"
 fi
 
+export AWS_LINUX_VERSION="2018.03"
 export AWS_DEFAULT_REGION=${AWS_REGION}
 export TZ=GMT
 DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
+
+TMP_DIR=$(mktemp -d -t atlaws)
+echo "TMP_DIR = ${TMP_DIR}"
+PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
+# comment out the trap if you want the debug output to persist after the run
+trap "rm -rf ${TMP_DIR}" EXIT
 
 packer -machine-readable build \
     -var aws_access_key="${AWS_ACCESS_KEY}" \
