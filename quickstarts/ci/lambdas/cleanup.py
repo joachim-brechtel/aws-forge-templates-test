@@ -90,8 +90,8 @@ def can_purge_stack(stack: dict) -> bool:
     stack_last_touched_timestamp = stack_last_updated_at if stack_last_updated_at is not None else stack_created_at
 
     now = datetime.datetime.now().replace(tzinfo=tz.tzutc())
-    logger.info("Stack with name :%s last created more than 2 hour ago", stack["StackName"])
-    is_stack_last_modified_more_than_1_hour_ago = round((now - stack_last_touched_timestamp).total_seconds()) > 7200
+    logger.info("Stack with name :%s last created more than 1 hour ago", stack["StackName"])
+    is_stack_last_modified_more_than_1_hour_ago = round((now - stack_last_touched_timestamp).total_seconds()) > 3600
 
     return stack['StackName'].lower().startswith('tcat') and is_stack_last_modified_more_than_1_hour_ago 
 
