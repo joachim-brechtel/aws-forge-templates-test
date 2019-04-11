@@ -19,14 +19,13 @@ Based on `https://stash.atlassian.com/projects/AV/repos/instenv-app/browse/utils
 # Environmental variables to configure the lambda function
 AWS_REGIONS = os.getenv('CLEANUP_AWS_REGION')
 AWS_ACCOUNT = os.getenv('CLEANUP_AWS_ACCOUNT')
+CI_HOSTED_ZONE_ID= os.getenv('HOSTED_ZONE_ID')
 
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
 DRY_RUN = os.getenv('DRY_RUN', False)
 CLEANUP_TASKCAT_ONLY = strtobool(os.getenv('CLEANUP_TASKCAT_ONLY', 'True'))
 
-RUN_ID_TAG='taskcat-ci-run-id'
-CI_HOSTED_ZONE_ID='Z2R1NCP8IR4TFQ'
 
 logger = logging.getLogger(__name__)
 logging_level = logging.DEBUG
@@ -129,36 +128,28 @@ def delete_taskcat_r53_record(cfn_client, stack_id: str) -> None:
     tags = stack['Tags']
     logger.info("Deleting route53 record for stack: %s", stack['StackName'])
 
-    run_id = [tag['Value'] for tag in tags if tag['Key'] == RUN_ID_TAG]
-    if len(run_id) == 0:
-        logger.error('no run ID found for cfn stack: %s', stack['StackName'])
+    [bamboo_build_no] = [tag['Value'] for tag in tags if tag['Key'] == 'bamboo-run-id']
+    [product] = [tag['Value'] for tag in tags if tag['Key'] == 'atl-product']
+
+    r53 = boto3.client('route53')
+    records = r53.list_resource_record_sets(HostedZoneId=CI_HOSTED_ZONE_ID)
+    record_sets = records['ResourceRecordSets']
+    matched_stack_records = [record for record in record_sets if record['Name'] == 'taskcat-bamboo-{}-{}.deplops.com.'.format(bamboo_build_no, product)]
+    if len(matched_stack_records) != 1:
+        logger.error('Could not find corresponding record in hosted zone: %s for stack: %s', CI_HOSTED_ZONE_ID, stack['StackName'])
     else:
-        expr = re.compile('tcat-(.*)-([0-9]*)')
-        match = expr.match(run_id[0])
-        if len(match.groups()) != 2:
-            logger.error('ill-formatted run ID () for cfn stack: %s', run_id[0], stack['StackName'])
-        else:
-            product = match.group(1)
-            bamboo_build_no = match.group(2)
-            r53 = boto3.client('route53')
-            records = r53.list_resource_record_sets(HostedZoneId=CI_HOSTED_ZONE_ID)
-            record_sets = records['ResourceRecordSets']
-            matched_stack_records = [record for record in record_sets if record['Name'] == 'taskcat-bamboo-{}-{}.deplops.com.'.format(bamboo_build_no, product)]
-            if len(matched_stack_records) != 1:
-                logger.error('Could not find corresponding record in hosted zone: %s for stack: %s', CI_HOSTED_ZONE_ID, stack['StackName'])
-            else:
-                logger.info('Deleting r53 record: %s', matched_stack_records[0]['Name'])
-                change_resource = { 'Action': 'DELETE', 'ResourceRecordSet': matched_stack_records[0] }
-                if not DRY_RUN:
-                    r53.change_resource_record_sets(
-                        HostedZoneId=CI_HOSTED_ZONE_ID,
-                        ChangeBatch={
-                            'Comment': 'deleted by taskcat cleanup',
-                            'Changes': [
-                                change_resource
-                            ]
-                        }
-                    )
+        logger.info('Deleting r53 record: %s', matched_stack_records[0]['Name'])
+        change_resource = { 'Action': 'DELETE', 'ResourceRecordSet': matched_stack_records[0] }
+        if not DRY_RUN:
+            r53.change_resource_record_sets(
+                HostedZoneId=CI_HOSTED_ZONE_ID,
+                ChangeBatch={
+                    'Comment': 'deleted by taskcat cleanup',
+                    'Changes': [
+                        change_resource
+                    ]
+                }
+            )
 
 client_dict = {}
 
