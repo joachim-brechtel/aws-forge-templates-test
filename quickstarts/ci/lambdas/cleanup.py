@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import boto3
 from distutils.util import strtobool
@@ -18,11 +19,13 @@ Based on `https://stash.atlassian.com/projects/AV/repos/instenv-app/browse/utils
 # Environmental variables to configure the lambda function
 AWS_REGIONS = os.getenv('CLEANUP_AWS_REGION')
 AWS_ACCOUNT = os.getenv('CLEANUP_AWS_ACCOUNT')
+CI_HOSTED_ZONE_ID= os.getenv('HOSTED_ZONE_ID')
 
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
 DRY_RUN = os.getenv('DRY_RUN', False)
 CLEANUP_TASKCAT_ONLY = strtobool(os.getenv('CLEANUP_TASKCAT_ONLY', 'True'))
+
 
 logger = logging.getLogger(__name__)
 logging_level = logging.DEBUG
@@ -53,7 +56,7 @@ def delete_cfn_stacks(region: str) -> bool:
     stack_summary_dict = cfn.list_stacks(StackStatusFilter=stack_status_list)
     filtered_stacks = stack_summary_dict['StackSummaries']
     root_stacks = [stack for stack in filtered_stacks if 'RootId' not in stack.keys()]
-    [delete_cfn_stack(cfn, stack) for stack in root_stacks if
+    [delete_cfn_stack_and_r53_record(cfn, stack) for stack in root_stacks if
      not should_retain_stack(cfn, stack['StackId'], CLEANUP_TASKCAT_ONLY)]
     return True
 
@@ -86,11 +89,16 @@ def can_purge_stack(stack: dict) -> bool:
     stack_last_touched_timestamp = stack_last_updated_at if stack_last_updated_at is not None else stack_created_at
 
     now = datetime.datetime.now().replace(tzinfo=tz.tzutc())
-    is_stack_last_modified_more_than_1_hour_ago = round((now - stack_last_touched_timestamp).total_seconds()) > 7200
     logger.info("Stack with name :%s last created more than 1 hour ago", stack["StackName"])
+    is_stack_last_modified_more_than_1_hour_ago = round((now - stack_last_touched_timestamp).total_seconds()) > 3600
 
     return stack['StackName'].lower().startswith('tcat') and is_stack_last_modified_more_than_1_hour_ago 
 
+
+def delete_cfn_stack_and_r53_record(cfn_client, stack: dict) -> None:
+    logger.info("Cleaning up stack: %s", stack['StackName'])
+    delete_taskcat_r53_record(cfn_client, stack['StackId'])
+    delete_cfn_stack(cfn_client, stack)
 
 def delete_cfn_stack(cfn_client, stack: dict) -> None:
     logger.info("Deleting stack :%s", stack['StackName'])
@@ -110,6 +118,38 @@ def delete_stack_resources(cfn_client, stack):
         for resource in resource_list:
             _build_aws_resource(resource, region_name).delete_resource()
 
+def delete_taskcat_r53_record(cfn_client, stack_id: str) -> None:
+    stack_description = cfn_client.describe_stacks(StackName=stack_id)
+    stacks = stack_description['Stacks']
+    if len(stacks) != 1:
+        raise Exception('StackId has to be unique and must resolve to one stack')
+
+    stack = stacks[0]
+    tags = stack['Tags']
+    logger.info("Deleting route53 record for stack: %s", stack['StackName'])
+
+    [bamboo_build_no] = [tag['Value'] for tag in tags if tag['Key'] == 'bamboo-run-id']
+    [product] = [tag['Value'] for tag in tags if tag['Key'] == 'atl-product']
+
+    r53 = boto3.client('route53')
+    records = r53.list_resource_record_sets(HostedZoneId=CI_HOSTED_ZONE_ID)
+    record_sets = records['ResourceRecordSets']
+    matched_stack_records = [record for record in record_sets if record['Name'] == 'taskcat-bamboo-{}-{}.deplops.com.'.format(bamboo_build_no, product)]
+    if len(matched_stack_records) != 1:
+        logger.error('Could not find corresponding record in hosted zone: %s for stack: %s', CI_HOSTED_ZONE_ID, stack['StackName'])
+    else:
+        logger.info('Deleting r53 record: %s', matched_stack_records[0]['Name'])
+        change_resource = { 'Action': 'DELETE', 'ResourceRecordSet': matched_stack_records[0] }
+        if not DRY_RUN:
+            r53.change_resource_record_sets(
+                HostedZoneId=CI_HOSTED_ZONE_ID,
+                ChangeBatch={
+                    'Comment': 'deleted by taskcat cleanup',
+                    'Changes': [
+                        change_resource
+                    ]
+                }
+            )
 
 client_dict = {}
 
