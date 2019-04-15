@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Atlassian CDN distribution
+Parameters:
+  DomainName:
+    Description: Domain name used for the origin of the content
+    Type: String
+Resources:
+  CloudFrontCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          ForwardedValues:
+            Headers:
+              - Origin
+              - Accept
+            QueryString: true
+          TargetOriginId: !Sub '${DomainName}-origin-id'
+          ViewerProtocolPolicy: allow-all
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - Id: !Sub '${DomainName}-origin-id'
+            DomainName: !Ref DomainName
+            CustomOriginConfig:
+              OriginProtocolPolicy: match-viewer
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} CloudFront'
