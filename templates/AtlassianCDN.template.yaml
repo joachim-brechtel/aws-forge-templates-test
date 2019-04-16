@@ -2,7 +2,11 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Atlassian CDN distribution
 Parameters:
   DomainName:
-    Description: Domain name used for the origin of the content
+    AllowedPattern: ^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$
+    ConstraintDescription: You need to use valid domain name
+    Description: Domain name used for the origin of the content. You can find this value
+      in the Outputs section of Atlassian CloudFormation templates or your loadbalancer URL.
+    MinLength: 3
     Type: String
 Resources:
   CloudFrontCDN:
@@ -28,3 +32,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName} CloudFront'
+Outputs:
+  CDNDomainName:
+    Description: This is the domain name for the Atlassian CDN
+    Value: !GetAtt 'CloudFrontCDN.DomainName'
