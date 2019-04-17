@@ -1029,6 +1029,12 @@ Resources:
               - Action: ['iam:ListRolePolicies', 'iam:GetRolePolicy']
                 Effect: Allow
                 Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-JiraClusterNodeRole*'
+              - Action: ['rds:ModifyDBInstance']
+                Effect: Allow
+                Resource: ['arn:aws:rds:*:*:db:*']
+              - Action: ['iam:PassRole']
+                Effect: Allow
+                Resource: ['*']
   JiraClusterNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
