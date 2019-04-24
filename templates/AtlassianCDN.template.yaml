@@ -4,11 +4,90 @@ Parameters:
   DomainName:
     AllowedPattern: ^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$
     ConstraintDescription: You need to use valid domain name
-    Description: Domain name used for the origin of the content. You can find this value
+    Description: (required) Domain name used for the origin of the content. You can find this value
       in the Outputs section of Atlassian CloudFormation templates or your loadbalancer URL.
     MinLength: 3
     Type: String
+  TargetGroupARN:
+    Type: String
+    Description: (optional) ARN of the target group. This will also create new ALB and WAF rules
+      to protect your instance.
+    MinLength: 20
+    MaxLength: 2048
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+  ExternalSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+Conditions:
+  UseWAF:
+    !Not [!Equals [!Ref TargetGroupARN, '']]
 Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '300'
+      Scheme: internal
+      SecurityGroups: [!Ref SecurityGroup]
+      Subnets: !Ref ExternalSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
+        - Key: Cluster
+          Value: !Ref AWS::StackName
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroupARN
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+  WebACLWAF:
+    Condition: UseWAF
+    Type: "AWS::WAFRegional::WebACL"
+    Properties:
+      Name: "Atlassian WebACL for ALB"
+      DefaultAction:
+        Type: "BLOCK"
+      MetricName: "AtlassianWebACLALB"
+      Rules:
+        - Action:
+            Type: "ALLOW"
+          Priority: 1
+          RuleId:
+            Ref: "ConfluenceRuleAllowStatic"
+  ConfluenceWebACLALBAssociation:
+    Condition: UseWAF
+    Type: "AWS::WAFRegional::WebACLAssociation"
+    Properties:
+      ResourceArn: !Ref LoadBalancer
+      WebACLId:
+        Ref: WebACLWAF
+  ConfluenceRuleAllowStatic:
+    Condition: UseWAF
+    Type: "AWS::WAFRegional::Rule"
+    Properties:
+      Name: "WAF rule to allow static assets"
+      MetricName: "ConfluenceRuleAllowStatic"
+      Predicates:
+        - DataId:
+            Ref: "ConfluenceConditionStaticContent"
+          Negated: true
+          Type: "ByteMatch"
+  ConfluenceConditionStaticContent:
+    Condition: UseWAF
+    Type: "AWS::WAFRegional::ByteMatchSet"
+    Properties:
+      Name: "Condition matching URIs for static content"
+      ByteMatchTuples:
+        - FieldToMatch:
+            Type: "URI"
+          TargetString: "/s/"
+          TextTransformation: "NONE"
+          PositionalConstraint: "CONTAINS"
   CloudFrontCDN:
     Type: AWS::CloudFront::Distribution
     Properties:
