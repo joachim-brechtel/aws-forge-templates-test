@@ -36,6 +36,7 @@ pipelines:
               - echo -e "Host *\n StrictHostKeyChecking no\n UserKnownHostsFile=/dev/null" > ~/.ssh/config
               - (umask  077 ; echo $CI_BB_PRIVKEY | base64 -d > ~/.ssh/id_rsa)
               - chmod 744 ./scripts/cisetup.sh && ./scripts/cisetup.sh
+              - git clone https://github.com/atlassian/quickstart-atlassian-services.git quickstarts/quickstart-atlassian-services
               # Todo:
               # Work out what has changed in this branch using `git diff --name-only $(git merge-base master HEAD)`
               - git fetch origin master:master
@@ -73,6 +74,8 @@ pipelines:
               - ls
               - aws s3 cp quickstarts/quickstart-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-for-atlassian-services.yaml
+              - aws s3 cp quickstarts/quickstart-atlassian-services/quickstarts/quickstart-bastion-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
+              - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-bastion-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-backmac-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
               - aws cloudformation validate-template --template-url https://s3.amazonaws.com/${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-backmac-for-atlassian-services.yaml
               - aws s3 cp quickstarts/quickstart-forge-for-atlassian-services.yaml s3://${CI_S3_OUTPUT_BUCKET}/${BITBUCKET_BUILD_NUMBER}/quickstarts/quickstart-forge-for-atlassian-services.yaml
