@@ -289,7 +289,7 @@ Resources:
       Parameters:
         AccessCIDR: !Ref AccessCIDR
         FlaskSecretKey: !Ref FlaskSecretKey
-        KeyName: !Ref 'KeyPairName'
+        KeyPairName: !Ref 'KeyPairName'
         ExternalSubnet: !GetAtt VPCStack.Outputs.PublicSubnet1ID
         InternalSubnet: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
         VPC: !GetAtt VPCStack.Outputs.VPCID
