@@ -1,14 +1,15 @@
+---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Atlassian CDN distribution
 Parameters:
-  DomainName:
+  ServiceUrl:
     Description: (required) Application URL used for the origin of the content including protocol. You can find this value
       in the Outputs section of Atlassian CloudFormation templates.
       E.g. https://jira.example.com
     MinLength: 3
     Type: String
 Conditions:
-  UseHTTP: !Equals ['http', !Select ['0', !Split ["://", !Ref DomainName]]]
+  UseHTTP: !Equals ['http', !Select ['0', !Split ["://", !Ref ServiceUrl]]]
 Resources:
   CloudFrontCDN:
     Type: AWS::CloudFront::Distribution
@@ -20,14 +21,14 @@ Resources:
               - Origin
               - Accept
             QueryString: true
-          TargetOriginId: !Sub '${DomainName}-origin-id'
+          TargetOriginId: !Sub ['${domainName}-origin-id', {domainName: !Select ['1', !Split ["://", !Ref ServiceUrl]]}]
           ViewerProtocolPolicy: 
         Enabled: true
         HttpVersion: http2
         IPV6Enabled: true
         Origins:
-          - Id: !Sub '${DomainName}-origin-id'
-            DomainName: !Select ['1', !Split ["://", !Ref DomainName]]
+          - Id: !Sub ['${domainName}-origin-id', {domainName: !Select ['1', !Split ["://", !Ref ServiceUrl]]}]
+            DomainName: !Select ['1', !Split ["://", !Ref ServiceUrl]]
             CustomOriginConfig:
               OriginProtocolPolicy: !If [UseHTTP, 'http-only', 'https-only']
       Tags:
