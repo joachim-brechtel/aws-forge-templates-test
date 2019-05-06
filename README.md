@@ -39,4 +39,4 @@ Prior to merging your pull requests, please follow the appropriate link below to
 
 ## License
 
-Copyright (c) 2016 Atlassian and others. Apache 2.0 licensed, see [LICENSE.txt](LICENSE.txt) file.
+Copyright (c) 2019 Atlassian and others. Apache 2.0 licensed, see [LICENSE.txt](LICENSE.txt) file.
