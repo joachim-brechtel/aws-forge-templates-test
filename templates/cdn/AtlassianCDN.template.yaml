@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Atlassian CDN distribution
+Parameters:
+  DomainName:
+    Description: (required) Application URL used for the origin of the content including protocol. You can find this value
+      in the Outputs section of Atlassian CloudFormation templates.
+      E.g. https://jira.example.com
+    MinLength: 3
+    Type: String
+Conditions:
+  UseHTTP: !Equals ['http', !Select ['0', !Split ["://", !Ref DomainName]]]
+Resources:
+  CloudFrontCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          ForwardedValues:
+            Headers:
+              - Origin
+              - Accept
+            QueryString: true
+          TargetOriginId: !Sub '${DomainName}-origin-id'
+          ViewerProtocolPolicy: 
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - Id: !Sub '${DomainName}-origin-id'
+            DomainName: !Select ['1', !Split ["://", !Ref DomainName]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: !If [UseHTTP, 'http-only', 'https-only']
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} CloudFront'
+Outputs:
+  CDNDomainName:
+    Description: This is the domain name for the Atlassian CDN
+    Value: !GetAtt 'CloudFrontCDN.DomainName'
