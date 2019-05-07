@@ -508,7 +508,7 @@ Resources:
               test: !Sub test -n "${LocalAnsibleGitRepo}"
             025_ansible_first_run:
               command: /usr/local/bin/local-ansible-run
-              ignoreErrors: true
+              test: test -x /usr/local/bin/local-ansible-run
             030_run_forge:
               command:
                 start forge
