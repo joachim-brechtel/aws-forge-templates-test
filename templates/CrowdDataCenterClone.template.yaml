@@ -1185,6 +1185,7 @@ Resources:
               command: !Sub ["sed -i 's_<property name=\"hibernate.connection.password\">.*</property>_<property name=\"hibernate.connection.password\">${DBPassword}</property>_' /media/atl/crowd/shared/crowd.cfg.xml", { DBPassword: !Ref DBPassword }]
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
           services:
             sysvinit:
               cfn-hup:
@@ -1305,6 +1306,7 @@ Resources:
               command: service nfs restart
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
           services:
             sysvinit:
               nfs:

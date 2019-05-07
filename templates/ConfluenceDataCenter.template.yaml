@@ -1343,6 +1343,7 @@ Resources:
               ignoreErrors: true
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
           services:
             sysvinit:
               cfn-hup:
@@ -1600,6 +1601,7 @@ Resources:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
           services:
             sysvinit:
               cfn-hup:
