@@ -162,7 +162,7 @@ Parameters:
     MaxLength: 18
     Type: String
   ClusterNodeInstanceType:
-    Default: c4.xlarge
+    Default: c5.xlarge
     AllowedValues:
       - c4.large
       - c4.xlarge
@@ -554,6 +554,8 @@ Resources:
                 - ec2.amazonaws.com
                 - es.amazonaws.com
             Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
         - PolicyName: BitbucketFileServerPolicy
@@ -606,6 +608,8 @@ Resources:
             Principal:
               Service: [ec2.amazonaws.com]
             Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
         - PolicyName: BitbucketClusterNodePolicy
@@ -787,7 +791,7 @@ Resources:
           - ""
           -
             - "#!/bin/bash -xe\n"
-            - "yum update -y aws-cfn-bootstrap\n"
+            - "yum update -y aws-cfn-bootstrap amazon-ssm-agent\n"
             - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
             - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
             - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
@@ -1066,7 +1070,7 @@ Resources:
           - ""
           -
             - "#!/bin/bash -xe\n"
-            - "yum update -y aws-cfn-bootstrap\n"
+            - "yum update -y aws-cfn-bootstrap amazon-ssm-agent\n"
             - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
             - !Sub [" --resource FileServer --region ${Region}\n", Region: !Ref "AWS::Region"]
             - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
