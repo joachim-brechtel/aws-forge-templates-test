@@ -1,11 +1,21 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Atlassian CDN distribution
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Atlassian Product Configuration
+        Parameters:
+          - ServiceUrl
+    ParameterLabels:
+      ServiceUrl:
+        default: Service URL
 Parameters:
   ServiceUrl:
-    Description: (required) Application URL used for the origin of the content including protocol. You can find this value
-      in the Outputs section of Atlassian CloudFormation templates.
-      E.g. https://jira.example.com
+    Description: '(required) Application URL used for the origin of the content including protocol.
+      You can find this value in the Outputs section of Atlassian CloudFormation templates. We strongly encourage to use instance serving content
+      via secured HTTP protocol (HTTPS). E.g. https://jira.example.com'
     MinLength: 3
     Type: String
 Conditions:
@@ -16,6 +26,7 @@ Resources:
     Properties:
       DistributionConfig:
         DefaultCacheBehavior:
+          AllowedMethods: ["GET", "HEAD", "OPTIONS"]
           ForwardedValues:
             Headers:
               - Origin
