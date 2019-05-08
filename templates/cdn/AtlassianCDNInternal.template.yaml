@@ -1,121 +1,72 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: 'Example of Atlassian CDN distribution for private network. Please read documentation on TODO'
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Atlassian Product Configuration
+        Parameters:
+          - ServiceUrl
+      - Label:
+          default: Infrastructure Configuration
+        Parameters:
+          - InstanceId
+          - VPC
+          - ExternalSubnets
+          - SecurityGroup
+      - Label:
+          default: Optional
+        Parameters:
+          - ApplicationContextPath
+    ParameterLabels:
+      ApplicationContextPath:
+        default: Application context path (optional)
+      ExternalSubnets:
+        default: Public subnets(required)
+      InstanceId:
+        default: EC2 instance serving assets (required)
+      SecurityGroup:
+        default: Security group for the new ALB (required)
+      ServiceUrl:
+        default: Service URL (required)
+      VPC:
+        default: VPC (required)
 Parameters:
-  ServiceUrl:
-    Description: (required) Application URL used for the origin of the content including protocol. You can find this value
-      in the Outputs section of Atlassian CloudFormation templates.
-    MinLength: 3
-    Type: String
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup::Id
-  ExternalSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-  InstanceId:
-    Type: AWS::EC2::Instance::Id
-  VPC:
-    Type: AWS::EC2::VPC::Id
   ApplicationContextPath:
     Default: ''
-    Description: '(optional) The context path of this web application, which is matched against the beginning of each
-      request URI to select the appropriate web application for processing. If used, must include leading "/" and should
-      not contain a trailing slash "/". For example: "/confluence"'
+    Description: 'The context path of this web application, which is matched against the beginning of each
+                   request URI to select the appropriate web application for processing. If used, must include leading "/" and should
+                   not contain a trailing slash "/". For example: "/confluence"'
     Type: String
+  ExternalSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: List of public subnets in the VPC defined above that the new load balancer will associate with.
+  InstanceId:
+    Type: AWS::EC2::Instance::Id
+    Description: EC2 instance ID that will serve the assets for the CDN requests. This will be one of the application
+      nodes.
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: This security group will be used for the new load balancer.
+  ServiceUrl:
+    Description: 'Application URL used for the origin of the content including protocol.
+        You can find this value in the Outputs section of Atlassian CloudFormation templates. We strongly encourage to use instance serving content
+        via secured HTTP protocol (HTTPS). E.g. https://jira.example.com'
+    MinLength: 3
+    Type: String
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID of network where you Atlassian application located.
 Conditions:
   UseHTTP: !Equals ['http', !Select ['0', !Split ["://", !Ref ServiceUrl]]]
 Resources:
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      LoadBalancerAttributes:
-        - Key: idle_timeout.timeout_seconds
-          Value: '300'
-      Scheme: internet-facing
-      SecurityGroups: [!Ref SecurityGroup]
-      Subnets: !Ref ExternalSubnets
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-LoadBalancer"
-        - Key: Cluster
-          Value: !Ref AWS::StackName
-  MainTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
-      Port: 8080
-      Protocol: HTTP
-      VpcId: !Ref VPC
-      HealthCheckIntervalSeconds: 20
-      HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 2
-      Matcher:
-        HttpCode: '200'
-      HealthCheckPath: !Sub '${ApplicationContextPath}/status'
-      HealthCheckPort: 8080
-      HealthCheckProtocol: HTTP
-      Targets:
-        - Id: !Ref InstanceId
-          Port: 8080
-      Tags:
-        - Key: Name
-          Value: MainTargetGroup
-        - Key: Cluster
-          Value: !Ref AWS::StackName
-    DependsOn:
-      - LoadBalancer
-  LoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref MainTargetGroup
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
-  WebACLWAF:
-    Type: "AWS::WAFRegional::WebACL"
-    Properties:
-      Name: "Atlassian WebACL for ALB"
-      DefaultAction:
-        Type: "BLOCK"
-      MetricName: "AtlassianWebACLALB"
-      Rules:
-        - Action:
-            Type: "ALLOW"
-          Priority: 1
-          RuleId:
-            Ref: "ConfluenceRuleAllowStatic"
-  ConfluenceWebACLALBAssociation:
-    Type: "AWS::WAFRegional::WebACLAssociation"
-    Properties:
-      ResourceArn: !Ref LoadBalancer
-      WebACLId:
-        Ref: WebACLWAF
-  ConfluenceRuleAllowStatic:
-    Type: "AWS::WAFRegional::Rule"
-    Properties:
-      Name: "WAF rule to allow static assets"
-      MetricName: "ConfluenceRuleAllowStatic"
-      Predicates:
-        - DataId:
-            Ref: "ConfluenceConditionStaticContent"
-          Negated: true
-          Type: "ByteMatch"
-  ConfluenceConditionStaticContent:
-    Type: "AWS::WAFRegional::ByteMatchSet"
-    Properties:
-      Name: "Condition matching URIs for static content"
-      ByteMatchTuples:
-        - FieldToMatch:
-            Type: "URI"
-          TargetString: !Sub '${ApplicationContextPath}/s/'
-          TextTransformation: "NONE"
-          PositionalConstraint: "STARTS_WITH"
   CloudFrontCDN:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
         DefaultCacheBehavior:
+          AllowedMethods: ["GET", "HEAD", "OPTIONS"]
           ForwardedValues:
             Headers:
               - Origin
@@ -134,7 +85,95 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName} CloudFront'
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '300'
+      Scheme: internet-facing
+      SecurityGroups: [!Ref SecurityGroup]
+      Subnets: !Ref ExternalSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
+        - Key: Cluster
+          Value: !Ref AWS::StackName
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref MainTargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+  MainTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      HealthCheckIntervalSeconds: 20
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200'
+      HealthCheckPath: !Sub '${ApplicationContextPath}/status'
+      HealthCheckPort: '8080'
+      HealthCheckProtocol: HTTP
+      Targets:
+        - Id: !Ref InstanceId
+          Port: 8080
+      Tags:
+        - Key: Name
+          Value: MainTargetGroup
+        - Key: Cluster
+          Value: !Ref AWS::StackName
+  WebACLWAF:
+    Type: "AWS::WAFRegional::WebACL"
+    Properties:
+      Name: "Atlassian WebACL for ALB"
+      DefaultAction:
+        Type: "BLOCK"
+      MetricName: "AtlassianWebACLALB"
+      Rules:
+        - Action:
+            Type: "ALLOW"
+          Priority: 1
+          RuleId:
+            Ref: "AtlassianRuleAllowStatic"
+  AtlassianWebACLALBAssociation:
+    Type: "AWS::WAFRegional::WebACLAssociation"
+    Properties:
+      ResourceArn: !Ref LoadBalancer
+      WebACLId:
+        Ref: WebACLWAF
+  AtlassianRuleAllowStatic:
+    Type: "AWS::WAFRegional::Rule"
+    Properties:
+      Name: "WAF rule to allow static assets"
+      MetricName: "AtlassianRuleAllowStatic"
+      Predicates:
+        - DataId:
+            Ref: "AtlassianConditionStaticContent"
+          Negated: true
+          Type: "ByteMatch"
+  AtlassianConditionStaticContent:
+    Type: "AWS::WAFRegional::ByteMatchSet"
+    Properties:
+      Name: "Condition matching URIs for static content"
+      ByteMatchTuples:
+        - FieldToMatch:
+            Type: "URI"
+          TargetString: !Sub '${ApplicationContextPath}/s/'
+          TextTransformation: "NONE"
+          PositionalConstraint: "STARTS_WITH"
 Outputs:
   CDNDomainName:
     Description: This is the domain name for the Atlassian CDN
     Value: !GetAtt 'CloudFrontCDN.DomainName'
+  LoadBalancerURL:
+    Description: URL of the newly created ALB
+    Value: !GetAtt 'LoadBalancer.DNSName'

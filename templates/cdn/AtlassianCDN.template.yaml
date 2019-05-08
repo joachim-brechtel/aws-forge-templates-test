@@ -10,10 +10,10 @@ Metadata:
           - ServiceUrl
     ParameterLabels:
       ServiceUrl:
-        default: Service URL
+        default: Service URL (required)
 Parameters:
   ServiceUrl:
-    Description: '(required) Application URL used for the origin of the content including protocol.
+    Description: 'Application URL used for the origin of the content including protocol.
       You can find this value in the Outputs section of Atlassian CloudFormation templates. We strongly encourage to use instance serving content
       via secured HTTP protocol (HTTPS). E.g. https://jira.example.com'
     MinLength: 3
