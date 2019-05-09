@@ -48,4 +48,6 @@ Resources:
 Outputs:
   CDNDomainName:
     Description: This is the domain name for the Atlassian CDN
-    Value: !GetAtt 'CloudFrontCDN.DomainName'
+    Value: !Sub
+      - "https://${CloudFrontDomainName}"
+      - CloudFrontDomainName: !GetAtt CloudFrontCDN.DomainName
