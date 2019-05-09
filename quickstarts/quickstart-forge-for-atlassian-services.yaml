@@ -505,10 +505,10 @@ Resources:
               command: ./setup_forge.sh >> /var/log/forge.log 2>&1
             020_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
-              ignoreErrors: true
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
             025_ansible_first_run:
               command: /usr/local/bin/local-ansible-run
-              ignoreErrors: true
+              test: test -x /usr/local/bin/local-ansible-run
             030_run_forge:
               command:
                 start forge
