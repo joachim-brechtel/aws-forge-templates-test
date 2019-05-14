@@ -1242,7 +1242,7 @@ Resources:
       SnapshotId: !Ref EBSSnapshotId
       Tags:
         - Key: Name
-          Value: !Sub "${AWS::StackName} Crowd DR volume"
+          Value: !Sub "${AWS::StackName} Crowd DR shared-home volume"
         - Key: Cluster
           Value: !Ref AWS::StackName
         - Key: Application
