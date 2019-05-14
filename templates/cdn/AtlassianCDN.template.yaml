@@ -1,0 +1,53 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Atlassian CDN distribution
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Atlassian Product Configuration
+        Parameters:
+          - ServiceUrl
+    ParameterLabels:
+      ServiceUrl:
+        default: Service URL (required)
+Parameters:
+  ServiceUrl:
+    Description: 'Application URL used for the origin of the content including protocol.
+      You can find this value in the Outputs section of Atlassian CloudFormation templates. We strongly encourage to use instance serving content
+      via secured HTTP protocol (HTTPS). E.g. https://jira.example.com'
+    MinLength: 3
+    Type: String
+Conditions:
+  UseHTTP: !Equals ['http', !Select ['0', !Split ["://", !Ref ServiceUrl]]]
+Resources:
+  CloudFrontCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          AllowedMethods: ["GET", "HEAD", "OPTIONS"]
+          ForwardedValues:
+            Headers:
+              - Origin
+              - Accept
+            QueryString: true
+          TargetOriginId: !Sub ['${domainName}-origin-id', {domainName: !Select ['1', !Split ["://", !Ref ServiceUrl]]}]
+          ViewerProtocolPolicy: redirect-to-https
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - Id: !Sub ['${domainName}-origin-id', {domainName: !Select ['1', !Split ["://", !Ref ServiceUrl]]}]
+            DomainName: !Select ['1', !Split ["://", !Ref ServiceUrl]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: !If [UseHTTP, 'http-only', 'https-only']
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} CloudFront'
+Outputs:
+  CDNDomainName:
+    Description: This is the domain name for the Atlassian CDN
+    Value: !Sub
+      - "https://${CloudFrontDomainName}"
+      - CloudFrontDomainName: !GetAtt CloudFrontCDN.DomainName
