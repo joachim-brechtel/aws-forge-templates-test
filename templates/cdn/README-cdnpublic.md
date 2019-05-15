@@ -6,6 +6,4 @@ After deploying your CloudFront CDN stack, open its Stack Details page. From the
 
 **PLACEHOLDER: LINKS TO INSTRUCTIONS ([DRAFT](https://extranet.atlassian.com/display/CONFIX/How+to+configure+a+CDN+for+Confluence+Data+Center))**
 
-| **IMPORTANT:** |
-|----------------|
-| Your Atlassian deployment doesn't have to be hosted on AWS in order to use this template's CloudFront stack. |
+**IMPORTANT:** Your Atlassian deployment doesn't have to be hosted on AWS in order to use this template's CloudFront stack.
