@@ -512,35 +512,35 @@ Conditions:
 Mappings:
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-01cb7136f82407434
+      HVM64: ami-0f658cab80913c3c0
     ap-northeast-2:
-      HVM64: ami-05939313da2cee1d9
+      HVM64: ami-016c7b7b3f77ffd11
     ap-south-1:
-      HVM64: ami-0f87eb67101adaa95
+      HVM64: ami-0adcb162adf71afdf
     ap-southeast-1:
-      HVM64: ami-0f737ef2991410f55
+      HVM64: ami-074c644312ad7d12e
     ap-southeast-2:
-      HVM64: ami-0f880c612ba9db684
+      HVM64: ami-08fea065a06fa36d5
     ca-central-1:
-      HVM64: ami-07f9b76d33830f1aa
+      HVM64: ami-0d2fbf41e7cef9bc4
     eu-central-1:
-      HVM64: ami-02f390185bddcfb01
+      HVM64: ami-0e4f74ff487b43921
     eu-west-1:
-      HVM64: ami-050e8cd830aa9ed94
+      HVM64: ami-0b98b7982b4f2755a
     eu-west-2:
-      HVM64: ami-0a48a64baf846b803
+      HVM64: ami-0a39dcd34283329a9
     eu-west-3:
-      HVM64: ami-0b6f8672aec4fee91
+      HVM64: ami-0535cb7dd3a11621c
     sa-east-1:
-      HVM64: ami-0b37b97b0afa89d88
+      HVM64: ami-0fa0afb48e1944687
     us-east-1:
-      HVM64: ami-05bf747bde497cacd
+      HVM64: ami-07623aad5253fe368
     us-east-2:
-      HVM64: ami-00de6870b0710223e
+      HVM64: ami-087cfa6ca30104ae9
     us-west-1:
-      HVM64: ami-0e3184ec65584b002
+      HVM64: ami-0416003aa8136f33d
     us-west-2:
-      HVM64: ami-05653cd3cf9f4ad7c
+      HVM64: ami-0143676dda828ffe8
 Resources:
   BitbucketFileServerRole:
     Type: AWS::IAM::Role
