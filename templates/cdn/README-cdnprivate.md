@@ -1,4 +1,4 @@
-## Deploying a CloudFront CDN for private deployments
+## CloudFront CDN for private deployments
 
 The [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template deploys a CloudFront CDN for Atlassian deployments that are **hosted on AWS but not accessible publicly**. These are Jira or Confluence sites whose `Service URL`s are only accessible within private networks.
 

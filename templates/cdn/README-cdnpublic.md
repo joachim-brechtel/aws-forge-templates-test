@@ -1,4 +1,4 @@
-## Deploying a CloudFront CDN for public deployments
+## CloudFront CDN for public deployments
 
 If your Atlassian deployment **is publicly accessible**, you can deploy a CloudFront CDN stack using the [AtlassianCDN.template.yaml](AtlassianCDN.template.yaml) template. This template will only require your Atlassian deployment's `Service URL`.
 
