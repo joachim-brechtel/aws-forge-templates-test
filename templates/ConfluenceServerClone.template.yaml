@@ -861,52 +861,52 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-0d5e41b15d04a006b
+      HVM64: ami-0a46812db6fcb9888
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-0c03fa401f1d346d4
+      HVM64: ami-04b261d388bf21289
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-008f3f5243cbb9563
+      HVM64: ami-0943ccc1bf54b8608
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-066630c868848cf4e
+      HVM64: ami-01e8e2d4f62c60aa3
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0bc38442d145b1ec3
+      HVM64: ami-0f82750f641620fff
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-0d36406f53ad1e0f0
+      HVM64: ami-0b6f939dcb0550289
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-0e70a334347cae36b
+      HVM64: ami-078f02c8002630faa
       HVMG2: NOT_SUPPORTED
     eu-north-1:
-      HVM64: ami-0d39adfcaa130ece7
+      HVM64: ami-02a79609ba214fbb7
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-00e6ec99cbb5d8fea
+      HVM64: ami-0c78d699ae19f2312
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-08ed09d41758c8558
+      HVM64: ami-062ffbb631bc5d853
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-00a25c9e19182b2ca
+      HVM64: ami-00a796a4f90ceba2a
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-05bc007fe8d983fcd
+      HVM64: ami-06a3c17fbaad8fd87
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0920319447ff3036f
+      HVM64: ami-08a9b5661f94f5aac
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0c8c2f95df87176f4
+      HVM64: ami-0b09fb81f0bd7cc72
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0d832098429d638b8
+      HVM64: ami-04790414a81b7588a
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-06956deb56bc6bde7
+      HVM64: ami-0e5410df91747eb09
       HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceServerRole:
