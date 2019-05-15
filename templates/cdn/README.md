@@ -4,7 +4,10 @@ You can use [Amazon CloudFront](https://aws.amazon.com/cloudfront/) as your Atla
 
 This directory contains templates that help you provision and configure the right CloudFront stack for your deployment:
 
-### CDN for public deployments
+- [AtlassianCDN.template.yaml](AtlassianCDN.template.yaml) (creates a [CDN for public deployments](#cdnpublic))
+- [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) (creates a [CDN for private deployments](#cdnprivate))
+
+### CDN for public deployments <a id="cdnpublic"/>
 
 If your Atlassian deployment **is publicly accessible**, you can deploy a CloudFront CDN stack using the [AtlassianCDN.template.yaml](AtlassianCDN.template.yaml) template. This template will only require your Atlassian deployment's `Service URL`.
 
@@ -14,11 +17,11 @@ After deploying your CloudFront CDN stack, open its Stack Details page. From the
 
 > **IMPORTANT:** Your Atlassian deployment doesn't have to be hosted on AWS in order to use this template's CloudFront stack.
 
-### CDN for private deployments
+### CDN for private deployments <a id="cdnprivate"/>
 
 The [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template deploys a CloudFront CDN for Atlassian deployments that are **hosted on AWS but not accessible publicly**. These are Jira or Confluence sites whose `Service URL`s are only accessible within private networks.
 
-The [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template requires the following parameters to do access your private deployment:
+[AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) requires the following parameters to do access your private deployment:
 
 - `Service URL`: your deployments base URL.
 - `EC2 instance serving assets`: any of the application nodes that the CDN can take assets from.
