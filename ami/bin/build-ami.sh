@@ -125,16 +125,16 @@ fi
 BASEDIR=$(dirname "$0")
 source "${BASEDIR}/atl-aws-functions.sh"
 
+export AWS_LINUX_VERSION="2018.03"
+export AWS_DEFAULT_REGION=${AWS_REGION}
+export TZ=GMT
+DATE=$(date '+%Y.%m.%d_%H%M')
+
 DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION" "$AWS_LINUX_VERSION")
 BASE_AMI="${BASE_AMI:-$DEFAULT_BASE_AMI}"
 if [[ -z "${BASE_AMI}" ]]; then
     err_usage "BASE_AMI env var not defined and no mapping found to fall back on"
 fi
-
-export AWS_LINUX_VERSION="2018.03"
-export AWS_DEFAULT_REGION=${AWS_REGION}
-export TZ=GMT
-DATE=$(date '+%Y.%m.%d_%H%M')
 
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
 
