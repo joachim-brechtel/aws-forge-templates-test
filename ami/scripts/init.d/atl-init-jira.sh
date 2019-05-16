@@ -369,8 +369,10 @@ function installJIRA {
         atl_log "${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
       fi
-      # remove version file to allow new version download/deploy
-      rm $lastVersionFile
+      # if current version doesnt match requested version then remove version file to allow new version download/deploy
+      if [[ "$currentVersion" != "$requestedVersion" ]] ; then
+        rm $lastVersionFile
+      fi
       # else ensure the node is cleaned up ready for fresh install of newer release
       atl_log "Confirming this IS an upgrade ! - if requestedVersion is not 'latest' then clean up the environment"
       if [[ $requestedVersion != "latest" ]]; then
