@@ -1031,16 +1031,14 @@ Resources:
             yum:
               !If
                 - DoCollectd
-                - collectd: []
+                - amazon-ssm-agent: []
+                  collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-                  inotify-tools: []
-                  amazon-ssm-agent: []
                   xmlstarlet: []
-                - inotify-tools: []
-                  amazon-ssm-agent: []
+                - amazon-ssm-agent: []
                   xmlstarlet: []
           files:
             /etc/atl:
