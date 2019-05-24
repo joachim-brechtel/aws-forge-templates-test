@@ -57,10 +57,10 @@ Metadata:
           default: Advanced (Optional)
         Parameters:
           - JiraDownloadUrl
+          - KmsKeyArn
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
-          - StorageEncrypted
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/display/AdminJIRAServer/Tuning+database+connections tomcatref - http://tomcat.apache.org/tomcat-7.0-doc/config/http.html
         Parameters:
@@ -159,6 +159,8 @@ Metadata:
         default: JVM Heap Size Override
       KeyPairName:
         default: Key Name *
+      KmsKeyArn:
+        default: Encryption Key ARN
       LoadBalancerScheme:
         default: Load Balancer Scheme
       LocalAnsibleGitRepo:
@@ -171,8 +173,6 @@ Metadata:
         default: SSL Certificate ARN
       StartCollectd:
         default: Start the collectd metrics agent
-      StorageEncrypted:
-        default: Encryption
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       TomcatAcceptCount:
@@ -510,6 +510,11 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  KmsKeyArn:
+    Default: ''
+    AllowedPattern: '^arn:aws:kms:[\w\-]+:\d{12}:key\/[\w\-]+|^(?![\s\S])'
+    Description: Provide the KMS key ARN for a pre-generated encryption key. If this is provided, RDS and EFS will be encrypted at-rest using this key
+    Type: String
   LoadBalancerScheme:
     Default: internet-facing
     AllowedValues:
@@ -532,9 +537,6 @@ Parameters:
     Default: false
     Description: Enable mail processing and sending
     Type: String
-  SubDomainName:
-    Description: Leave this field blank to use your stack name as the sub-domain.
-    Type: String
   SSLCertificateARN:
     Description: Amazon Resource Name (ARN) of your SSL certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created.
     MinLength: 0
@@ -548,12 +550,8 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
     Type: String
-  StorageEncrypted:
-    Default: false
-    AllowedValues:
-      - true
-      - false
-    Description: Whether or not to encrypt the local storage on the EC2 nodes. The database and file system will be encrypted if the snapshots are of encrypted services.
+  SubDomainName:
+    Description: Leave this field blank to use your stack name as the sub-domain.
     Type: String
   TomcatAcceptCount:
     Default: 10
@@ -620,7 +618,7 @@ Conditions:
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
   UseEncryption:
-    !Equals [!Ref StorageEncrypted, true]
+    !Not [!Equals [!Ref KmsKeyArn, '']]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UseSubDomainName:
@@ -1046,11 +1044,10 @@ Resources:
     Properties:
       DesiredCapacity: !Ref ClusterNodeMin
       LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
-      MinSize: !Ref ClusterNodeMin
-      MaxSize: !Ref ClusterNodeMax
       LoadBalancerNames:
         - !Ref LoadBalancer
-      VPCZoneIdentifier: !Ref InternalSubnets
+      MaxSize: !Ref ClusterNodeMax
+      MinSize: !Ref ClusterNodeMin
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} Jira Node"
@@ -1060,6 +1057,7 @@ Resources:
           PropagateAtLaunch: true
       TerminationPolicies:
         - OldestInstance
+      VPCZoneIdentifier: !Ref InternalSubnets
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
@@ -1231,7 +1229,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            Encrypted: !If [UseEncryption, true, false]
+            Encrypted: true
             VolumeSize: !Ref ClusterNodeVolumeSize
             VolumeType: gp2
         - DeviceName: /dev/xvdf
@@ -1264,6 +1262,8 @@ Resources:
     Type: AWS::EC2::Volume
     Properties:
       AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
+      Encrypted: !If [UseEncryption, true, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !Ref KmsKeyArn, !Ref 'AWS::NoValue']
       SnapshotId: !Ref EBSSnapshotId
       Tags:
         - Key: Name
@@ -1342,6 +1342,12 @@ Resources:
               nfs-utils: []
     Properties:
       AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            Encrypted: true
+            VolumeSize: 50
+            VolumeType: gp2
       IamInstanceProfile: !Ref JiraClusterNodeInstanceProfile
       ImageId:
         !FindInMap
@@ -1426,9 +1432,11 @@ Resources:
       Engine: postgres
       EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !Ref KmsKeyArn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseEncryption, true, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name

@@ -58,6 +58,7 @@ Metadata:
         Parameters:
           - AutologinCookieAge
           - ConfluenceDownloadUrl
+          - KmsKeyArn
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
@@ -153,6 +154,8 @@ Metadata:
         default: Synchrony Heap Size Override
       KeyPairName:
         default: Key Name *
+      KmsKeyArn:
+        default: Encryption Key ARN
       LoadBalancerScheme:
         default: Load Balancer Scheme
       LocalAnsibleGitRepo:
@@ -165,8 +168,6 @@ Metadata:
         default: SSL Certificate ARN
       StartCollectd:
         default: Start the collectd metrics agent
-      StorageEncrypted:
-        default: Encryption
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       SynchronyClusterNodeMax:
@@ -518,6 +519,11 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  KmsKeyArn:
+    Default: ''
+    AllowedPattern: '^arn:aws:kms:[\w\-]+:\d{12}:key\/[\w\-]+|^(?![\s\S])'
+    Description: Provide the KMS key ARN for a pre-generated encryption key. If this is provided, RDS and EFS will be encrypted at-rest using this key
+    Type: String
   LoadBalancerScheme:
     Default: internet-facing
     AllowedValues:
@@ -555,13 +561,6 @@ Parameters:
       - false
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
-    Type: String
-  StorageEncrypted:
-    Default: false
-    AllowedValues:
-      - true
-      - false
-    Description: Whether or not to encrypt the database and the local storage on the EC2 nodes. EFS encryption is coming soon.
     Type: String
   SynchronyClusterNodeMax:
     Description: Maximum number of Synchrony cluster nodes
@@ -746,7 +745,7 @@ Conditions:
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
   UseEncryption:
-    !Equals [!Ref StorageEncrypted, true]
+    !Not [!Equals [!Ref KmsKeyArn, '']]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UseHostedZoneAndDoCreateReadReplica:
@@ -1179,10 +1178,8 @@ Resources:
     Properties:
       DesiredCapacity: !Ref ClusterNodeMin
       LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
-      MinSize: !Ref ClusterNodeMin
       MaxSize: !Ref ClusterNodeMax
-      TargetGroupARNs: [!Ref MainTargetGroup]
-      VPCZoneIdentifier: !Ref InternalSubnets
+      MinSize: !Ref ClusterNodeMin
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} Confluence Node"
@@ -1190,8 +1187,10 @@ Resources:
         - Key: Cluster
           Value: !Ref AWS::StackName
           PropagateAtLaunch: true
+      TargetGroupARNs: [!Ref MainTargetGroup]
       TerminationPolicies:
         - OldestInstance
+      VPCZoneIdentifier: !Ref InternalSubnets
   ClusterNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn:
@@ -1363,7 +1362,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            Encrypted: !If [UseEncryption, true, false]
+            Encrypted: true
             VolumeSize: !Ref ClusterNodeVolumeSize
             VolumeType: gp2
         - DeviceName: /dev/xvdf
@@ -1621,6 +1620,11 @@ Resources:
     Properties:
       AssociatePublicIpAddress: false
       BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            Encrypted: true
+            VolumeSize: !Ref ClusterNodeVolumeSize
+            VolumeType: gp2
         - DeviceName: /dev/xvdf
           Ebs: {}
           NoDevice: true
@@ -1700,11 +1704,13 @@ Resources:
   ElasticFileSystem:
     Type: AWS::EFS::FileSystem
     Properties:
+      Encrypted: !If [UseEncryption, true, !Ref 'AWS::NoValue']
       FileSystemTags:
         - Key: Name
           Value: !Join [' ', [!Ref 'AWS::StackName', 'cluster shared-files']]
         - Key: Application
           Value: !Ref AWS::StackId
+      KmsKeyId: !If [UseEncryption, !Ref KmsKeyArn, !Ref 'AWS::NoValue']
   EFSMountAz1:
     Type: AWS::EFS::MountTarget
     Properties:
@@ -1741,11 +1747,11 @@ Resources:
       Engine: postgres
       EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
-      KmsKeyId: !If [UseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !Ref KmsKeyArn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
-      StorageEncrypted: !If [UseEncryption, !Ref StorageEncrypted, !Ref 'AWS::NoValue']
+      StorageEncrypted: !If [UseEncryption, true, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
@@ -1945,30 +1951,6 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
-  EncryptionKey:
-    Condition: UseEncryption
-    DeletionPolicy: Retain
-    Type: AWS::KMS::Key
-    Properties:
-      KeyPolicy:
-        Version: 2012-10-17
-        Id: !Sub "${AWS::StackName}"
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action: 'kms:*'
-            Resource: '*'
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName} Encryption Key"
-  EncryptionKeyAlias:
-    Condition: UseEncryption
-    Type: AWS::KMS::Alias
-    Properties:
-      AliasName: !Sub "alias/${AWS::StackName}"
-      TargetKeyId: !Ref EncryptionKey
 Outputs:
   ServiceURL:
     Description: The URL to access this Atlassian service
@@ -2005,10 +1987,6 @@ Outputs:
   DBEndpointAddress:
     Description: The Database Connection String
     Value: !GetAtt DB.Endpoint.Address
-  DBEncryptionKey:
-    Condition: UseEncryption
-    Description: The alias of the encryption key created for RDS
-    Value: !Ref EncryptionKeyAlias
   DBReplicaEndpointAddress:
     Condition: DoCreateReadReplica
     Description: The endpoint for the read replica
