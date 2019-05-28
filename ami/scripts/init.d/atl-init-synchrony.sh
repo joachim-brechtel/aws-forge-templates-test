@@ -176,6 +176,10 @@ ${ATL_SYNCHRONY_STACK_SPACE} ${ATL_SYNCHRONY_MEMORY} \
 -Dsynchrony.database.url=${ATL_JDBC_URL} \
 -Dsynchrony.database.username=${ATL_JDBC_USER} \
 -Dsynchrony.database.password=${ATL_JDBC_PASSWORD} \
+-Dsynchrony.database.idle.connection.test.period=${ATL_SYNCHRONY_DATABASE_IDLE_CONNECTION_TEST_PERIOD} \
+-Dsynchrony.database.max.idle.time=${ATL_SYNCHRONY_DATABASE_MAX_IDLE_TIME} \
+-Dsynchrony.database.max.idle.time.excess.connections=${ATL_SYNCHRONY_DATABASE_MAX_IDLE_TIME_EXCESS_CONNECTIONS} \
+-Dsynchrony.database.test.connection.on.checkin=${ATL_SYNCHRONY_DATABASE_TEST_CONNECTION_ON_CHECKIN} \
 -Dsynchrony.bind=${AWS_EC2_PRIVATE_IP} \
 -Dsynchrony.cluster.bind=${AWS_EC2_PRIVATE_IP} \
 -Dcluster.interfaces=${AWS_EC2_PRIVATE_IP} \
