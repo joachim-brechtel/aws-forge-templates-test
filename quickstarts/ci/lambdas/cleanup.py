@@ -128,28 +128,32 @@ def delete_taskcat_r53_record(cfn_client, stack_id: str) -> None:
     tags = stack['Tags']
     logger.info("Deleting route53 record for stack: %s", stack['StackName'])
 
-    [bamboo_build_no] = [tag['Value'] for tag in tags if tag['Key'] == 'bamboo-run-id']
-    [product] = [tag['Value'] for tag in tags if tag['Key'] == 'atl-product']
+    tagKeys = [tag['Key'] for tag in tags]
+    if 'bamboo-run-id' in tagKeys and 'atl-product' in tagKeys:
+        [bamboo_build_no] = [tag['Value'] for tag in tags if tag['Key'] == 'bamboo-run-id']
+        [product] = [tag['Value'] for tag in tags if tag['Key'] == 'atl-product']
 
-    r53 = boto3.client('route53')
-    records = r53.list_resource_record_sets(HostedZoneId=CI_HOSTED_ZONE_ID)
-    record_sets = records['ResourceRecordSets']
-    matched_stack_records = [record for record in record_sets if record['Name'] == 'taskcat-bamboo-{}-{}.deplops.com.'.format(bamboo_build_no, product)]
-    if len(matched_stack_records) != 1:
-        logger.error('Could not find corresponding record in hosted zone: %s for stack: %s', CI_HOSTED_ZONE_ID, stack['StackName'])
+        r53 = boto3.client('route53')
+        records = r53.list_resource_record_sets(HostedZoneId=CI_HOSTED_ZONE_ID)
+        record_sets = records['ResourceRecordSets']
+        matched_stack_records = [record for record in record_sets if record['Name'] == 'taskcat-bamboo-{}-{}.deplops.com.'.format(bamboo_build_no, product)]
+        if len(matched_stack_records) != 1:
+            logger.error('Could not find corresponding record in hosted zone: %s for stack: %s', CI_HOSTED_ZONE_ID, stack['StackName'])
+        else:
+            logger.info('Deleting r53 record: %s', matched_stack_records[0]['Name'])
+            change_resource = { 'Action': 'DELETE', 'ResourceRecordSet': matched_stack_records[0] }
+            if not DRY_RUN:
+                r53.change_resource_record_sets(
+                    HostedZoneId=CI_HOSTED_ZONE_ID,
+                    ChangeBatch={
+                        'Comment': 'deleted by taskcat cleanup',
+                        'Changes': [
+                            change_resource
+                        ]
+                    }
+                )
     else:
-        logger.info('Deleting r53 record: %s', matched_stack_records[0]['Name'])
-        change_resource = { 'Action': 'DELETE', 'ResourceRecordSet': matched_stack_records[0] }
-        if not DRY_RUN:
-            r53.change_resource_record_sets(
-                HostedZoneId=CI_HOSTED_ZONE_ID,
-                ChangeBatch={
-                    'Comment': 'deleted by taskcat cleanup',
-                    'Changes': [
-                        change_resource
-                    ]
-                }
-            )
+        logger.info("Stack did not have necessary tags to determine corresponding r53 record")
 
 client_dict = {}
 
