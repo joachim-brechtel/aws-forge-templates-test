@@ -6,8 +6,8 @@ This directory contains the following AWS CloudFormation templates:
 |---------------|-------------|----------|-------|---------------|
 | `BitbucketServer.template` | None | PostgreSQL (onboard) | Nginx (onboard) | [Documentation](https://confluence.atlassian.com/x/wZZKLg) |
 | `BitbucketDataCenter.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
-| `ConfluenceDataCenter.template` | EFS* | RDS PostgreSQL | ELB | - |
-| `ConfluenceDataCenterClone.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
+| `ConfluenceDataCenter.template` | EFS* | RDS PostgreSQL | ALB | - |
+| `ConfluenceDataCenterClone.template` | EC2 as NFS | RDS PostgreSQL | ALB | - |
 | `CrowdDataCenter.template` | EFS* | RDS PostgreSQL | ELB | - |
 | `CrowdDataCenterClone.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
 | `JiraDataCenter.template` | EFS* | RDS PostgreSQL | ELB | - |
