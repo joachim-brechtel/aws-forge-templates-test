@@ -54,10 +54,10 @@ Metadata:
         Parameters:
           - AutologinCookieAge
           - ConfluenceDownloadUrl
+          - KmsKeyArn
           - LocalAnsibleGitRepo
           - LocalAnsibleGitSshKeyName
           - StartCollectd
-          - StorageEncrypted
       - Label:
           default: Application Tuning (Optional) - dbref - https://confluence.atlassian.com/doc/performance-tuning-130289.html tomcatref - http://tomcat.apache.org/tomcat-8.0-doc/config/http.html
         Parameters:
@@ -141,6 +141,8 @@ Metadata:
         default: JVM Heap Size Override for Synchrony
       KeyPairName:
         default: Key Name *
+      KmsKeyArn:
+        default: Encryption Key ARN
       LoadBalancerScheme:
         default: Load Balancer Scheme
       LocalAnsibleGitRepo:
@@ -153,8 +155,6 @@ Metadata:
         default: SSL Certificate ARN
       StartCollectd:
         default: Start the collectd metrics agent
-      StorageEncrypted:
-        default: Encryption
       SubDomainName:
         default: Sub-domain for Hosted Zone (optional)
       TomcatAcceptCount:
@@ -455,6 +455,11 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  KmsKeyArn:
+    Default: ''
+    AllowedPattern: '^arn:aws:kms:[\w\-]+:\d{12}:key\/[\w\-]+|^(?![\s\S])'
+    Description: Provide the KMS key ARN for a pre-generated encryption key. If this is provided, RDS and EFS will be encrypted at-rest using this key
+    Type: String
   LoadBalancerScheme:
     Default: internet-facing
     AllowedValues:
@@ -492,13 +497,6 @@ Parameters:
       - false
     ConstraintDescription: Must be 'true' or 'false'.
     Description: Start the collectd service
-    Type: String
-  StorageEncrypted:
-    Default: false
-    AllowedValues:
-      - true
-      - false
-    Description: Whether or not to encrypt the local storage on the EC2 nodes. The database and file system will be encrypted if the snapshots are of encrypted services.
     Type: String
   TomcatAcceptCount:
     Default: 10
@@ -567,7 +565,7 @@ Conditions:
   UseCustomDnsName:
     !Not [!Equals [!Ref CustomDnsName, '']]
   UseEncryption:
-    !Equals [!Ref StorageEncrypted, true]
+    !Not [!Equals [!Ref KmsKeyArn, '']]
   UseHostedZone:
     !Not [!Equals [!Ref HostedZone, '']]
   UseSubDomainName:
@@ -994,12 +992,12 @@ Resources:
       LaunchConfigurationName: !Ref ConfluenceServerLaunchConfig
       MaxSize: '1'
       MinSize: '1'
-      TargetGroupARNs: [!Ref ConfluenceServerTargetGroup]
-      VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} Confluence Server"
           PropagateAtLaunch: true
+      TargetGroupARNs: [!Ref ConfluenceServerTargetGroup]
+      VPCZoneIdentifier: !Ref InternalSubnets
   ConfluenceServerLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
@@ -1232,7 +1230,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            Encrypted: !If [UseEncryption, true, false]
+            Encrypted: true
             VolumeSize: 100
             VolumeType: gp2
         - DeviceName: /dev/xvdb
@@ -1270,9 +1268,11 @@ Resources:
       Engine: postgres
       EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
+      KmsKeyId: !If [UseEncryption, !Ref KmsKeyArn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
       MasterUserPassword: !If [DoSetDBMasterUserPassword, !Ref DBMasterUserPassword, !Ref 'AWS::NoValue']
       MultiAZ: !Ref DBMultiAZ
+      StorageEncrypted: !If [UseEncryption, true, !Ref 'AWS::NoValue']
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
