@@ -12,9 +12,7 @@ The [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) tem
 
 The CloudFront CDN deployed by [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) can only connect to **private Atlassian deployments hosted on AWS**. This is because the CDN needs to connect through a VPC and EC2 instance (both of which are only accessible within AWS).
 
-After deploying your CloudFront CDN stack, open its Stack Details page. From there, check the Outputs tab and note the value of `LoadBalancerURL`; this is your `CDN URL`. You'll need to configure your Atlassian deployment to use this URL.
-
-**PLACEHOLDER: LINKS TO INSTRUCTIONS ([DRAFT](https://extranet.atlassian.com/display/CONFIX/How+to+configure+a+CDN+for+Confluence+Data+Center))**
+After deploying your CloudFront CDN stack, open its Stack Details page. From there, check the Outputs tab and note the value of `LoadBalancerURL`; this is your `CDN URL`. You'll need to configure your Atlassian deployment to use this URL. For instructions on how to do this, see [Use a CDN with Atlassian Data Center applications](https://confluence.atlassian.com/display/adminjiraserver/Use+a+CDN+with+Atlassian+Data+Center+applications).
 
 
 **IMPORTANT:** We've only tested the [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template with private deployments created through our [Jira](https://aws.amazon.com/quickstart/architecture/jira/) and [Confluence](https://aws.amazon.com/quickstart/architecture/confluence/) Quick Starts. You may need to edit the [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template accordingly if your deployment has additional connection requirements. |
