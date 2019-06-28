@@ -1,6 +1,6 @@
 ## CloudFront CDN for private deployments
 
-The [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template deploys a CloudFront CDN for Atlassian deployments that are **hosted on AWS but not accessible publicly**. These are Jira or Confluence sites whose `Service URL`s are only accessible within private networks.
+The [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template deploys a CloudFront CDN for Atlassian deployments that are **hosted on AWS but not accessible publicly**. These are deployments whose `Service URL`s are only accessible within private networks.
 
 [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) requires the following parameters to do access your private deployment:
 
@@ -15,4 +15,4 @@ The CloudFront CDN deployed by [AtlassianCDNInternal.template.yaml](AtlassianCDN
 After deploying your CloudFront CDN stack, open its Stack Details page. From there, check the Outputs tab and note the value of `LoadBalancerURL`; this is your `CDN URL`. You'll need to configure your Atlassian deployment to use this URL. For instructions on how to do this, see [Use a CDN with Atlassian Data Center applications](https://confluence.atlassian.com/display/adminjiraserver/Use+a+CDN+with+Atlassian+Data+Center+applications).
 
 
-**IMPORTANT:** We've only tested the [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template with private deployments created through our [Jira](https://aws.amazon.com/quickstart/architecture/jira/) and [Confluence](https://aws.amazon.com/quickstart/architecture/confluence/) Quick Starts. You may need to edit the [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template accordingly if your deployment has additional connection requirements. |
+**IMPORTANT:** We've only tested the [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template with private deployments created through our [Jira](https://aws.amazon.com/quickstart/architecture/jira/) and [Confluence](https://aws.amazon.com/quickstart/architecture/confluence/) Quick Starts. You may need to edit the [AtlassianCDNInternal.template.yaml](AtlassianCDNInternal.template.yaml) template accordingly if your deployment has additional connection requirements.

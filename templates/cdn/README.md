@@ -1,6 +1,6 @@
 ## Deploying a CloudFront CDN stack
 
-You can use [Amazon CloudFront](https://aws.amazon.com/cloudfront/) as your Atlassian deployment's third-party Content Delivery Network (CDN). Specifically, you can provision a CloudFront stack to act as a CDN for your Jira or Confluence deployment.
+You can use [Amazon CloudFront](https://aws.amazon.com/cloudfront/) as your Atlassian deployment's third-party Content Delivery Network (CDN). Specifically, you can provision a CloudFront stack to act as a CDN for your Atlassian deployment.
 
 This directory contains templates that help you provision and configure the right CloudFront stack for your deployment:
 
