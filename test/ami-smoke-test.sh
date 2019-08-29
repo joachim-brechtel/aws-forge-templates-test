@@ -19,7 +19,8 @@
 # AWS properties
 AWS_AMI_ID=${AWS_AMI_ID}
 AWS_INSTANCE_TYPE=${AWS_INSTANCE_TYPE:-"m4.xlarge"}
-AWS_SECURITY_GROUP_NAME=${AWS_SECURITY_GROUP_NAME:-"aws-bitbucket-ami-smoke-test"}
+# Generate a unique security group name so builds running at the same time (simultaneous patch releases) don't clash
+AWS_SECURITY_GROUP_NAME=${AWS_SECURITY_GROUP_NAME:-"aws-bitbucket-ami-smoke-test-"$(uuidgen | cut -c 1-4)}
 AWS_REGION=${AWS_REGION:-"us-east-1"}
 
 # Product properties
