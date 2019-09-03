@@ -15,6 +15,7 @@ This directory contains the following AWS CloudFormation Quickstart templates:
 > Directory structure changes are now complete.
 
 The following quickstart templates have been moved to the [Atlassian org on github](https://github.com/atlassian/) and are referenced from this repository as a `git submodule` 
+
   * [quickstart-atlassian-jira](https://github.com/atlassian/quickstart-atlassian-jira)
     - This quickstart spins up a Jira instance in either a pre-existing Atlassian Service VPC only or a new [Atlassian Standard Infrastructure stack](https://github.com/atlassian/quickstart-atlassian-services)
   * [quickstart-atlassian-confluence](https://github.com/atlassian/quickstart-atlassian-confluence)
