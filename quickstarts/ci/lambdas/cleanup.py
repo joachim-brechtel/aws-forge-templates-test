@@ -49,6 +49,7 @@ def handler(_event, _context):
     logger.info("regions: %s", regions)
     for region in regions:
         delete_cfn_stacks(region)
+        delete_old_taskcat_db_snapshots(region)
 
 
 def delete_cfn_stacks(region: str) -> bool:
@@ -61,6 +62,19 @@ def delete_cfn_stacks(region: str) -> bool:
      not should_retain_stack(cfn, stack['StackId'], CLEANUP_TASKCAT_ONLY)]
     return True
 
+def delete_old_taskcat_db_snapshots(region: str) -> bool:
+    rds = boto3.client('rds', region_name=region)
+    snapshots = rds.describe_db_snapshots(
+        SnapshotType='manual',
+        IncludeShared=False,
+        IncludePublic=False
+    )['DBSnapshots']
+    logger.info(snapshots)
+    all_snapshot_identifiers = map(lambda snapshot: snapshot['DBSnapshotIdentifier'], snapshots)
+    all_taskcat_stack_db_snapshot_identifiers = filter(lambda snapshot_identifier: 'tcat-tag' in snapshot_identifier, all_snapshot_identifiers)
+    for taskcat_stack_db_snapshot_identifier in all_taskcat_stack_db_snapshot_identifiers:
+        logger.debug('Deleting taskcat snapshot: %s', taskcat_stack_db_snapshot_identifier)
+        execute_if_not_dry_run(lambda: rds.delete_db_snapshot(DBSnapshotIdentifier=taskcat_stack_db_snapshot_identifier))
 
 def should_retain_stack(cfn, stack_id: str, cleanup_taskcat_only: bool) -> bool:
     stack_description = cfn.describe_stacks(StackName=stack_id)
@@ -103,16 +117,14 @@ def delete_cfn_stack_and_r53_record(cfn_client, stack: dict) -> None:
 
 def delete_cfn_stack(cfn_client, stack: dict) -> None:
     logger.info("Deleting stack :%s", stack['StackName'])
-    if not DRY_RUN:
+    def do_full_stack_cleanup():
         try:
-            logger.info("Actually deleting stack (not a dry run)")
             delete_stack_resources(cfn_client, stack)
             cfn_client.delete_stack(StackName=stack['StackName'])
         except Exception as e:
             logger.error("Error deleting CFn stack: %s", stack['StackName'])
             logger.error(repr(e))
-    else:
-        logger.info("In a dry run. Not carrying out delete")
+    execute_if_not_dry_run(do_full_stack_cleanup)
 
 
 def delete_stack_resources(cfn_client, stack):
@@ -146,21 +158,26 @@ def delete_taskcat_r53_record(cfn_client, stack_id: str) -> None:
         else:
             logger.info('Deleting r53 record: %s', matched_stack_records[0]['Name'])
             change_resource = { 'Action': 'DELETE', 'ResourceRecordSet': matched_stack_records[0] }
-            if not DRY_RUN:
-                r53.change_resource_record_sets(
-                    HostedZoneId=CI_HOSTED_ZONE_ID,
-                    ChangeBatch={
-                        'Comment': 'deleted by taskcat cleanup',
-                        'Changes': [
-                            change_resource
-                        ]
-                    }
-                )
+            execute_if_not_dry_run(lambda: r53.change_resource_record_sets(
+                HostedZoneId=CI_HOSTED_ZONE_ID,
+                ChangeBatch={
+                    'Comment': 'deleted by taskcat cleanup',
+                    'Changes': [
+                        change_resource
+                    ]
+                }
+            ))
     else:
         logger.info("Stack did not have necessary tags to determine corresponding r53 record")
 
 client_dict = {}
 
+def execute_if_not_dry_run(deletion_operation):
+    if not DRY_RUN:
+        logger.info('Actually deleting object (not dry run)')
+        deletion_operation()
+    else:
+        logger.info('Is dry run. Not deleting object')
 
 def build_ec2_client(region: str):
     if "ec2" not in client_dict:
