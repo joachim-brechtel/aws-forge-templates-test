@@ -23,7 +23,8 @@ CI_HOSTED_ZONE_ID= os.getenv('HOSTED_ZONE_ID')
 
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
-DRY_RUN = os.getenv('DRY_RUN', False)
+DRY_RUN_ENV = os.getenv('DRY_RUN', 'False')
+DRY_RUN = DRY_RUN_ENV == 'TRUE'
 CLEANUP_TASKCAT_ONLY = strtobool(os.getenv('CLEANUP_TASKCAT_ONLY', 'True'))
 
 
@@ -104,11 +105,14 @@ def delete_cfn_stack(cfn_client, stack: dict) -> None:
     logger.info("Deleting stack :%s", stack['StackName'])
     if not DRY_RUN:
         try:
+            logger.info("Actually deleting stack (not a dry run)")
             delete_stack_resources(cfn_client, stack)
             cfn_client.delete_stack(StackName=stack['StackName'])
         except Exception as e:
             logger.error("Error deleting CFn stack: %s", stack['StackName'])
             logger.error(repr(e))
+    else:
+        logger.info("In a dry run. Not carrying out delete")
 
 
 def delete_stack_resources(cfn_client, stack):
