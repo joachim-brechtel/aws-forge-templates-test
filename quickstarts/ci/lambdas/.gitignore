@@ -1,0 +1,6 @@
+# Virtual Env
+venv
+
+# Build artifacts
+vendor
+*.zip

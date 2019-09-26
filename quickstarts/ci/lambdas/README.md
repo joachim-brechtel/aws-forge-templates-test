@@ -1,6 +1,7 @@
 #### Lambda Cleaner
 
-Helps clean up test AWS resources after `taskcat` runs on CI
+Helps clean up test AWS resources after `taskcat` runs on CI. Deletes cloudformation stacks created by taskcat as well as Route53 records
+created for HTTPS taskcat deloyments. We usually use deplops.com hosted zone
 
 #### Development
 
@@ -29,7 +30,7 @@ handler(None, None)
 - Run `aws configure` to ensure you are running the lambda from the desired region
 - To create a lambda the first time, run
 
-`make aws-account=account_id aws-role=role_id create-lambda`
+`make aws-account=account_id aws-role=role_id hosted-zone=hosted_zone_id create-lambda`
 
 - To update existing lambda function run
 
