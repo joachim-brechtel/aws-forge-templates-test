@@ -6,7 +6,6 @@ import boto3
 from distutils.util import strtobool
 import datetime 
 from dateutil import tz
-from distutils.util import strtobool
 
 """ Function to clean up resources created by Instant Environments
 This function assumes that each resource that should be managed by the cleanup script requires
