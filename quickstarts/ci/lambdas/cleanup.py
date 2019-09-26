@@ -6,6 +6,7 @@ import boto3
 from distutils.util import strtobool
 import datetime 
 from dateutil import tz
+from distutils.util import strtobool
 
 """ Function to clean up resources created by Instant Environments
 This function assumes that each resource that should be managed by the cleanup script requires
@@ -23,8 +24,7 @@ CI_HOSTED_ZONE_ID= os.getenv('HOSTED_ZONE_ID')
 
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
-DRY_RUN_ENV = os.getenv('DRY_RUN', 'False')
-DRY_RUN = DRY_RUN_ENV == 'TRUE'
+DRY_RUN = strtobool(os.getenv('DRY_RUN', 'False'))
 CLEANUP_TASKCAT_ONLY = strtobool(os.getenv('CLEANUP_TASKCAT_ONLY', 'True'))
 
 
