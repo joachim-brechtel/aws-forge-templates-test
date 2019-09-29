@@ -69,7 +69,6 @@ def delete_old_taskcat_db_snapshots(region: str) -> bool:
         IncludeShared=False,
         IncludePublic=False
     )['DBSnapshots']
-    logger.info(snapshots)
     all_snapshot_identifiers = map(lambda snapshot: snapshot['DBSnapshotIdentifier'], snapshots)
     all_taskcat_stack_db_snapshot_identifiers = filter(lambda snapshot_identifier: TASKCAT_IDENTIFIER_LABEL in snapshot_identifier, all_snapshot_identifiers)
     for taskcat_stack_db_snapshot_identifier in all_taskcat_stack_db_snapshot_identifiers:
