@@ -26,6 +26,7 @@ CI_HOSTED_ZONE_ID= os.getenv('HOSTED_ZONE_ID')
 DRY_RUN = strtobool(os.getenv('DRY_RUN', 'False'))
 CLEANUP_TASKCAT_ONLY = strtobool(os.getenv('CLEANUP_TASKCAT_ONLY', 'True'))
 
+TASKCAT_IDENTIFIER_LABEL = 'tcat-tag'
 
 logger = logging.getLogger(__name__)
 logging_level = logging.DEBUG
@@ -70,7 +71,7 @@ def delete_old_taskcat_db_snapshots(region: str) -> bool:
     )['DBSnapshots']
     logger.info(snapshots)
     all_snapshot_identifiers = map(lambda snapshot: snapshot['DBSnapshotIdentifier'], snapshots)
-    all_taskcat_stack_db_snapshot_identifiers = filter(lambda snapshot_identifier: 'tcat-tag' in snapshot_identifier, all_snapshot_identifiers)
+    all_taskcat_stack_db_snapshot_identifiers = filter(lambda snapshot_identifier: TASKCAT_IDENTIFIER_LABEL in snapshot_identifier, all_snapshot_identifiers)
     for taskcat_stack_db_snapshot_identifier in all_taskcat_stack_db_snapshot_identifiers:
         logger.debug('Deleting taskcat snapshot: %s', taskcat_stack_db_snapshot_identifier)
         execute_if_not_dry_run(lambda: rds.delete_db_snapshot(DBSnapshotIdentifier=taskcat_stack_db_snapshot_identifier))
@@ -106,7 +107,7 @@ def can_purge_stack(stack: dict) -> bool:
     logger.info("Stack with name :%s last created more than 1 hour ago", stack["StackName"])
     is_stack_last_modified_more_than_1_hour_ago = round((now - stack_last_touched_timestamp).total_seconds()) > 3600
 
-    return stack['StackName'].lower().startswith('tcat') and is_stack_last_modified_more_than_1_hour_ago 
+    return stack['StackName'].lower().startswith(TASKCAT_IDENTIFIER_LABEL) and is_stack_last_modified_more_than_1_hour_ago 
 
 
 def delete_cfn_stack_and_r53_record(cfn_client, stack: dict) -> None:
