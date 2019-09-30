@@ -19,7 +19,7 @@ Based on `https://stash.atlassian.com/projects/AV/repos/instenv-app/browse/utils
 # Environmental variables to configure the lambda function
 AWS_REGIONS = os.getenv('CLEANUP_AWS_REGION')
 AWS_ACCOUNT = os.getenv('CLEANUP_AWS_ACCOUNT')
-CI_HOSTED_ZONE_ID= os.getenv('HOSTED_ZONE_ID')
+CI_HOSTED_ZONE_ID = os.getenv('HOSTED_ZONE_ID')
 
 # Debug only - Dry Run doesn't work for load balancers so we don't use AWS API DryRun parameter
 # and just printing the instances that are designated for termination but don't kill them
