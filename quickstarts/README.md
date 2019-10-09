@@ -4,17 +4,15 @@ This directory contains the following AWS CloudFormation Quickstart templates:
 
 | Template Name | Purpose |
 |---------------|-------------|
-| `quickstart-for-atlassian-services.yaml` | This quickstart spins up Atlassian Services Vpc + bastion with an optional forge and backmac. From there you can use the product VPC's or the forge UI to spin up Atlassian product instances
 | `quickstart-backmac-for-atlassian-services.yaml` | This quickstart spins up Backmac in a pre-existing Atlassian Service VPC only
-| `quickstart-crowd-master.template.yaml` | This quickstart spins up a Crowd instance in a pre-existing Atlassian Service VPC only
-| `quickstart-forge-for-atlassian-services.yaml` | This quickstart spins up Forge in a pre-existing Atlassian Service VPC only
-
+| `quickstart-crowd-master.template.yaml`          | This quickstart spins up a Crowd instance in a pre-existing Atlassian Service VPC only
+| `quickstart-forge-for-atlassian-services.yaml`   | This quickstart spins up Forge in a pre-existing Atlassian Service VPC only
 
 ### Directory structure
 
 > Directory structure changes are now complete.
 
-The following quickstart templates have been moved to the [Atlassian org on github](https://github.com/atlassian/) and are referenced from this repository as a `git submodule` 
+The following quickstart templates have been moved to the [Atlassian org on GitHub](https://github.com/atlassian/) and are referenced from this repository as a `git submodule`:
 
   * [quickstart-atlassian-jira](https://github.com/atlassian/quickstart-atlassian-jira)
     - This quickstart spins up a Jira instance in either a pre-existing Atlassian Service VPC only or a new [Atlassian Standard Infrastructure stack](https://github.com/atlassian/quickstart-atlassian-services)
@@ -26,11 +24,11 @@ The following quickstart templates have been moved to the [Atlassian org on gith
     - Provisions a [Bastion stack](https://github.com/atlassian/quickstart-atlassian-services/blob/master/quickstarts/quickstart-bastion-for-atlassian-services.yaml)
     - Provisions a VPC stack
 
-The submodules refer to quickstart projects in the develop branch of the [Atlassian org on github](https://github.com/atlassian/)
+The submodules refer to quickstart projects in the `develop` branch of the respective repo in the [Atlassian org on GitHub](https://github.com/atlassian/).
 
 ##### Development
 
-- To make changes to the Bitbucket, Confluence, Jira or Atlassian Standard Services templates, please raise a PR in the respective Github repository listed above.
+- To make changes to the Bitbucket, Confluence, Jira or Atlassian Services templates, please raise a PR in the respective GitHub repository listed above.
 - Once the changes have been accepted and merged into upstream develop, please synchronize the git submodules in this repository. 
 
 **Key Terms:**
@@ -39,7 +37,7 @@ The submodules refer to quickstart projects in the develop branch of the [Atlass
 |------|------------|
 | `backmac` | [Backmac](https://community.atlassian.com/t5/Data-Center-articles/Introducing-Atlassian-CloudFormation-Backup-Machine/ba-p/881556#M25) is the backup machine toolset for automating the backup of atlassian product Cloudformation stacks and is required for stack replication and DR to alternate regions |
 | `bastion` | An ec2 node with sshd and a public IP that allows you to connect to other resources inside the Atlassian Services VPC. |
-| `forge` | [Forge](https://community.atlassian.com/t5/Data-Center-articles/Introducing-Atlassian-CloudFormation-Forge/ba-p/881551) is a Cloudformation automation tool, which consolidates and simplifies most of the tasks you would need to do on atlassian products in AWS in a single webUI  |
+| `forge` | [Forge](https://community.atlassian.com/t5/Data-Center-articles/Introducing-Atlassian-CloudFormation-Forge/ba-p/881551) is a CloudFormation automation tool, which consolidates and simplifies most of the tasks you would need to do on Atlassian products in AWS in a single webUI  |
 
 ### Use
 
