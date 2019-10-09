@@ -13,4 +13,3 @@
 [submodule "quickstarts/quickstart-atlassian-services"]
 	path = quickstarts/quickstart-atlassian-services
 	url = git://github.com/atlassian/quickstart-atlassian-services.git
-	branch = develop
