@@ -10,3 +10,7 @@
 	path = quickstarts/quickstart-atlassian-jira
 	url = git://github.com/atlassian/quickstart-atlassian-jira.git
 	branch = develop
+[submodule "quickstarts/quickstart-atlassian-services"]
+	path = quickstarts/quickstart-atlassian-services
+	url = git://github.com/atlassian/quickstart-atlassian-services.git
+	branch = develop
