@@ -1877,6 +1877,8 @@ Resources:
           Value: 'true'
         - Key: stickiness.type
           Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '18000'
       Tags:
         - Key: Name
           Value: MainTargetGroup
@@ -1904,6 +1906,8 @@ Resources:
           Value: 'true'
         - Key: stickiness.type
           Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '18000'
       Tags:
         - Key: Name
           Value: SynchronyTargetGroup
