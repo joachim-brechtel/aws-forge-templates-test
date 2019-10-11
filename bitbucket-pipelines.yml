@@ -15,7 +15,7 @@ pipelines:
         script:
             - echo 'only running CI on ITOPS branches for now'
   branches:
-    'ITOPS-*':
+    'ITOPS*':
         - step:
             name: Build Atlassian Services AWS Environment (VPC + tooling) from quickstart (if doesnt exist)
             script:
