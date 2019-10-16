@@ -966,6 +966,20 @@ Resources:
                     - !Sub '${AWS::StackName} sg'
                 Effect: Allow
                 Resource: ['*']
+              - !If
+                - UseEncryption
+                - Action:
+                  - 'kms:CreateGrant'
+                  - 'kms:Decrypt'
+                  - 'kms:DescribeKey'
+                  - 'kms:Encrypt'
+                  - 'kms:GenerateDataKey*'
+                  - 'kms:ListGrants'
+                  - 'kms:ReEncrypt*'
+                  - 'kms:RevokeGrant'
+                  Effect: Allow
+                  Resource: !Ref KmsKeyArn
+                - !Ref AWS::NoValue
         - PolicyName: !Sub '${AWS::StackName}-ansible-custom-policy'
           PolicyDocument:
             Version: 2012-10-17
@@ -1017,16 +1031,14 @@ Resources:
             yum:
               !If
                 - DoCollectd
-                - collectd: []
+                - amazon-ssm-agent: []
+                  collectd: []
                   collectd-java: []
                   collectd-generic-jmx: []
                   collectd-rrdtool: []
                   collectd-disk: []
-                  inotify-tools: []
-                  amazon-ssm-agent: []
                   xmlstarlet: []
-                - inotify-tools: []
-                  amazon-ssm-agent: []
+                - amazon-ssm-agent: []
                   xmlstarlet: []
           files:
             /etc/atl:
