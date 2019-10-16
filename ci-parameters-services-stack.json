@@ -9,10 +9,10 @@
   "ParameterValue": "us-east-1"
 }, {
   "ParameterKey": "EnableBackmac",
-  "ParameterValue": "true"
+  "ParameterValue": "false"
 }, {
   "ParameterKey": "EnableForge",
-  "ParameterValue": "true"
+  "ParameterValue": "false"
 }, {
   "ParameterKey": "FlaskSecretKey",
   "ParameterValue": "s3333333cret"

@@ -1,4 +1,7 @@
 [{
+  "ParameterKey": "CrowdDownloadUrl",
+  "ParameterValue": "https://product-downloads.atlassian.com/software/crowd/downloads/atlassian-crowd-3.3.3.tar.gz"
+}, {
   "ParameterKey": "CustomDnsName",
   "ParameterValue": ""
 }, {
