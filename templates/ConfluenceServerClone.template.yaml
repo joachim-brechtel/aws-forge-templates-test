@@ -1207,6 +1207,7 @@ Resources:
           commands:
             010_bootstrap_confluence_home:
               command: /tmp/bootstrap_confluence_home > /var/log/bootstrap_confluence_home.log 2>&1
+              test: test -z "$(grep '/var/atlassian/application-data/confluence' /etc/mtab)"
             020_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
               test: !Sub test -n "${LocalAnsibleGitRepo}"
