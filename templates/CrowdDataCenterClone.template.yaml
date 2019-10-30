@@ -45,6 +45,7 @@ Metadata:
           default: Disaster Recovery Snapshot IDs
         Parameters:
           - DBSnapshotName
+          - DeployFromAnsible
           - EBSSnapshotId
       - Label:
           default: DNS (Optional)
@@ -146,6 +147,8 @@ Metadata:
         default: EBS (shared filesystem) snapshot ID to restore from
       DeployEnvironment:
         default: Deployment Environment
+      DeployFromAnsible:
+        default: Deployment Automation Git Repository details
       ExternalSubnets:
         default: External subnets *
       HostedZone:
@@ -214,7 +217,6 @@ Parameters:
       - c4.2xlarge
       - c4.4xlarge
       - c4.8xlarge
-      - c5.large
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
@@ -329,7 +331,7 @@ Parameters:
     Type: String
     ConstraintDescription: Must be a valid Crowd download url
   CrowdVersion:
-    Default: 3.3.3
+    Default: 3.7.0
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
     ConstraintDescription: Must be a valid Crowd version number, for example 3.3.3.
     Description: The version of Crowd to install
@@ -439,7 +441,6 @@ Parameters:
     Description: The length of time (in seconds) that a database connection can be idle before it is considered abandoned
     Type: String
   DBSnapshotName:
-    Default: "look this up in RDS at DR region"
     ConstraintDescription: Must be a valid RDS snapshot Name
     Description: RDS snapshot Name of an existing snapshot to restore from like "dr-opsj-snap-201709241212".
     Type: String
@@ -464,7 +465,6 @@ Parameters:
     Description: The number of milliseconds to sleep between runs of the idle object eviction thread. When non-positive, no idle object eviction thread will be run
     Type: String
   EBSSnapshotId:
-    Default: "look this up in ec2 snapshots at DR region"
     ConstraintDescription: Must be a valid EBS snapshot ID
     Description: EBS snapshot ID of an existing backup to restore of the form "snap-065c60da27161cb43".
     Type: String
@@ -477,6 +477,12 @@ Parameters:
       - stg
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
+    Type: String
+  DeployFromAnsible:
+    Default: https://bitbucket.org/atlassian/dc-deployments-automation.git;master;aws_crowd_dc_node.yml
+    AllowedPattern: '^(http|https|git|ssh):\/\/(.+);(.+);(.+)$'
+    ConstraintDescription: Must be a valid git repo, branch and playbook in the format <protocol>://<repo>;<branch>;<playbook>
+    Description: Repository, branch and playbook to use for Ansible based deployment.
     Type: String
   ExternalSubnets:
     ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
@@ -613,353 +619,234 @@ Conditions:
 Mappings:
   AWSInstanceType2Arch:
     c4.xlarge:
-      Arch: HVM64
-      Jvmheap: 4608m
+      Jvmheap: 3584m
     c4.2xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 9216m
     c4.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     c4.8xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
-    c5.large:
-      Arch: HVM64
-      Jvmheap: 2048m
     c5.xlarge:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     c5.2xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     c5.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     c5.9xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     c5.18xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
-    c5d.large:
-      Arch: HVM64
-      Jvmheap: 2048m
     c5d.xlarge:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     c5d.2xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     c5d.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     c5d.9xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     c5d.18xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     d2.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     d2.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     d2.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     d2.8xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     h1.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     h1.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     h1.8xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     h1.16xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     i3.large:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 9472m
     i3.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     i3.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     i3.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     i3.8xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     i3.16xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m4.large:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m4.xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     m4.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m4.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m4.10xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m4.16xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5.large:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m5.xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     m5.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5.24xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5a.large:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m5a.xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     m5a.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5a.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5a.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5a.24xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5d.large:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     m5d.xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     m5d.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5d.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5d.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     m5d.24xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r4.large:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 9472m
     r4.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r4.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r4.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r4.8xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r4.16xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5.large:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     r5.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5.24xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5a.large:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     r5a.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5a.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5a.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5a.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5a.24xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5d.large:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     r5d.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5d.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5d.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5d.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     r5d.24xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     t2.medium:
-      Arch: HVM64
       Jvmheap: 2048m
     t2.large:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     t2.xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     t2.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     t3.medium:
-      Arch: HVM64
       Jvmheap: 2048m
     t3.large:
-      Arch: HVM64
-      Jvmheap: 5120m
+      Jvmheap: 4096m
     t3.xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     t3.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1.16xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1.32xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1e.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1e.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1e.4xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1e.8xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     x1e.16xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     z1d.large:
-      Arch: HVM64
-      Jvmheap: 12288m
+      Jvmheap: 10240m
     z1d.xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     z1d.2xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     z1d.3xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     z1d.6xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
     z1d.12xlarge:
-      Arch: HVM64
       Jvmheap: 12288m
-  AWSRegionArch2AMI:
+  AWSRegion2AMI:
     ap-northeast-1:
-      HVM64: ami-0992d999eb71f0a98
-      HVMG2: NOT_SUPPORTED
+      AMI: ami-0c3fd0f5d33134a76
     ap-northeast-2:
-      HVM64: ami-0e27d4a44613ca3e8
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-095ca789e0549777d
     ap-south-1:
-      HVM64: ami-00c73e7a57b017f33
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0d2692b6acea72ee6
     ap-southeast-1:
-      HVM64: ami-0297ad6070544022a
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-01f7527546b557442
     ap-southeast-2:
-      HVM64: ami-00b3a145fd5a0d88b
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0dc96254d5535925f
     ca-central-1:
-      HVM64: ami-08788d6d99a6c902a
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0d4ae09ec9361d8ac
     eu-central-1:
-      HVM64: ami-0f07250b579c40b38
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0cc293023f983ed53
     eu-north-1:
-      HVM64: ami-02ec14350380fc2ae
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-3f36be41
     eu-west-1:
-      HVM64: ami-0263c2fc06870c430
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0bbc25e23a7640b9b
     eu-west-2:
-      HVM64: ami-0e29e6ff22e76f974
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0d8e27447ec2c8410
     eu-west-3:
-      HVM64: ami-0c4cbd68947198380
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0adcddd3324248c4c
     sa-east-1:
-      HVM64: ami-0468abfaf72edfdfc
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-058943e7d9b9cabfb
     us-east-1:
-      HVM64: ami-046caafba30e2f998
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0b898040803850657
     us-east-2:
-      HVM64: ami-04b68d38542135abb
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-0d8f6eb4f641ef691
     us-west-1:
-      HVM64: ami-029078ef5717a3641
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-056ee704806822732
     us-west-2:
-      HVM64: ami-095e71de86b1d02e4
-      HVMG2: NOT_SUPPORTED
+      AMI:  ami-082b5a644766e0e6f
 Resources:
-  CrowdClusterNodeRole:
+  ClusterNodeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -973,7 +860,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
       Policies:
-        - PolicyName: CrowdClusterNodePolicy
+        - PolicyName: ClusterNodePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -996,7 +883,7 @@ Resources:
             Statement:
               - Action: ['iam:ListRolePolicies', 'iam:GetRolePolicy']
                 Effect: Allow
-                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-JiraClusterNodeRole*'
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-ClusterNodeRole*'
               - Action: ['rds:ModifyDBInstance']
                 Effect: Allow
                 Resource: ['arn:aws:rds:*:*:db:*']
@@ -1007,17 +894,17 @@ Resources:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
-      Roles: [!Ref CrowdClusterNodeRole]
+      Roles: [!Ref ClusterNodeRole]
 # Crowd node config
   ClusterNodeGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       DesiredCapacity: !Ref ClusterNodeMin
       LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
-      LoadBalancerNames:
-        - !Ref LoadBalancer
       MaxSize: !Ref ClusterNodeMax
       MinSize: !Ref ClusterNodeMin
+      TargetGroupARNs: [!Ref MainTargetGroup]
+      VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} Crowd Node"
@@ -1035,14 +922,10 @@ Resources:
         config:
           packages:
             yum:
-              !If
-                - DoCollectd
-                - collectd: []
-                  collectd-java: []
-                  collectd-generic-jmx: []
-                  collectd-rrdtool: []
-                  collectd-disk: []
-                - !Ref "AWS::NoValue"
+              git: []
+              jq: []
+              python2-pip: []
+              python-virtualenv: []
           files:
             /etc/atl:
               content:
@@ -1065,9 +948,15 @@ Resources:
                     - !Sub ["ATL_DB_PORT=${DBEndpointPort}", DBEndpointPort: !GetAtt DB.Endpoint.Port]
                     - !Sub ["ATL_DB_REMOVEABANDONED=${DBRemoveAbandoned}", DBRemoveAbandoned: !Ref DBRemoveAbandoned]
                     - !Sub ["ATL_DB_REMOVEABANDONEDTIMEOUT=${DBRemoveAbandonedTimeout}", DBRemoveAbandonedTimeout: !Ref DBRemoveAbandonedTimeout]
+                    - !Sub ["ATL_DB_ROOT_PASSWORD=${DBMasterUserPassword}", DBMasterUserPassword: !Ref DBMasterUserPassword]
                     - !Sub ["ATL_DB_TESTONBORROW=${DBTestOnBorrow}", DBTestOnBorrow: !Ref DBTestOnBorrow]
                     - !Sub ["ATL_DB_TESTWHILEIDLE=${DBTestWhileIdle}", DBTestWhileIdle: !Ref DBTestWhileIdle]
                     - !Sub ["ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS=${DBTimeBetweenEvictionRunsMillis}", DBTimeBetweenEvictionRunsMillis: !Ref DBTimeBetweenEvictionRunsMillis]
+                    - !Sub ["ATL_DEPLOYMENT_REPOSITORY=${DeployRepository}", DeployRepository: !Select [0, !Split [";", !Ref DeployFromAnsible]]]
+                    - !Sub ["ATL_DEPLOYMENT_REPOSITORY_BRANCH=${DeployRepositoryBranch}", DeployRepositoryBranch: !Select [1, !Split [";", !Ref DeployFromAnsible]]]
+                    - !Sub ["ATL_DEPLOYMENT_REPOSITORY_KEYNAME=${DeployRepositoryKeyName}", DeployRepositoryKeyName: !Ref LocalAnsibleGitSshKeyName]
+                    - !Sub ["ATL_DEPLOYMENT_REPOSITORY_PLAYBOOK=${DeployRepositoryPlaybook}", DeployRepositoryPlaybook: !Select [2, !Split [";", !Ref DeployFromAnsible]]]
+                    - !Sub ["ATL_EFS_ID=${ElasticFileSystem}", ElasticFileSystem: !GetAtt NFSServer.PrivateIp]
                     - !Sub ["ATL_ENVIRONMENT=${DeployEnvironment}", DeployEnvironment: !Ref DeployEnvironment]
                     - !Sub ["ATL_HOSTEDZONE=${HostedZone}", HostedZone: !Ref HostedZone]
                     - !Sub ["ATL_JDBC_PASSWORD=${DBPassword}", DBPassword: !Ref DBPassword]
@@ -1075,7 +964,9 @@ Resources:
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
                     - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
                     - !Sub ["ATL_LOCALANSIBLE_SSHKEYNAME=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitSshKeyName]
-                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
+                    - !Sub ["ATL_PRODUCT_DOWNLOAD_URL=${CrowdDownloadUrl}", CrowdDownloadUrl: !Ref CrowdDownloadUrl]
+                    - !Sub ["ATL_PRODUCT_VERSION=${CrowdVersion}", CrowdVersion: !Ref CrowdVersion]
+                    - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancerV2.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
                     - !Sub ["ATL_TOMCAT_CONTEXTPATH=${TomcatContextPath}", TomcatContextPath: !Ref TomcatContextPath]
@@ -1088,17 +979,23 @@ Resources:
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
                     - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !If [SSLScheme, https, http]]
                     - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !If [SSLScheme, true, false]]
+                    - "ANSIBLE_SKIP_TAGS=new_only"
+                    - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_CROWD_FULL_DISPLAY_NAME=\"Atlassian Crowd\""
                     - "ATL_CROWD_NAME=crowd"
                     - "ATL_CROWD_SHORT_DISPLAY_NAME=Crowd"
-                    - "ATL_APP_DATA_MOUNT_ENABLED=false"
                     - "ATL_DB_NAME=crowd"
+                    - "ATL_EFS_MOUNT_OPTIONS=rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev"
+                    - "ATL_EFS_SRC_DIR=/media/atl"
+                    - "ATL_EFS_TYPE=nfs"
                     - "ATL_ENABLED_PRODUCTS=Crowd"
                     - "ATL_ENABLED_SHARED_HOMES="
+                    - "ATL_JDBC_DB_NAME=crowd"
                     - "ATL_JDBC_DRIVER=org.postgresql.Driver"
                     - "ATL_JDBC_USER=atlcrowd"
                     - "ATL_NGINX_ENABLED=false"
                     - "ATL_POSTGRES_ENABLED=false"
+                    - "ATL_PRODUCT_USER_UID=501"
                     - "ATL_RELEASE_S3_BUCKET=atlassian-software"
                     - "ATL_RELEASE_S3_PATH=releases"
                     - "ATL_SSL_SELF_CERT_ENABLED=false"
@@ -1149,41 +1046,53 @@ Resources:
               mode: "000750"
               owner: root
               group: root
+            /tmp/clone_deployment_repo:
+              content: !Sub
+                - |
+                    #!/bin/bash
+                    mkdir -p /opt/atlassian/dc-deployments-automation/
+                    gitkeylocation=/root/.ssh/gitkey
+                    key_name="${LocalAnsibleGitSshKeyName}"
+                    if [[ ! -z "$key_name" ]]; then
+                        # Ensure awscli is up to date
+                        pip install --upgrade awscli jq
+                        gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "$key_name" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                        echo -e gitkey > $gitkeylocation
+                        chmod 600 $gitkeylocation
+                        export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+                    else
+                        export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+                    fi
+                    git clone "${DeploymentAutomationRepository}" -b "${DeploymentAutomationBranch}" /opt/atlassian/dc-deployments-automation/
+                - { DeploymentAutomationRepository: !Select [0, !Split [";", !Ref DeployFromAnsible]], DeploymentAutomationBranch: !Select [1, !Split [";", !Ref DeployFromAnsible]] }
+              mode: "000750"
+              owner: root
+              group: root
           commands:
-            010_make_mount_point:
-              command: mkdir -p /media/atl
-              ignoreErrors: false
-            020_add_nfs_mount:
-              command:
-                !Join
-                  - ""
-                  -
-                    - "echo "
-                    - !GetAtt NFSServer.PrivateIp
-                    - ":/nfs /media/atl nfs4 rw,vers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0 >>/etc/fstab"
-              ignoreErrors: false
-            030_mount_all:
-              command: mount -a
-              ignoreErrors: true
-            040_make_shared_home_dir:
-              command: mkdir -p /media/atl/crowd/shared
-              ignoreErrors: false
-            050_ssm_group:
+            010_ssm_group:
               command: groupadd ssm-user --gid 400 || groupmod -g 400 ssm-user
-            051_ssm_user:
+            020_ssm_user:
               command: useradd ssm-user --uid 400 -g ssm-user || usermod -u 400 ssm-user
-            052_ensure_ssm:
+            030_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
               ignoreErrors: true
-            060_update_db_endpoint:
+            070_clone_atl_scripts:
+              test: "test ! -d /opt/atlassian/dc-deployments-automation/"
+              command: /tmp/clone_deployment_repo
+            080_run_atl_init_node:
+              command: !Sub
+                - cd /opt/atlassian/dc-deployments-automation/ && ./bin/install-ansible && ./bin/ansible-with-atl-env inv/aws_node_local ${DeploymentAutomationPlaybook} /var/log/ansible-bootstrap.log
+                - { DeploymentAutomationPlaybook: !Select [2, !Split [";", !Ref DeployFromAnsible]] }
+              ignoreErrors: true
+            085_update_db_endpoint:
               command: !Sub ["sed -i 's_jdbc:postgres.*?_jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd?_' /media/atl/crowd/shared/crowd.cfg.xml", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
-            070_update_db_user:
-              command: sed -i 's_<property name=\"hibernate.connection.username\">.*</property>_<property name=\"hibernate.connection.username\">atlcrowd</property>_' /media/atl/crowd/shared/crowd.cfg.xml
-            080_update_db_password:
-              command: !Sub ["sed -i 's_<property name=\"hibernate.connection.password\">.*</property>_<property name=\"hibernate.connection.password\">${DBPassword}</property>_' /media/atl/crowd/shared/crowd.cfg.xml", { DBPassword: !Ref DBPassword }]
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
               test: !Sub test -n "${LocalAnsibleGitRepo}"
+            100_run_local_ansible:
+              command: /usr/local/bin/local-ansible-run
+              test: test -f /usr/local/bin/local-ansible-run
+              ignoreErrors: true
           services:
             sysvinit:
               cfn-hup:
@@ -1214,12 +1123,9 @@ Resources:
       IamInstanceProfile: !Ref CrowdClusterNodeInstanceProfile
       ImageId:
         !FindInMap
-          - AWSRegionArch2AMI
+          - AWSRegion2AMI
           - !Ref AWS::Region
-          - !FindInMap
-              - AWSInstanceType2Arch
-              - !Ref ClusterNodeInstanceType
-              - Arch
+          - AMI
       InstanceType: !Ref ClusterNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
       UserData:
@@ -1264,7 +1170,12 @@ Resources:
                   -
                     - !Sub "ATL_AWS_STACK_NAME=${AWS::StackName}"
                     - !Sub "ATL_ENVIRONMENT=${DeployEnvironment}"
+                    - "ANSIBLE_SKIP_TAGS=new_only"
+                    - "ATL_NFS_FS_LABEL=shared-home"
+                    - "ATL_NFS_FS_TYPE=ext4"
+                    - "ATL_NFS_SERVER_DEVICE=/dev/xvdk"
                     - "ATL_NODE_TYPE=nfs"
+                    - "ATL_PRODUCT_USER_UID=501"
             /tmp/bootstrap_local_ansible:
               content: !Sub |
                 #!/usr/bin/env bash
@@ -1288,25 +1199,52 @@ Resources:
               mode: "000750"
               owner: root
               group: root
+            /tmp/clone_deployment_repo:
+              content: !Sub
+                - |
+                    #!/bin/bash
+                    mkdir -p /opt/atlassian/dc-deployments-automation/
+                    gitkeylocation=/root/.ssh/gitkey
+                    key_name="${LocalAnsibleGitSshKeyName}"
+                    if [[ ! -z "$key_name" ]]; then
+                        # Ensure awscli is up to date
+                        pip install --upgrade awscli jq
+                        gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "$key_name" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                        echo -e gitkey > $gitkeylocation
+                        chmod 600 $gitkeylocation
+                        export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+                    else
+                        export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+                    fi
+                    git clone "${DeploymentAutomationRepository}" -b "${DeploymentAutomationBranch}" /opt/atlassian/dc-deployments-automation/
+                - { DeploymentAutomationRepository: !Select [0, !Split [";", !Ref DeployFromAnsible]], DeploymentAutomationBranch: !Select [1, !Split [";", !Ref DeployFromAnsible]] }
+              mode: "000750"
+              owner: root
+              group: root
           commands:
-            010_make_mount_point:
-              command: mkdir /nfs
+            010_ssm_group:
+              command: groupadd ssm-user --gid 400 || groupmod -g 400 ssm-user
+            020_ssm_user:
+              command: useradd ssm-user --uid 400 -g ssm-user || usermod -u 400 ssm-user
+            030_ensure_ssm:
+              command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+              ignoreErrors: true
+            040_add_label_to_ebsvol:
+              command: tune2fs -L shared-home /dev/xvdk
               ignoreErrors: false
-            020_add_nfs_mount:
-              command:
-                echo "/dev/xvdk   /nfs        ext4    defaults        0   2" >>/etc/fstab
-              ignoreErrors: false
-            030_mount_nfs:
-              command: mount /nfs
-            040_fix_exports:
-              command: echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            045_check_exports:
-              command: cat /etc/exports
-            050_restart_nfs:
-              command: service nfs restart
+            070_clone_atl_scripts:
+              test: "test ! -d /opt/atlassian/dc-deployments-automation/"
+              command: /tmp/clone_deployment_repo
+            080_run_atl_init_node:
+              command: cd /opt/atlassian/dc-deployments-automation/ && ./bin/install-ansible && ./bin/ansible-with-atl-env inv/aws_node_local aws_clone_nfs.yml /var/log/ansible-bootstrap.log
+              ignoreErrors: true
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
               test: !Sub test -n "${LocalAnsibleGitRepo}"
+            100_run_local_ansible:
+              command: /usr/local/bin/local-ansible-run
+              test: test -f /usr/local/bin/local-ansible-run
+              ignoreErrors: true
           services:
             sysvinit:
               nfs:
@@ -1314,7 +1252,10 @@ Resources:
                 ensureRunning: true
           packages:
             yum:
+              git: []
+              jq: []
               nfs-utils: []
+              python2-pip: []
     Properties:
       AvailabilityZone: !Join ['', [!Ref "AWS::Region", "a"]]
       BlockDeviceMappings:
@@ -1323,15 +1264,14 @@ Resources:
             Encrypted: true
             VolumeSize: 50
             VolumeType: gp2
+        - DeviceName: /dev/xvdf
+          NoDevice: {}
       IamInstanceProfile: !Ref CrowdClusterNodeInstanceProfile
       ImageId:
         !FindInMap
-          - AWSRegionArch2AMI
-          - !Ref "AWS::Region"
-          - !FindInMap
-              - AWSInstanceType2Arch
-              - !Ref ClusterNodeInstanceType
-              - Arch
+          - AWSRegion2AMI
+          - !Ref AWS::Region
+          - AMI
       InstanceType: !Ref ClusterNodeInstanceType
       KeyName: !Ref KeyPairName
       NetworkInterfaces:
@@ -1360,15 +1300,7 @@ Resources:
             - |2
                || error_exit 'Failed to run cfn-init'
             - |
-              echo "/nfs *(rw,no_root_squash,no_subtree_check,sync)" > /etc/exports
-            - |
-              base64 -d /tmp/nfs > /etc/sysconfig/nfs
-            - |
-              exportfs -av
-            - |
               /sbin/service rpcbind restart
-            - |
-              /sbin/service nfs restart
             - |
             - '/opt/aws/bin/cfn-signal -e $? '
             - ' --stack '
@@ -1393,7 +1325,7 @@ Resources:
       Comment: Route53 A rec for the nfs
       Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
       Type: A
-      TTL: '900'
+      TTL: '60'
       ResourceRecords:
         - !GetAtt NFSServer.PrivateIp
 # Database
@@ -1430,53 +1362,39 @@ Resources:
       Comment: Route53 cname for the RDS
       Name: !Sub "${AWS::StackName}.db.${HostedZone}"
       Type: CNAME
-      TTL: '900'
+      TTL: '60'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+  LoadBalancerV2:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      AppCookieStickinessPolicy:
-        - CookieName: JSESSIONID
-          PolicyName: JSessionIdStickiness
-      ConnectionDrainingPolicy:
-        Enabled: true
-        Timeout: 30
-      ConnectionSettings:
-        IdleTimeout: 3600
-      CrossZone: true
-      Listeners:
-        - LoadBalancerPort: '80'
-          Protocol: HTTP
-          InstancePort: !Ref TomcatDefaultConnectorPort
-          InstanceProtocol: HTTP
-          PolicyNames:
-            - JSessionIdStickiness
-        - !If
-          - DoSSL
-          - LoadBalancerPort: '443'
-            Protocol: HTTPS
-            InstancePort: !Ref TomcatDefaultConnectorPort
-            InstanceProtocol: HTTP
-            PolicyNames:
-              - JSessionIdStickiness
-            SSLCertificateId: !Ref SSLCertificateARN
-          - !Ref AWS::NoValue
-      HealthCheck:
-        Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
-        Timeout: '29'
-        Interval: '30'
-        UnhealthyThreshold: '2'
-        HealthyThreshold: '2'
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '3600'
       Scheme: !Ref LoadBalancerScheme
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Ref ExternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub "${AWS::StackName}-LoadBalancer"
+          Value: !Sub "${AWS::StackName}-LoadBalancerV2"
         - Key: Cluster
           Value: !Ref AWS::StackName
+  LoadBalancerV2Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+        - CertificateArn:
+            !If
+              - DoSSL
+              - !Ref SSLCertificateARN
+              - !Ref AWS::NoValue
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref MainTargetGroup
+      LoadBalancerArn: !Ref LoadBalancerV2
+      Port: !If [DoSSL, 443, 80]
+      Protocol: !If [DoSSL, HTTPS, HTTP]
   LoadBalancerCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
@@ -1488,9 +1406,37 @@ Resources:
         - SubDomainName: !If [UseSubDomainName, !Ref 'SubDomainName', !Ref 'AWS::StackName']
           HostedZone: !Ref 'HostedZone'
       Type: CNAME
-      TTL: '900'
+      TTL: '60'
       ResourceRecords:
-        - !GetAtt LoadBalancer.DNSName
+        - !GetAtt LoadBalancerV2.DNSName
+  MainTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: !Ref TomcatDefaultConnectorPort
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 29
+      HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200'
+      HealthCheckPath: !If [UseContextPath, !Sub "${TomcatContextPath}/status", '/status']
+      HealthCheckPort: !Ref TomcatDefaultConnectorPort
+      HealthCheckProtocol: HTTP
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: "true"
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '18000'
+      Tags:
+        - Key: Name
+          Value: MainTargetGroup
+        - Key: Cluster
+          Value: !Ref AWS::StackName
+    DependsOn:
+      - LoadBalancerV2
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -1540,14 +1486,14 @@ Outputs:
         - !Sub
           - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+            LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
             ContextPath: !Ref TomcatContextPath
   LoadBalancerURL:
     Description: The Load Balancer URL
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [DoSSL, 'https', 'http']
-        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+        LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
