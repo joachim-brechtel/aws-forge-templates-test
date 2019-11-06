@@ -59,8 +59,8 @@ do
     grep -i -h -A 12 $THREAD *DUMP* | egrep -v ^$ | tee -a ${ANALYSIS_DIR}/offendingthreads.log
 done
 
-DUMPFILE=$TMPDIR/thread_dumps_$(date +%Y%m%d_%H%M%S).tar.gz
-tar -czf ${DUMPFILE} $ANALYSIS_DIR 2> /dev/null
+DUMPFILE=$TMPDIR/thread_dumps_$(date +%Y%m%d_%H%M%S).zip
+zip -r ${DUMPFILE} $ANALYSIS_DIR 2> /dev/null
 update_permission $DUMPFILE
 echo Thread dump file ${DUMPFILE}
 
