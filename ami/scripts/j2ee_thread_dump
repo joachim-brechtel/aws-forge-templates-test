@@ -11,7 +11,7 @@ upload_s3() {
   local ACCOUNT_ID=`aws sts get-caller-identity | grep Account | awk {'print $2'} | sed 's/\"\|,//g'`
   local BUCKET=atl-cfn-forge-${ACCOUNT_ID}
   local DEST="${BUCKET}/diagnostics/${ATL_AWS_STACK_NAME}/$(date +%Y-%m-%d)"
-  aws s3 cp "${FILE}" "s3://${DEST}/${ATL_AWS_STACK_NAME}_${IP}_${FILENAME}" || echo "Upload of ${ATL_AWS_STACK_NAME}_${IP}_${FILENAME} to ${DEST} Failed"
+  aws s3 cp --content-type application/x-gzip "${FILE}" "s3://${DEST}/${ATL_AWS_STACK_NAME}_${IP}_${FILENAME}" || echo "Upload of ${ATL_AWS_STACK_NAME}_${IP}_${FILENAME} to ${DEST} Failed"
 }
 
 if [[ ! -w ${TMPDIR} ]]
@@ -59,8 +59,8 @@ do
     grep -i -h -A 12 $THREAD *DUMP* | egrep -v ^$ | tee -a ${ANALYSIS_DIR}/offendingthreads.log
 done
 
-DUMPFILE=$TMPDIR/thread_dumps_$(date +%Y%m%d_%H%M%S).zip
-zip -r ${DUMPFILE} $ANALYSIS_DIR 2> /dev/null
+DUMPFILE=$TMPDIR/thread_dumps_$(date +%Y%m%d_%H%M%S).tar.gz
+tar -czf ${DUMPFILE} $ANALYSIS_DIR 2> /dev/null
 update_permission $DUMPFILE
 echo Thread dump file ${DUMPFILE}
 
