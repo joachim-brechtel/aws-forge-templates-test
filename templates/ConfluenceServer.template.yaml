@@ -1171,7 +1171,7 @@ Resources:
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
-      EngineVersion: 9.6
+      EngineVersion: 10
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
