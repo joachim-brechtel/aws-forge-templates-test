@@ -3,6 +3,8 @@
 # Run this script with root privileges and it will take a live heap dump from a
 # healthy JVM.
 #
+# Add `--no-gc` to take a heap dump without a full GC preceding it
+#
 
 remove_incomplete_dump() {
     RC=$?
@@ -31,7 +33,12 @@ if [ ! -f ${SERVICE_JAVA_HOME}/bin/jmap ]; then
   SERVICE_JAVA_HOME=$(dirname $(dirname $(which jmap)))
 fi
 JVM_HEAP=${TMPDIR}/${SERVICE_NAME}_$(date +%Y%m%d_%H%M%S).hprof
-JMAP_OPTS="-dump:live,format=b,file=${JVM_HEAP} $SERVICE_PID"
+
+if [ "x$1" == "x--no-gc" ]; then
+    JMAP_OPTS="-dump:format=b,file=${JVM_HEAP} $SERVICE_PID"
+else
+    JMAP_OPTS="-dump:live,format=b,file=${JVM_HEAP} $SERVICE_PID"
+fi
 
 echo "Service PID: $SERVICE_PID"
 echo "Service User: $PROCUSER"

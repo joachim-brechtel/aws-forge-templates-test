@@ -98,12 +98,12 @@ Parameters:
     Type: CommaDelimitedList
     Default: ''
   BitbucketVersion:
-    Description: Version of Bitbucket, or 'latest' for the latest public release
-    Type: String
     Default: latest
     AllowedPattern: (\d+\.\d+\.\d+(-?.*))|latest
     ConstraintDescription: Must be a valid Bitbucket version number, or 'latest' for
       the latest public release.
+    Description: Version of Bitbucket, or 'latest' for the latest public release
+    Type: String
   CatalinaOpts:
     Description: Java options passed to the JVM that runs Bitbucket.
     Type: String
@@ -333,49 +333,49 @@ Mappings:
       Arch: HVM64
   AWSRegionArch2AMI:
     us-east-1:
-      HVM64: ami-007d583e51592b28f
+      HVM64: ami-071cd8a2fab6949ca
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-0177432d41902bdbb
+      HVM64: ami-0930527f394f1bd33
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0f45279ed791b6e4a
+      HVM64: ami-012bb64140c351f86
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-07d018490aadc8077
+      HVM64: ami-0773a7950c78a347a
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-0955f4b496f860cd9
+      HVM64: ami-065a73de325151c55
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-0f83fc6f692522bf6
+      HVM64: ami-0bc205f15452957ed
       HVMG2: NOT_SUPPORTED
     ap-northeast-1:
-      HVM64: ami-08ef2026883ad0931
+      HVM64: ami-0ea657859df27b551
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-0065d07493984a78b
+      HVM64: ami-01bbd4ef0401c51da
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-03a3c1d6650658e9d
+      HVM64: ami-0e4d655684a6c6615
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-003849359de4eb3c5
+      HVM64: ami-09f66fb36dbed1d66
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0a7fe660035acdcff
+      HVM64: ami-0a26861ab0371c77e
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-00f22060e5c39cb89
+      HVM64: ami-0a81ee8bccf4cfa71
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0d7e93975ebbe565e
+      HVM64: ami-069500b0ef2c2db3a
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0ff59c7466487df7c
+      HVM64: ami-050d3992bc96ab769
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0ccfb450bced77082
+      HVM64: ami-06a03bd30a0d6ea0c
       HVMG2: NOT_SUPPORTED
 Resources:
   BitbucketBackupRole:
@@ -523,16 +523,16 @@ Resources:
                   - "BITBUCKET_HOME=/media/atl/bitbucket\n"
                   - "BITBUCKET_UID=atlbitbucket\n"
                   - "BITBUCKET_GID=atlbitbucket\n"
-                  - "BACKUP_HOME_TYPE=amazon-ebs\n"
+                  - "BACKUP_DISK_TYPE=amazon-ebs\n"
                   - "BACKUP_DATABASE_TYPE=postgresql-fslevel\n"
                   - "BACKUP_ARCHIVE_TYPE=\n"
                   - "BACKUP_ZERO_DOWNTIME=true\n"
                   - "HOME_DIRECTORY_MOUNT_POINT=/media/atl\n"
-                  - "HOME_DIRECTORY_DEVICE_NAME=/dev/sdf\n"
+                  - "EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES=(/media/atl:/dev/sdf)\n"
                   - !Join
                     - ''
                     -
-                      - RESTORE_HOME_DIRECTORY_VOLUME_TYPE=
+                      - RESTORE_DISK_VOLUME_TYPE=
                       - !If
                         - IsHomeProvisionedIops
                         - io1
@@ -543,13 +543,16 @@ Resources:
                     - !Join
                       - ''
                       -
-                        - RESTORE_HOME_DIRECTORY_IOPS=
+                        - RESTORE_DISK_IOPS=
                         - !Ref 'HomeIops'
                         - "\n"
                     - !Ref 'AWS::NoValue'
                   - "FILESYSTEM_TYPE=zfs\n"
-                  - "ZFS_HOME_TANK_NAME=$(run sudo zfs list -H -o name,mountpoint\
-                    \ | grep \"${HOME_DIRECTORY_MOUNT_POINT}\" | cut -f1)\n"
+                  - "ZFS_FILESYSTEM_NAMES=()"
+                  - "for volume in \"${EBS_VOLUME_MOUNT_POINT_AND_DEVICE_NAMES[@]}\"; do"
+                  - "    mount_point=\"$(echo \"${volume}\" | cut -d \":\" -f1)\""
+                  - "    ZFS_FILESYSTEM_NAMES+=($(run sudo zfs list -H -o name,mountpoint | grep \"${mount_point}\" | cut -f1))"
+                  - "done"
                   - "CURL_OPTIONS=\"-L -s -f\"\n"
                   - !Join
                     - ''

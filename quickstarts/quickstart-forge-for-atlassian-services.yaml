@@ -7,7 +7,7 @@ Metadata:
         - Label:
             default: Network Config
           Parameters:
-            - AccessCIDR
+            - CidrBlock
             - InternetAccessible
             - ExternalSubnet
             - InternalSubnet
@@ -15,7 +15,7 @@ Metadata:
         - Label:
             default: EC2 Config
           Parameters:
-            - KeyName
+            - KeyPairName
             - NodeInstanceType
             - NodeVolumeSize
         - Label:
@@ -26,6 +26,11 @@ Metadata:
             default: Forge config
           Parameters:
             - Analytics
+            - CustomTemplateRepo
+            - CustomTemplateGitKey
+            - DeployEnvironment
+            - LocalAnsibleGitRepo
+            - LocalAnsibleGitSshKeyName
             - Nodes
             - FlaskSecretKey
             - Regions
@@ -33,6 +38,12 @@ Metadata:
       ParameterLabels:
         Analytics:
           default: Enable analytics
+        CustomTemplateRepo:
+          default: Custom Cloudformation template repository
+        CustomTemplateGitKey:
+          default: Git key for custom template repository
+        DeployEnvironment:
+          default: Deployment Environment
         FlaskSecretKey:
           default: Flask secret key
         ExternalSubnet:
@@ -41,12 +52,16 @@ Metadata:
           default: Internal subnet Id
         InternetAccessible:
           default: Load balancer accessible from the internet
-        AccessCIDR:
+        CidrBlock:
           default: IP range permitted to access forge
         HostedZone:
           default: Route 53 Hosted Zone
-        KeyName:
+        KeyPairName:
           default: Key Pair
+        LocalAnsibleGitRepo:
+          default: Git repo for local-ansible
+        LocalAnsibleGitSshKeyName:
+          default: Git key for local-ansible
         Nodes:
           default: Number of nodes
         NodeInstanceType:
@@ -59,7 +74,6 @@ Metadata:
           default: SAML metadata URL
         VPC:
           default: VPC Id
-
 Parameters:
   Analytics:
     Default: true
@@ -69,7 +83,7 @@ Parameters:
     ConstraintDescription: Must be true or false
     Description: Enable analytics to be sent back to Atlassian
     Type: String
-  AccessCIDR:
+  CidrBlock:
     Default: '0.0.0.0/0'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
@@ -77,19 +91,35 @@ Parameters:
     Type: String
     MinLength: 9
     MaxLength: 18
-  HostedZone:
-    Default: ''
-    ConstraintDescription: Must be the name of an existing Route53 Hosted Zone (ie "myteam.example.com.").
-    Description: The domain name of the Route53 Hosted Zone in which to create cnames
+  CustomTemplateRepo:
+    Description: To make additional Cloudformation templates available in Forge, provide repo location to git clone (ie git@bitbucket.org:atlassian/custom-templates.git)
     Type: String
-  FlaskSecretKey:
-    Description: 'Override the default secret key passed to Flask app to enable sessions, which are required to run. For more info: https://bit.ly/2PRfJRk'
-    NoEcho: True
+  CustomTemplateGitKey:
+    Description: If your custom template repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
+  DeployEnvironment:
+    Default: prod
+    AllowedValues:
+      - dev
+      - dr
+      - prod
+      - stg
+    ConstraintDescription: Must be either Production (prod), Staging (stg), Disaster Recovery (dr) or Development (dev).
+    Description: Environment of the application - either Production, Staging, Disaster Recovery (DR) or Development
     Type: String
   ExternalSubnet:
     ConstraintDescription: Select one Subnet ID within the selected VPC
     Description: Subnet where your user-facing load balancer will be deployed. MUST be within the selected VPC.
     Type: List<AWS::EC2::Subnet::Id>
+  FlaskSecretKey:
+    Description: 'Override the default secret key passed to Flask app to enable sessions, which are required to run. For more info: https://bit.ly/2PRfJRk'
+    NoEcho: True
+    Type: String
+  HostedZone:
+    Default: 'myteam.example.com.'
+    ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
+    Description: The domain name of the Route53 Hosted Zone in which to create cnames
+    Type: String
   InternalSubnet:
     ConstraintDescription: Select one Subnet ID within the selected VPC
     Description: Subnet where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnet again here if you wish to deploy the whole stack into the same subnet.
@@ -99,13 +129,21 @@ Parameters:
       - true
       - false
     ConstraintDescription: Must be 'true' or 'false'.
-    Default: true
+    Default: false
     Description: Whether the load balancer can be accessed from the internet
     Type: String
-  KeyName:
+  KeyPairName:
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LocalAnsibleGitRepo:
+    Default: ''
+    Description: For additional node customization, provide ansible repo location to git clone. This may be in either http or ssh format, but it must be in the correct format for your git hosting provider (as it is passed directly to a 'git clone' command), eg git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@bitbucketserver.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
+    Type: String
+  LocalAnsibleGitSshKeyName:
+    Default: ''
+    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Type: String
   Nodes:
     Default: 1
     AllowedValues:
@@ -134,7 +172,6 @@ Parameters:
     Description: "Comma delimited list of the regions you want Forge to operate in, including display names for the region, in format 'aws_region: region_name'. Names are for reference only, so can be AWS region names or Staging/Production etc. First region will be the default region."
     Type: CommaDelimitedList
   SamlMetadataUrl:
-    Default: ''
     Description: Metadata URL for your SAML provider
     Type: String
   VPC:
@@ -214,6 +251,7 @@ Resources:
                 - elasticfilesystem:CreateTags
                 - elasticfilesystem:DeleteFileSystem
                 - elasticfilesystem:DeleteMountTarget
+                - elasticfilesystem:DeleteTags
                 - elasticfilesystem:DescribeFileSystems
                 - elasticfilesystem:DescribeMountTargets
                 - elasticloadbalancing:*
@@ -229,7 +267,18 @@ Resources:
                 - iam:PassRole
                 - iam:PutRolePolicy
                 - iam:RemoveRoleFromInstanceProfile
+                - kms:CreateAlias
+                - kms:CreateGrant
+                - kms:CreateKey
+                - kms:DeleteAlias
+                - kms:DescribeKey
+                - kms:ListAliases
+                - kms:PutKeyPolicy
+                - kms:ScheduleKeyDeletion
+                - kms:TagResource
+                - kms:UpdateKey
                 - rds:CreateDBInstance
+                - rds:CreateDBInstanceReadReplica
                 - rds:CreateDBSubnetGroup
                 - rds:DeleteDBInstance
                 - rds:DeleteDBSubnetGroup
@@ -242,6 +291,7 @@ Resources:
                 - route53:ChangeResourceRecordSets
                 - route53:GetChange
                 - route53:ListHostedZones
+                - route53:ListResourceRecordSets
                 - ssm:ListCommands
                 - ssm:PutParameter
                 - ssm:SendCommand
@@ -255,8 +305,7 @@ Resources:
                 - s3:ListBucket
                 - s3:ListBucketByTags
                 Effect: Allow
-                Resource:
-                  - !Sub ["arn:aws:s3:::atl-forge-${AccountId}", AccountId: !Ref "AWS::AccountId"]
+                Resource: !Sub "arn:aws:s3:::atl-cfn-forge-${AWS::AccountId}"
               - Action:
                 - s3:GetObject
                 - s3:GetObjectAcl
@@ -266,8 +315,7 @@ Resources:
                 - s3:PutObjectTagging
                 - s3:PutObjectVersionTagging
                 Effect: Allow
-                Resource:
-                  - !Sub ["arn:aws:s3:::atl-forge-${AccountId}/*", AccountId: !Ref "AWS::AccountId"]
+                Resource: !Sub "arn:aws:s3:::atl-cfn-forge-${AWS::AccountId}/*"
 
   ForgeNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -305,10 +353,34 @@ Resources:
               xmlsec1: []
               xmlsec1-openssl: []
           files:
+            /etc/atl:
+              content: !Sub
+                - |
+                  ATL_AWS_REGION=${AWS::Region}
+                  ATL_AWS_STACK_NAME=${AWS::StackName}
+                  ATL_AUTOSCALING_GROUP_NAME=ForgeNodeGroup
+                  ATL_CUSTOM_TEMPLATE_REPO=${CustomTemplateRepo}
+                  ATL_CUSTOM_TEMPLATE_GITKEY=${CustomTemplateGitKey}
+                  ATL_ENVIRONMENT=${DeployEnvironment}
+                  ATL_HOSTEDZONE=${HostedZone}
+                  ATL_LOCAL_ANSIBLE_REPO=${LocalAnsibleGitRepo}
+                  ATL_LOCAL_ANSIBLE_GITSSHKEY_NAME=${LocalAnsibleGitSshKeyName}
+                - CustomTemplateRepo: !Ref CustomTemplateRepo
+                  CustomTemplateGitKey: !Ref CustomTemplateGitKey
+                  DeployEnvironment: !Ref DeployEnvironment
+                  HostedZone: !Ref HostedZone
+                  LocalAnsibleGitSshKeyName: !Ref LocalAnsibleGitSshKeyName
+                  LocalAnsibleGitRepo: !Ref LocalAnsibleGitRepo
+              group: root
+              mode: "000640"
+              owner: root
             /root/setup_forge.sh:
               content: !Sub
                 - |
                   #!/usr/bin/env bash
+
+                  # long paths are required for the atlassian-aws-deployment submodule to clone correctly
+                  git config --global core.longpaths true
 
                   forgepath=/home/forge/atl-cfn-forge
 
@@ -318,66 +390,110 @@ Resources:
                   else
                       useradd -d /home/forge forge
                       cd /home/forge
-                      git clone https://bitbucket.org/atlassian/atl-cfn-forge.git $forgepath
+                      git config --global url."https://github.com/aws-quickstart".insteadOf git@github.com:aws-quickstart
+                      sudo -u forge /bin/bash -c 'git config --global url."https://github.com/aws-quickstart".insteadOf git@github.com:aws-quickstart'
+                      git clone https://bitbucket.org/atlassian/atl-cfn-forge.git  $forgepath
                       cd $forgepath
+                      git submodule update --init
+                      git submodule foreach git checkout master
                   fi
-                  ./update
-                  /usr/bin/pip-3.6 install -r requirements.txt
-                  mv /tmp/forge.properties $forgepath/forge.properties --force
-                  chown -R forge:forge $forgepath
+                  /usr/bin/pip-3.6 install --upgrade pipenv
+                  chown -R forge:forge /home/forge
 
                   # create s3 bucket for forge objects
-                  if aws s3api create-bucket --bucket atl-forge-${AccountId} --region us-east-1; then echo "S3 bucket created"; else echo "S3 bucket already exists"; fi
-                - AccountId: !Ref AWS::AccountId
-                  region: !Ref AWS::Region
-              mode: "000700"
-              owner: root
-              group: root
-            /etc/init/forge.conf:
-              content: !Sub
-              - |
-                #!upstart
-                description "Atlassian Cloudformation Forge"
+                  if aws s3api create-bucket --bucket atl-cfn-forge-${AccountId} --region us-east-1; then echo "S3 bucket created"; else echo "S3 bucket already exists"; fi
 
-                start on started mountall
-                stop on shutdown
+                  # clone custom template repo
+                  if [[ -n "${CustomTemplateRepo}" ]]; then
+                    # apply git key if entered
+                    if [[ -n "${CustomTemplateGitKey}" ]]; then
+                      gitkeylocation=/root/.ssh/gitkey
+                      gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${CustomTemplateGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                      echo -e $gitkey > $gitkeylocation
+                      chmod 600 $gitkeylocation
+                      export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+                      cp $gitkeylocation /home/forge/gitkey
+                      chown forge:forge /home/forge/gitkey
+                      chmod 400 /home/forge/gitkey
+                    fi
+                    # clone the repo
+                    mkdir $forgepath/custom-templates
+                    cd $forgepath/custom-templates
+                    git clone "${CustomTemplateRepo}"
+                  fi
 
-                # Automatically Respawn:
-                respawn
-                respawn limit 3 5
+                  chown forge:forge /etc/atl
 
-                script
-                  cd /home/forge/atl-cfn-forge
+                  # upload SAML params for later use
                   if [[ -n "${SamlMetadataUrl}" ]]; then
                     aws --region=${region} ssm put-parameter --overwrite --name "atl_forge_secret_key" --type=SecureString --value="${FlaskSecretKey}"
                     aws --region=${region} ssm put-parameter --overwrite --name "atl_forge_saml_metadata_protocol" --type=SecureString --value="${SamlProtocol}"
                     aws --region=${region} ssm put-parameter --overwrite --name "atl_forge_saml_metadata_url" --type=SecureString --value="${SamlUrl}"
                   fi
-                  exec sudo -u forge /usr/bin/python3 /home/forge/atl-cfn-forge/acforge.py --region=${region} ${noSaml} >> /var/log/forge.log 2>&1
-                end script
-              - noSaml: !If [NoSamlMetadata, "--nosaml", '']
-                region: !Ref AWS::Region
-                SamlProtocol: !If [NoSamlMetadata, '', !Select [0, !Split ['://', !Ref SamlMetadataUrl]]]
-                SamlUrl: !If [NoSamlMetadata, '', !Select [1, !Split ['://', !Ref SamlMetadataUrl]]]
+
+                  # download config files from S3 if they exist
+                  cd /home/forge/atl-cfn-forge
+                  aws s3 cp s3://atl-cfn-forge-${AccountId}/config/permissions.json forge/saml_auth/permissions.json
+                  aws s3 cp s3://atl-cfn-forge-${AccountId}/config/config.py forge/config/config.py
+                  aws s3 cp --recursive s3://atl-cfn-forge-${AccountId}/config/stacks stacks/
+
+                  touch /var/log/forge.log
+                  mkdir -p $forgepath/logs
+
+                  # final chown for updated files
+                  chown -R forge:forge /home/forge
+                  chown forge:forge /var/log/forge.log
+                - AccountId: !Ref AWS::AccountId
+                  CustomTemplateRepo: !Ref CustomTemplateRepo
+                  CustomTemplateGitKey: !Ref CustomTemplateGitKey
+                  region: !Ref AWS::Region
+                  SamlProtocol: !If [NoSamlMetadata, '', !Select [0, !Split ['://', !Ref SamlMetadataUrl]]]
+                  SamlUrl: !If [NoSamlMetadata, '', !Select [1, !Split ['://', !Ref SamlMetadataUrl]]]
+              mode: "000700"
+              owner: root
+              group: root
+            /etc/init/forge.conf:
+              content: !Sub
+                - |
+                  #!upstart
+                  description "Atlassian Cloudformation Forge"
+
+                  start on started mountall
+                  stop on shutdown
+
+                  # Automatically Respawn:
+                  respawn
+                  respawn limit 3 5
+
+                  script
+                    exec sudo -u forge /bin/bash -c "cd /home/forge/atl-cfn-forge && export LC_ALL=en_US.UTF-8 && export LANG=en_US.UTF-8 && export REGION=${region} ${noSaml} && /usr/local/bin/pipenv install --skip-lock && /usr/local/bin/pipenv run forge-gunicorn" >> /var/log/forge.log 2>&1
+                  end script
+                - noSaml: !If [NoSamlMetadata, "&& export NO_SAML=1", '']
+                  region: !Ref AWS::Region
               mode: "000600"
               owner: root
               group: root
-            /tmp/forge.properties:
-              content:
-                'Fn::Join':
-                  - "\n"
-                  -
-                    - "# Regions in format 'aws_region: region_name'"
-                    - "# Names are for reference only, so can be AWS region names or Staging/Production etc"
-                    - "# Enter default region first"
-                    - "[regions]"
-                    - !Sub ["${Regions}", Regions: !Join ["\n", !Ref Regions]]
-                    - ""
-                    - "[analytics]"
-                    - !Sub ["enabled: ${Analytics}", Analytics: !Ref Analytics]
-                    - ""
-                    - "[s3]"
-                    - !Sub ["bucket: atl-forge-${AccountId}", AccountId: !Ref "AWS::AccountId"]
+            /tmp/bootstrap_local_ansible:
+              content: !Sub
+                - |
+                  #!/usr/bin/env bash
+                  # bootstrap any local-ansible repo that is passed in on this template
+
+                  localansiblerepopath=/home/localansible
+                  gitkeylocation=/root/.ssh/gitkey
+
+                  gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names ${LocalAnsibleGitSshKeyName} --with-decryption 2>/dev/null| jq --raw-output '.Parameters[0] .Value')
+                  echo -e $gitkey > $gitkeylocation
+                  chmod 600 $gitkeylocation
+                  export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
+
+                  mkdir -p $localansiblerepopath
+                  cd $localansiblerepopath
+                  git clone ${LocalAnsibleGitRepo}
+                  cp $localansiblerepopath/*/local-ansible-run /usr/local/bin/local-ansible-run
+                  chmod 750 /usr/local/bin/local-ansible-run
+                - LocalAnsibleGitRepo: !Ref LocalAnsibleGitRepo
+                  LocalAnsibleGitSshKeyName: !Ref LocalAnsibleGitSshKeyName
               mode: "000750"
               owner: root
               group: root
@@ -386,8 +502,14 @@ Resources:
               command: yum-config-manager --enable epel
             002_setup_forge:
               cwd: /root/
-              command: ./setup_forge.sh
-            003_run_forge:
+              command: ./setup_forge.sh >> /var/log/forge.log 2>&1
+            020_bootstrap_local_ansible:
+              command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
+            025_ansible_first_run:
+              command: /usr/local/bin/local-ansible-run
+              test: test -x /usr/local/bin/local-ansible-run
+            030_run_forge:
               command:
                 start forge
     Properties:
@@ -400,7 +522,7 @@ Resources:
       IamInstanceProfile: !Ref ForgeNodeInstanceProfile
       ImageId: !FindInMap [RegionAmiMap, !Ref "AWS::Region", "ami"]
       InstanceType: !Ref NodeInstanceType
-      KeyName: !Ref KeyName
+      KeyName: !Ref KeyPairName
       SecurityGroups: [!Ref ForgeNodeSecurityGroup]
       UserData:
         Fn::Base64: !Sub |
@@ -415,21 +537,21 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          CidrIp: !Ref AccessCIDR
+          CidrIp: !Ref CidrBlock
           FromPort: 22
           ToPort: 22
         - IpProtocol: tcp
-          CidrIp: !Ref AccessCIDR
+          CidrIp: !Ref CidrBlock
           FromPort: 80
           ToPort: 80
         - IpProtocol: tcp
           FromPort: 8000
           ToPort: 8000
-          CidrIp: !Ref AccessCIDR
+          CidrIp: !Ref CidrBlock
         - IpProtocol: icmp
           FromPort: -1
           ToPort: -1
-          CidrIp: !Ref AccessCIDR
+          CidrIp: !Ref CidrBlock
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ForgeNode-SG
@@ -438,7 +560,7 @@ Resources:
     Properties:
       GroupId: !Ref ForgeNodeSecurityGroup
       FromPort: -1
-      IpProtocol: -1
+      IpProtocol: '-1'
       ToPort: -1
       SourceSecurityGroupId: !Ref ForgeNodeSecurityGroup
 # Loadbalancer
@@ -447,22 +569,22 @@ Resources:
     Properties:
       CrossZone: true
       Listeners:
-        - LoadBalancerPort: 80
-          Protocol: HTTP
-          InstancePort: 8000
-          InstanceProtocol: HTTP
+        - LoadBalancerPort: '80'
+          Protocol: TCP
+          InstancePort: '8000'
+          InstanceProtocol: TCP
       HealthCheck:
         Target: 'HTTP:8000/status'
-        Timeout: 29
-        Interval: 30
-        UnhealthyThreshold: 2
-        HealthyThreshold: 2
+        Timeout: '29'
+        Interval: '30'
+        UnhealthyThreshold: '2'
+        HealthyThreshold: '2'
       Scheme: !If [InternetAccessible, 'internet-facing', 'internal']
       SecurityGroups: [!Ref ForgeNodeSecurityGroup]
       Subnets: !Ref ExternalSubnet
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
   LoadBalancerCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
@@ -471,7 +593,7 @@ Resources:
       Comment: Route53 cname for the ELB
       Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
 Outputs:

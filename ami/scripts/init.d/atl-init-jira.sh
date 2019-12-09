@@ -104,12 +104,19 @@ function configureJiraEnvironmentVariables (){
        if [[ ! "${ATL_JVM_HEAP}" =~ ^.*[mMgG]$ ]]; then
            ATL_JVM_HEAP="${ATL_JVM_HEAP}m"
       fi
-      su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY.+)(384m|768m)(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
+      su "${ATL_JIRA_USER}" -c "sed -i -r 's/^(JVM.+MEMORY=\")([0-9]+[mMgG])(.+)$/\1${ATL_JVM_HEAP}\3/' /opt/atlassian/jira/bin/setenv.sh" >> "${ATL_LOG}" 2>&1
    fi
    cat <<EOT | su "${ATL_JIRA_USER}" -c "tee -a \"${ATL_JIRA_INSTALL_DIR}/bin/setenv.sh\"" > /dev/null
-
-CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8 -XX:+UseG1GC"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+UseG1GC"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintAdaptiveSizePolicy"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintGCDetails"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:NumberOfGCLogFiles=10"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:GCLogFileSize=5m"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+UseGCLogFileRotation"
+CATALINA_OPTS="\${CATALINA_OPTS} -XX:+PrintTenuringDistribution"
+CATALINA_OPTS="\${CATALINA_OPTS} -Dfile.encoding=UTF-8"
 CATALINA_OPTS="\${CATALINA_OPTS} ${ATL_CATALINA_OPTS}"
+
 export CATALINA_OPTS
 EOT
    atl_log "=== END: service configureJiraEnvironmentVariables ==="
@@ -221,7 +228,7 @@ function configureDbProperties {
     <pool-min-size>${ATL_DB_POOLMINSIZE}</pool-min-size>
     <pool-max-size>${ATL_DB_POOLMAXSIZE}</pool-max-size>
     <pool-max-wait>${ATL_DB_MAXWAITMILLIS}</pool-max-wait>
-    <validation-query>select 1</validation-query>
+    <validation-query>select version();</validation-query>
     <min-evictable-idle-time-millis>${ATL_DB_MINEVICTABLEIDLETIMEMILLIS}</min-evictable-idle-time-millis>
     <time-between-eviction-runs-millis>${ATL_DB_TIMEBETWEENEVICTIONRUNSMILLIS}</time-between-eviction-runs-millis>
     <pool-max-idle>${ATL_DB_MAXIDLE}</pool-max-idle>
@@ -291,33 +298,7 @@ function restoreInstaller {
 function downloadInstaller {
     local ATL_LOG_HEADER="[downloadInstaller]: "
 
-    local VERSION_FILE_URL="${ATL_JIRA_RELEASES_S3_URL}/latest"
-
-    atl_log "${ATL_LOG_HEADER} Downloading installer description from ${VERSION_FILE_URL}"
-    if ! curl -L -f --silent "${VERSION_FILE_URL}" \
-        -o "$(atl_tempDir)/version" >> "${ATL_LOG}" 2>&1
-    then
-        local ERROR_MESSAGE="Could not download installer description from ${VERSION_FILE_URL} - aborting installation"
-        atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
-        atl_fatal_error "${ERROR_MESSAGE}"
-    fi
-
-    local JIRA_VERSION=$(cat $(atl_tempDir)/version)
-    # if a jira version was passed on the cloudformation template, use that instead
-    if [[ -n $requestedVersion ]] && [ $requestedVersion != "latest" ]; then
-      echo $requestedVersion > $(atl_tempDir)/version
-      local JIRA_VERSION=$requestedVersion
-    fi
-    local JIRA_INSTALLER="atlassian-${ATL_JIRA_NAME}-${JIRA_VERSION}-x64.bin"
-    local JIRA_INSTALLER_URL="${ATL_JIRA_RELEASES_S3_URL}/${JIRA_INSTALLER}"
-    # if a jira download_url was passed on the cloudformation template, use that instead
-    if [[ -n $ATL_JIRA_INSTALLER_DOWNLOAD_URL ]]; then
-      local JIRA_INSTALLER_URL=$ATL_JIRA_INSTALLER_DOWNLOAD_URL
-    fi
-
-    atl_log "${ATL_LOG_HEADER} Downloading ${ATL_JIRA_SHORT_DISPLAY_NAME} installer ${JIRA_INSTALLER} from ${ATL_JIRA_RELEASES_S3_URL}"
-    if ! curl -L -f --silent "${JIRA_INSTALLER_URL}" \
-        -o "$(atl_tempDir)/installer" >> "${ATL_LOG}" 2>&1
+    if ! atl_downloadInstaller;
     then
         local ERROR_MESSAGE="Could not download ${ATL_JIRA_SHORT_DISPLAY_NAME} installer from ${ATL_JIRA_RELEASES_S3_URL} - aborting installation"
         atl_log "${ATL_LOG_HEADER} ${ERROR_MESSAGE}"
@@ -379,7 +360,7 @@ function installJIRA {
     fi
     # overrideVersion always wins out over requestedVersion
     if [[ -n $overrideVersion ]]; then requestedVersion=$overrideVersion; fi
-    lastVersionFile=$(ls -tr1 /media/atl/jira*.version |tail -1)
+    lastVersionFile=$(ls -tr1 /media/atl/*.version |tail -1)
     if [[ -n $lastVersionFile ]]; then currentVersion="$(cat $lastVersionFile 2>/dev/null)"; fi
     if [[ -n $currentVersion ]] && [[ -n $requestedVersion ]] ; then
       # abend if requested version is older than current
@@ -388,8 +369,10 @@ function installJIRA {
         atl_log "${ERROR_MESSAGE}"
         atl_fatal_error "${ERROR_MESSAGE}"
       fi
-      # remove version file to allow new version download/deploy
-      rm $lastVersionFile
+      # if current version doesnt match requested version then remove version file to allow new version download/deploy
+      if [[ "$currentVersion" != "$requestedVersion" ]] ; then
+        rm $lastVersionFile
+      fi
       # else ensure the node is cleaned up ready for fresh install of newer release
       atl_log "Confirming this IS an upgrade ! - if requestedVersion is not 'latest' then clean up the environment"
       if [[ $requestedVersion != "latest" ]]; then
@@ -427,20 +410,24 @@ function installOBR {
         JIRA_VERSION=$(cat /media/atl/${ATL_JIRA_NAME}.version)
         PLUGIN_DIR="/media/atl/jira/shared/plugins/installed-plugins"
         atl_log "Fetching and Installing JSD OBR for Jira ${JIRA_VERSION}"
-        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep $JIRA_VERSION |  awk '{print $NF}')
-        MPLACE_REDIRECT_URL=$(curl -Ls $MPLACE_URL -o /dev/null -w %{url_effective})
-        MPLACE_FILE=$(basename $MPLACE_REDIRECT_URL)
-        ZIP_FILENAME=$MPLACE_FILE
-        # if obr doesnt exist on efs, try to fetch it first from marketplace
-        if [ ! -f /media/atl/${MPLACE_FILE} ]; then
-            curl -s $MPLACE_REDIRECT_URL -o /media/atl/${MPLACE_FILE}
+        MPLACE_URL=$(curl -s https://marketplace.atlassian.com/apps/1213632/jira-service-desk/version-history | tr '><"' '\n' |egrep -e 'Jira Server|download/apps'|sed '$!N;s/\n/ /'|grep -F $JIRA_VERSION |  awk '{print $NF}' | sed -n '1p')
+        MPLACE_FILE=''
+        if [[ -n $MPLACE_URL ]]; then
+            MPLACE_REDIRECT_URL=$(curl -Ls $MPLACE_URL -o /dev/null -w %{url_effective})
+            MPLACE_FILE=$(basename $MPLACE_REDIRECT_URL)
+            ZIP_FILENAME=$MPLACE_FILE
+            # if obr doesnt exist on efs, try to fetch it first from marketplace
+            if [ ! -f /media/atl/${MPLACE_FILE} ]; then
+                atl_log "OBR doesnt exist on EFS, trying to fetch it first from marketplace"
+                curl -s $MPLACE_REDIRECT_URL -o /media/atl/${MPLACE_FILE}
+            fi
         fi
-        # if obr still doesnt exist on efs, try to fetch it from downlaods-internal
+        # if obr still doesnt exist on efs, try to fetch it from downloads-internal
         if [ ! -f /media/atl/${MPLACE_FILE} ]; then
-            INTERNAL_OBR_S3_LOCATION="s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/${INTERNAL_JSD_OBR_NAME}"
+            atl_log "Unable to retrieve OBR from marketplace, trying to fetch it from downloads-internal S3 bucket"
             INTERNAL_JSD_OBR_NAME=$(aws s3 ls s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/|grep jira-servicedesk-application|grep obr|awk '{print $4}')
-            atl_log "OBR does not exist in shared-home, downloading from ${OBR_S3_LOCATION}"
-            aws s3 cp ${OBR_S3_LOCATION} /media/atl/${JSD_OBR_NAME}
+            INTERNAL_OBR_S3_LOCATION="s3://downloads-internal-us-east-1/private/jira/${JIRA_VERSION}/${INTERNAL_JSD_OBR_NAME}"
+            aws s3 cp ${INTERNAL_OBR_S3_LOCATION} /media/atl/${INTERNAL_JSD_OBR_NAME}
             ZIP_FILENAME=$INTERNAL_JSD_OBR_NAME
         fi
         if [ -e /media/atl/${ZIP_FILENAME} ]; then atl_log "Retrieved JSD OBR ${ZIP_FILENAME} for Jira ${JIRA_VERSION}"; fi

@@ -3,31 +3,23 @@
 
 set -e
 
-TMP_DIR=$(mktemp -d -t atlaws)
-echo "TMP_DIR = ${TMP_DIR}"
-PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
-# comment out the trap if you want the debug output to persist after the run
-trap "rm -rf ${TMP_DIR}" EXIT
-
-BASEDIR=$(dirname "$0")
-DEBUG_MODE=
-source "${BASEDIR}/atl-aws-functions.sh"
-
 function usage {
+# -b specifies business unit, and -o specifies resource owner. These are silently available options used to tag AWS resources
     cat << EOF
-usage: $0 options
+usage: $0 [options]
 
 This script generates an Atlassian AMI with Packer.
 
 OPTIONS:
-   -p The product to build an AMI for. If not supplied 'Bitbucket' is assumed
-   -r The AWS region to use. If not supplied, the AWS_REGION environment variable must be set
-   -v The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
-   -s The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
-   -c Whether to copy the AMI to other AWS regions. Defaults to false
-   -u Whether to update the CloudFormation templates' AMI mappings. Defaults to false
-   -P make AMI public
-   -d debug mode
+    -p  The product to build an AMI for. If not supplied 'Bitbucket' is assumed
+    -r  The AWS region to use. If not supplied, the AWS_REGION environment variable must be set
+    -v  The AWS VPC to use in the supplied region. If not supplied, the AWS_VPC_ID environment variable must be set
+    -s  The AWS Subnet to use in the supplied VPC. If not supplied, the AWS_SUBNET_ID environment variable must be set
+    -c  Whether to copy the AMI to other AWS regions. Defaults to false
+    -u  Whether to update the CloudFormation templates' AMI mappings. Defaults to false
+    -P  Make AMI public
+    -d  Debug mode
+    -h  Print usage
 EOF
 }
 
@@ -38,17 +30,17 @@ function err_usage {
     exit 1
 }
 
-export AWS_LINUX_VERSION="2018.03"
 COPY_AMIS=
 UPDATE_CLOUDFORMATION=
-ATL_PRODUCT="Bitbucket"
+ATL_PRODUCT=Bitbucket
+DEBUG_MODE=
 
-while getopts "dhPr:cv:s:p:u" OPTION
+while getopts ":dhPr:cv:s:p:ub:o:" OPTION
 do
     case $OPTION in
         h)
             usage
-            exit 1
+            exit 0
             ;;
         p)
             ATL_PRODUCT="${OPTARG}"
@@ -74,7 +66,13 @@ do
         d)
             DEBUG_MODE="true"
             ;;
-        ?)
+        b)
+            BUSINESS_UNIT="${OPTARG}"
+            ;;
+        o)
+            RESOURCE_OWNER="${OPTARG}"
+            ;;
+        \?)
             usage
             exit
             ;;
@@ -87,7 +85,7 @@ case $ATL_PRODUCT_ID in
         ATL_PRODUCT="Bitbucket"
         ;;
     jira)
-        ATL_PRODUCT="JIRA"
+        ATL_PRODUCT="Jira"
         ;;
     confluence)
         ATL_PRODUCT="Confluence"
@@ -124,17 +122,27 @@ if [[ -z "${AWS_SECRET_KEY:-$AWS_SECRET_ACCESS_KEY}" ]]; then
     err_usage "AWS_SECRET_KEY and AWS_SECRET_ACCESS_KEY env var not defined"
 fi
 
+BASEDIR=$(dirname "$0")
+source "${BASEDIR}/atl-aws-functions.sh"
+
+export AWS_LINUX_VERSION="2018.03"
+export AWS_DEFAULT_REGION=${AWS_REGION}
+export TZ=GMT
+DATE=$(date '+%Y.%m.%d_%H%M')
+
 DEFAULT_BASE_AMI=$(atl_awsLinuxAmi "$AWS_REGION" "$AWS_LINUX_VERSION")
 BASE_AMI="${BASE_AMI:-$DEFAULT_BASE_AMI}"
 if [[ -z "${BASE_AMI}" ]]; then
     err_usage "BASE_AMI env var not defined and no mapping found to fall back on"
 fi
 
-export AWS_DEFAULT_REGION=${AWS_REGION}
-export TZ=GMT
-DATE=$(date '+%Y.%m.%d_%H%M')
-
 echo "Building ${ATL_PRODUCT} in ${AWS_REGION}"
+
+TMP_DIR=$(mktemp -d -t atlaws)
+echo "TMP_DIR = ${TMP_DIR}"
+PACKER_LOG_PATH="${TMP_DIR}/packer.debug.log"
+# comment out the trap if you want the debug output to persist after the run
+trap "rm -rf ${TMP_DIR}" EXIT
 
 packer -machine-readable build \
     -var aws_access_key="${AWS_ACCESS_KEY}" \
@@ -142,6 +150,8 @@ packer -machine-readable build \
     -var aws_session_token="${AWS_SESSION_TOKEN}" \
     -var vpc_id="${AWS_VPC_ID}" \
     -var base_ami="${BASE_AMI}" \
+    -var business_unit="${BUSINESS_UNIT}" \
+    -var resource_owner="${RESOURCE_OWNER}" \
     -var availability_zone="${AWS_AZ}" \
     -var subnet_id="${AWS_SUBNET_ID}" \
     -var aws_region="${AWS_REGION}" \
@@ -168,13 +178,12 @@ regionToAmi[$i]="${AWS_REGION} ${AWS_AMI}"
 
 if [[ -n "${COPY_AMIS}" ]]; then
     AWS_AMI_NAME=$(aws ec2 describe-images --region "${AWS_REGION}" --image-ids "${AWS_AMI}" | jq -r ".Images[0].Name")
-    AWS_REGIONS=$(aws ec2 --region "${AWS_REGION}" describe-regions | jq -r ".Regions[].RegionName")
-    mapfile -t AWS_OTHER_REGIONS <<< "${AWS_REGIONS/"$AWS_REGION"}"
+    declare -a AWS_OTHER_REGIONS
+    while IFS=$'\n' read -r line; do
+        AWS_OTHER_REGIONS+=("$line");
+    done < <(aws ec2 --region "${AWS_REGION}" describe-regions | jq --arg AWS_REGION "$AWS_REGION" -r '.Regions[] | select(.RegionName | contains($AWS_REGION) | not) | .RegionName')
     echo "Copying AMI ${AWS_AMI} to regions ${AWS_OTHER_REGIONS[*]}"
     for region in "${AWS_OTHER_REGIONS[@]}"; do
-        if [ -z "$region" ]; then
-            continue
-        fi
         ami=$(aws ec2 copy-image --source-region "${AWS_REGION}" --source-image-id "${AWS_AMI}" --region "${region}" --name "${AWS_AMI_NAME}" | jq -r ".ImageId")
         (
             echo "Copy to ${region} started (AMI ID: ${ami})"
@@ -187,8 +196,8 @@ fi
 
 if [[ -n "${UPDATE_CLOUDFORMATION}" ]]; then
     echo "Updating ${ATL_PRODUCT} CloudFormation template AMI mapping(s)..."
-    mapfile -t TEMPLATES <<< "$(find "${BASEDIR}/../../templates" -maxdepth 1 -iname "${ATL_PRODUCT}*.template.yaml")"
-    for template in "${TEMPLATES[@]}"; do
+    TEMPLATES=`(shopt -s nocaseglob; /bin/ls ${BASEDIR}/../../templates/${ATL_PRODUCT}*.template.yaml)`
+    for template in ${TEMPLATES}; do
         for regionami in "${regionToAmi[@]}"; do
             region=$(echo "$regionami" | cut -d' ' -f1)
             ami=$(echo "$regionami" | cut -d' ' -f2)

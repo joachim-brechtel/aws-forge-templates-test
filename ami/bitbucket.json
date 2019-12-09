@@ -32,7 +32,7 @@
     "release_s3_path":          "releases/bitbucket",
 
     "git_version":              "2.14.4",
-    "postgres_version":         "9.3",
+    "postgres_version":         "9.6",
 
     "diy_backup_display_name":  "Bitbucket DIY Backup",
     "diy_backup_clone_url":     "https://bitbucket.org/atlassianlabs/atlassian-bitbucket-diy-backup.git",
@@ -99,7 +99,7 @@
 
   "provisioners": [{
     "type": "shell",
-    "inline": "sudo yum -y -x 'kernel*' --security update-minimal"
+    "inline": "sudo yum -y -q update"
   },{
     "type": "shell",
     "script": "scripts/install-git.sh",

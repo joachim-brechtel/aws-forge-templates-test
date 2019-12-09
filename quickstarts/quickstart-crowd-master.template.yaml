@@ -47,38 +47,36 @@ Metadata:
         Parameters:
           - CrowdDownloadUrl
           - LocalAnsibleGitRepo
-          - LocalAnsibleGitKey
+          - LocalAnsibleGitSshKeyName
           - StartCollectd
       - Label:
           default: Application Tuning (Optional)
         Parameters:
-            - TomcatContextPath
-            - CatalinaOpts
-            - JvmHeapOverride
-            - DBPoolMaxSize
-            - DBPoolMinSize
-            - DBMaxIdle
-            - DBMaxWaitMillis
-            - DBMinEvictableIdleTimeMillis
-            - DBMinIdle
-            - DBRemoveAbandoned
-            - DBRemoveAbandonedTimeout
-            - DBTestOnBorrow
-            - DBTestWhileIdle
-            - DBTimeBetweenEvictionRunsMillis
-            - MailEnabled
-            - TomcatAcceptCount
-            - TomcatConnectionTimeout
-            - TomcatDefaultConnectorPort
-            - TomcatEnableLookups
-            - TomcatMaxThreads
-            - TomcatMinSpareThreads
-            - TomcatProtocol
-            - TomcatProxyPort
-            - TomcatRedirectPort
-            - TomcatScheme
-            - TomcatSecure
-    ParameterLabels:
+          - TomcatContextPath
+          - CatalinaOpts
+          - JvmHeapOverride
+          - DBPoolMaxSize
+          - DBPoolMinSize
+          - DBMaxIdle
+          - DBMaxWaitMillis
+          - DBMinEvictableIdleTimeMillis
+          - DBMinIdle
+          - DBRemoveAbandoned
+          - DBRemoveAbandonedTimeout
+          - DBTestOnBorrow
+          - DBTestWhileIdle
+          - DBTimeBetweenEvictionRunsMillis
+          - MailEnabled
+          - TomcatAcceptCount
+          - TomcatConnectionTimeout
+          - TomcatDefaultConnectorPort
+          - TomcatEnableLookups
+          - TomcatMaxThreads
+          - TomcatMinSpareThreads
+          - TomcatProtocol
+          - TomcatRedirectPort
+          - TomcatScheme
+  ParameterLabels:
       AssociatePublicIpAddress:
         default: Assign public IP
       CatalinaOpts:
@@ -147,8 +145,8 @@ Metadata:
         default: Key Name *
       LocalAnsibleGitRepo:
         default: Git repo for local-ansible
-      LocalAnsibleGitKey:
-        default: Git key for local-ansible
+      LocalAnsibleGitSshKeyName:
+        default: Git SSH key name for local-ansible
       MailEnabled:
         default: Enable App to Process Email
       SSLCertificateARN:
@@ -169,14 +167,10 @@ Metadata:
         default: Tomcat Minimum Spare Threads
       TomcatProtocol:
         default: Tomcat Protocol
-      TomcatProxyPort:
-        default: Tomcat Proxy Port
       TomcatRedirectPort:
         default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
-      TomcatSecure:
-        default: Tomcat Secure?
 Parameters:
   AssociatePublicIpAddress:
     Default: true
@@ -230,7 +224,6 @@ Parameters:
       - i3.4xlarge
       - i3.8xlarge
       - i3.16xlarge
-      - i3.metal
       - m4.large
       - m4.xlarge
       - m4.2xlarge
@@ -297,16 +290,17 @@ Parameters:
     Type: Number
   ClusterNodeMin:
     Default: 1
+    Description: Set to 1 for new deployment. Can be updated post launch.
     Type: Number
   ClusterNodeVolumeSize:
     Default: 50
-    Description: Size of cluster node root volume in Gb (note - size based upon Application indexes x 4)
+    Description: Size of cluster node root volume in GB (note - size based upon Application indexes x 4)
     Type: Number
   CrowdDownloadUrl:
     Default: ''
+    ConstraintDescription: Must be a valid Crowd download url
     Description: This parameter is used to download a custom Crowd version for testing purposes. Leave this parameter blank to automatically download the official version you specified earlier.
     Type: String
-    ConstraintDescription: Must be a valid Crowd download url
   CrowdVersion:
     Default: 3.2.1
     AllowedPattern: '(\d+\.\d+\.\d+(-?.*))'
@@ -341,7 +335,7 @@ Parameters:
     Type: String
   DBIops:
     Default: 1000
-    ConstraintDescription: 'Must be in the range 1000 - 30000'
+    ConstraintDescription: Must be in the range 1000 - 30000
     Description: 'Must be in the range of 1000 - 30000 and a multiple of 1000. This value is only used with Provisioned IOPS. Note: The ratio of IOPS per allocated-storage must be between 3.00 and 10.00'
     MinValue: 1000
     MaxValue: 30000
@@ -435,9 +429,10 @@ Parameters:
   DeployEnvironment:
     Default: prod
     AllowedValues:
+      - dev
+      - dr
       - prod
       - stg
-      - dr
     ConstraintDescription: Must be either Production (prod), Staging (stg), or Disaster Recovery (dr).
     Description: Environment of the application - either Production, Staging, or Disaster Recovery (DR)
     Type: String
@@ -459,9 +454,9 @@ Parameters:
     Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
     Type: String
-  LocalAnsibleGitKey:
+  LocalAnsibleGitSshKeyName:
     Default: ''
-    Description: if your git repo is private, provide a AWS Systems Manager ParameterStore key name that holds an ssh private key that can access the repo
+    Description: If your git repo is private, provide an AWS Systems Manager ParameterStore key name that holds an SSH private key that can access the repo
     Type: String
   MailEnabled:
     AllowedValues:
@@ -518,23 +513,15 @@ Parameters:
     Default: 'HTTP/1.1'
     Description: Sets the protocol to handle incoming traffic
     Type: String
-  TomcatProxyPort:
-    Default: 80
-    Description: If this Connector is being used in a proxy configuration, configure this attribute to specify the server port to be returned for calls to request.getServerPort()
-    Type: String
   TomcatRedirectPort:
     Default: 8443
     Description: The port number for Catalina to use when automatically redirecting a non-SSL connector actioning a redirect to a SSL URI
     Type: String
   TomcatScheme:
     Default: http
-    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector
+    Description: The name of the protocol you wish to have returned, ie "https" for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately.
     Type: String
     AllowedValues: [http, https]
-  TomcatSecure:
-    Default: false
-    Description: Set this attribute to true if you wish to have calls to request.isSecure() to return true for requests received by this Connector. Needed for ssl offloading.
-    Type: String
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
@@ -655,9 +642,6 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     i3.16xlarge:
-      Arch: HVM64
-      Jvmheap: 12288m
-    i3.metal:
       Arch: HVM64
       Jvmheap: 12288m
     m4.large:
@@ -836,49 +820,52 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-053c40644e5996f21
+      HVM64: ami-0310c8889a80491d1
       HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-05bd8e9ac469d4067
+      HVM64: ami-0899031381791ec98
       HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-04377cb6419764e84
+      HVM64: ami-0f6944530d0f5462d
       HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-0fda084a3fc2989a7
+      HVM64: ami-03f25b5125604b441
       HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0d38fc2b6dcb51b52
+      HVM64: ami-044f6c4ea139c29a9
       HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-00b6f551dde6c8133
+      HVM64: ami-06f2c1858ea0827f6
       HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-0fe525d17aa2b4240
+      HVM64: ami-05d573865db9be055
+      HVMG2: NOT_SUPPORTED
+    eu-north-1:
+      HVM64: ami-0d312a4810ef91934
       HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-0eae26e5b4163668e
+      HVM64: ami-0f408dad9fa3c987c
       HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-09d9e73160b5b4f9f
+      HVM64: ami-06e60046c1c5bcf35
       HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0e4105c6abe06bf2c
+      HVM64: ami-04afa6b770811cbcd
       HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-00b41a26dd15e1728
+      HVM64: ami-0bb9baf676443bd15
       HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-06dc14307f2e65df6
+      HVM64: ami-08f9e5d84ec606dea
       HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0ca1a64ed71c08e98
+      HVM64: ami-058e19570ae3d4fa6
       HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-0921f36cdcecdee8f
+      HVM64: ami-0b5df9e971328c637
       HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-02fe3257d2db1d71c
+      HVM64: ami-0e8829dddd5b91b8a
       HVMG2: NOT_SUPPORTED
 Resources:
   CrowdClusterNodeRole:
@@ -899,7 +886,27 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Action: ['ec2:DescribeInstances']
+              - Action:
+                - 'ec2:DescribeInstances'
+                - 'ec2:DescribeSecurityGroups'
+                - 'route53:ListHostedZones'
+                - 'route53:ListResourceRecordSet'
+                Effect: Allow
+                Resource: ['*']
+              - Action:
+                - "route53:ChangeResourceRecordSets"
+                Effect: Allow
+                Resource:
+                  - "arn:aws:route53:::healthcheck/*"
+                  - "arn:aws:route53:::change/*"
+                  - "arn:aws:route53:::hostedzone/*"
+                  - "arn:aws:route53:::delegationset/*"
+              - Action:
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                Condition:
+                  StringEquals:
+                    'ec2:ResourceTag/Name':
+                      - !Sub '${AWS::StackName} sg'
                 Effect: Allow
                 Resource: ['*']
   CrowdClusterNodeInstanceProfile:
@@ -920,7 +927,7 @@ Resources:
       VPCZoneIdentifier: !Split [ ",", !ImportValue ATL-PriNets]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd Node", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Crowd Node"
           PropagateAtLaunch: true
         - Key: Cluster
           Value: !Ref AWS::StackName
@@ -933,7 +940,6 @@ Resources:
     DependsOn:
       - EFSMountAz1
       - EFSMountAz2
-      - DB
     Metadata:
       Comment: ''
       AWS::CloudFormation::Init:
@@ -982,7 +988,7 @@ Resources:
                     - !Sub ["ATL_JDBC_URL=jdbc:postgresql://${DBEndpointAddress}:${DBEndpointPort}/crowd", { DBEndpointAddress: !GetAtt DB.Endpoint.Address, DBEndpointPort: !GetAtt DB.Endpoint.Port }]
                     - !Sub ["ATL_JVM_HEAP=${AtlJvmHeap}", AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref ClusterNodeInstanceType, Jvmheap]]]
                     - !Sub ["ATL_LOCALANSIBLE_REPO=${AnsibleRepo}", AnsibleRepo: !Ref LocalAnsibleGitRepo]
-                    - !Sub ["ATL_LOCALANSIBLE_KEY=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitKey]
+                    - !Sub ["ATL_LOCALANSIBLE_SSHKEYNAME=${AnsibleKey}", AnsibleKey: !Ref LocalAnsibleGitSshKeyName]
                     - !Sub ["ATL_PROXY_NAME=${AtlProxyName}", AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]]
                     - !Sub ["ATL_TOMCAT_ACCEPTCOUNT=${TomcatAcceptCount}", TomcatAcceptCount: !Ref TomcatAcceptCount]
                     - !Sub ["ATL_TOMCAT_CONNECTIONTIMEOUT=${TomcatConnectionTimeout}", TomcatConnectionTimeout: !Ref TomcatConnectionTimeout]
@@ -992,10 +998,10 @@ Resources:
                     - !Sub ["ATL_TOMCAT_MAXTHREADS=${TomcatMaxThreads}", TomcatMaxThreads: !Ref TomcatMaxThreads]
                     - !Sub ["ATL_TOMCAT_MINSPARETHREADS=${TomcatMinSpareThreads}", TomcatMinSpareThreads: !Ref TomcatMinSpareThreads]
                     - !Sub ["ATL_TOMCAT_PROTOCOL=${TomcatProtocol}", TomcatProtocol: !Ref TomcatProtocol]
-                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !Ref TomcatProxyPort]
+                    - !Sub ["ATL_TOMCAT_PROXYPORT=${TomcatProxyPort}", TomcatProxyPort: !If [SSLScheme, 443, 80]]
                     - !Sub ["ATL_TOMCAT_REDIRECTPORT=${TomcatRedirectPort}", TomcatRedirectPort: !Ref TomcatRedirectPort]
-                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !Ref TomcatScheme]
-                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !Ref TomcatSecure]
+                    - !Sub ["ATL_TOMCAT_SCHEME=${TomcatScheme}", TomcatScheme: !If [SSLScheme, https, http]]
+                    - !Sub ["ATL_TOMCAT_SECURE=${TomcatSecure}", TomcatSecure: !If [SSLScheme, true, false]]
                     - "ATL_CROWD_FULL_DISPLAY_NAME=\"Atlassian Crowd\""
                     - "ATL_CROWD_NAME=crowd"
                     - "ATL_CROWD_SHORT_DISPLAY_NAME=Crowd"
@@ -1042,7 +1048,9 @@ Resources:
                 localansiblerepopath=/home/localansible
                 gitkeylocation=/root/.ssh/gitkey
 
-                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitKey}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
+                # ensure awscli is up to date
+                pip install --upgrade awscli
+                gitkey=$(aws --region=${AWS::Region} ssm get-parameters --names "${LocalAnsibleGitSshKeyName}" --with-decryption | jq --raw-output '.Parameters[0] .Value')
                 echo -e $gitkey > $gitkeylocation
                 chmod 600 $gitkeylocation
                 export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i $gitkeylocation"
@@ -1081,16 +1089,15 @@ Resources:
               command: mkdir -p /media/atl/crowd/shared
               ignoreErrors: false
             050_ssm_group:
-              command: groupadd ssm-user --gid 400
-              test: 'test ! $(getent group ssm-user && test $(getent group ssm-user | cut -d: -f3) -eq 400)'
+              command: groupadd ssm-user --gid 400 || groupmod -g 400 ssm-user
             051_ssm_user:
-              command: useradd ssm-user --uid 400 -g ssm-user
-              test: 'test ! $(id -u ssm-user && test $(id -u ssm-user) -eq 400)'
+              command: useradd ssm-user --uid 400 -g ssm-user || usermod -u 400 ssm-user
             052_ensure_ssm:
               command: yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
               ignoreErrors: true
             090_bootstrap_local_ansible:
               command: /tmp/bootstrap_local_ansible > /var/log/bootstrap_local_ansible.log 2>&1
+              test: !Sub test -n "${LocalAnsibleGitRepo}"
           services:
             sysvinit:
               cfn-hup:
@@ -1134,11 +1141,12 @@ Resources:
             -
               - "#!/bin/bash -xe\n"
               - "yum update -y aws-cfn-bootstrap\n"
-              - !Sub ["/opt/aws/bin/cfn-init -v --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}\n", Region: !Ref "AWS::Region"]
-              - !Sub ["/opt/aws/bin/cfn-signal -e $? --stack ${StackName}", StackName: !Ref "AWS::StackName"]
-              - !Sub [" --resource ClusterNodeLaunchConfig --region ${Region}", Region: !Ref "AWS::Region"]
+              - !Sub "/opt/aws/bin/cfn-init -v --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}\n"
+              - !Sub "/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName}"
+              - !Sub " --resource ClusterNodeLaunchConfig --region ${AWS::Region}"
 # Elastic file system
+# EFS isn't available in all AWS regions; check https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/ to ensure your target region is supported
   ElasticFileSystem:
     Type: AWS::EFS::FileSystem
     Properties:
@@ -1169,7 +1177,7 @@ Resources:
       Comment: Route53 cname for the efs
       Name: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'efs', !Ref 'HostedZone']], '']
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !Join ['.', [!Ref ElasticFileSystem, 'efs', !Ref 'AWS::Region', 'amazonaws.com.']]
 # Database
@@ -1177,12 +1185,12 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       AllocatedStorage: !Ref DBStorage
-      BackupRetentionPeriod: 0
+      BackupRetentionPeriod: '0'
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref AWS::StackName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
-      EngineVersion: 9.6
+      EngineVersion: '9.6'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       KmsKeyId: !If [UseDatabaseEncryption, !GetAtt EncryptionKey.Arn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
@@ -1192,7 +1200,7 @@ Resources:
       StorageType: !If [DBProvisionedIops, io1, gp2]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Crowd PostgreSQL Database", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Crowd PostgreSQL Database"
         - Key: service_name
           Value: !Ref AWS::StackName
       VPCSecurityGroups: [!Ref SecurityGroup]
@@ -1209,7 +1217,7 @@ Resources:
       Comment: Route53 cname for the RDS
       Name: !Join ['.', [!Ref 'AWS::StackName', 'db', !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
@@ -1226,7 +1234,7 @@ Resources:
         IdleTimeout: 3600
       CrossZone: true
       Listeners:
-        - LoadBalancerPort: 80
+        - LoadBalancerPort: '80'
           Protocol: HTTP
           InstancePort: !Ref TomcatDefaultConnectorPort
           InstanceProtocol: HTTP
@@ -1244,16 +1252,16 @@ Resources:
           - !Ref AWS::NoValue
       HealthCheck:
         Target: !If [UseContextPath, !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, !Ref TomcatContextPath, '/status']], !Join ['', ['HTTP:', !Ref TomcatDefaultConnectorPort, '/status']]]
-        Timeout: 29
-        Interval: 30
-        UnhealthyThreshold: 2
-        HealthyThreshold: 2
+        Timeout: '29'
+        Interval: '30'
+        UnhealthyThreshold: '2'
+        HealthyThreshold: '2'
       Scheme: !If [UsePublicIp, 'internet-facing', 'internal']
       SecurityGroups: [!Ref SecurityGroup]
       Subnets: !Split [ ",", !ImportValue ATL-PubNets]
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName}-LoadBalancer", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
         - Key: Cluster
           Value: !Ref AWS::StackName
         - Key: service_name
@@ -1266,7 +1274,7 @@ Resources:
       Comment: Route53 cname for the ALB
       Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
       Type: CNAME
-      TTL: 900
+      TTL: '900'
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
   SecurityGroup:
@@ -1294,7 +1302,7 @@ Resources:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref SecurityGroup
-      IpProtocol: -1
+      IpProtocol: '-1'
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
@@ -1315,7 +1323,7 @@ Resources:
             Resource: '*'
       Tags:
         - Key: Name
-          Value: !Sub ["${StackName} Encryption Key", StackName: !Ref 'AWS::StackName']
+          Value: !Sub "${AWS::StackName} Encryption Key"
   EncryptionKeyAlias:
     Condition: UseDatabaseEncryption
     Type: AWS::KMS::Alias
@@ -1348,7 +1356,7 @@ Outputs:
     Description: The Load Balancer URL
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
-      - HTTP: !If [SSLScheme, 'https', 'http']
+      - HTTP: !If [DoSSL, 'https', 'http']
         LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   SGname:
     Description: The name of the SecurityGroup

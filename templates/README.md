@@ -6,12 +6,14 @@ This directory contains the following AWS CloudFormation templates:
 |---------------|-------------|----------|-------|---------------|
 | `BitbucketServer.template` | None | PostgreSQL (onboard) | Nginx (onboard) | [Documentation](https://confluence.atlassian.com/x/wZZKLg) |
 | `BitbucketDataCenter.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
-| `ConfluenceDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
-| `ConfluenceDataCenterClone.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
-| `CrowdDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
-| `CrowdDataCenterClone.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
-| `JiraDataCenter.template` | EFS | RDS PostgreSQL | ELB | - |
-| `JiraDataCenterClone.template` | EC2 as NFS and EFS | RDS PostgreSQL | ELB | - |
+| `ConfluenceDataCenter.template` | EFS* | RDS PostgreSQL | ALB | - |
+| `ConfluenceDataCenterClone.template` | EC2 as NFS | RDS PostgreSQL | ALB | - |
+| `CrowdDataCenter.template` | EFS* | RDS PostgreSQL | ELB | - |
+| `CrowdDataCenterClone.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
+| `JiraDataCenter.template` | EFS* | RDS PostgreSQL | ELB | - |
+| `JiraDataCenterClone.template` | EC2 as NFS | RDS PostgreSQL | ELB | - |
+
+\* EFS is not available in all AWS regions; check Amazon's [Regional Products and Services](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/) list to ensure your target region is supported.
 
 **Key Terms:**
 
