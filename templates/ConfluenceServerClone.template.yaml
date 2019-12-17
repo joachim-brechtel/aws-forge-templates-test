@@ -1279,7 +1279,7 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       DBSnapshotIdentifier: !Ref DBSnapshotName
       Engine: postgres
-      EngineVersion: '9.6'
+      EngineVersion: '10'
       Iops: !If [DBProvisionedIops, !Ref DBIops, !Ref 'AWS::NoValue']
       KmsKeyId: !If [UseEncryption, !Ref KmsKeyArn, !Ref 'AWS::NoValue']
       MasterUsername: postgres
