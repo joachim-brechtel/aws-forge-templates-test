@@ -19,6 +19,7 @@ Metadata:
       - Label:
           default: Cluster nodes
         Parameters:
+          - CloudWatchIntegration
           - ClusterNodeInstanceType
           - ClusterNodeCount
           - ClusterNodeVolumeSize
@@ -39,8 +40,11 @@ Metadata:
         Parameters:
           - LoadBalancerScheme
           - CidrBlock
+          - ExternalSubnets
+          - InternalSubnets
           - KeyPairName
           - SSLCertificateARN
+          - VPC
       - Label:
           default: DNS (Optional)
         Parameters:
@@ -50,7 +54,6 @@ Metadata:
       - Label:
           default: Advanced (Optional)
         Parameters:
-          - ASIPrefix
           - DBSnapshotName
           - DeployFromAnsible
           - EfsLifecyclePolicyDays
@@ -86,12 +89,12 @@ Metadata:
           - TomcatRedirectPort
           - TomcatScheme
     ParameterLabels:
-      ASIPrefix:
-        default: ASI identifier
       CatalinaOpts:
         default: Catalina options
       CidrBlock:
         default: Permitted IP range
+      CloudWatchIntegration:
+        default: Enable CloudWatch integration
       ClusterNodeCount:
         default: Desired number of cluster nodes
       ClusterNodeInstanceType:
@@ -100,8 +103,6 @@ Metadata:
         default: Cluster node instance volume size
       CustomDnsName:
         default: Existing DNS name (optional)
-      DBEngine:
-        default: The database engine to deploy with
       DBEngineVersion:
         default: DB Engine Major Version
       DBInstanceClass:
@@ -150,8 +151,12 @@ Metadata:
         default: Deployment Automation Git Repository details
       EfsLifecyclePolicyDays:
         default: EFS Lifecycle Policy Days
+      ExternalSubnets:
+        default: External subnets *
       HostedZone:
         default: Route 53 Hosted Zone (optional)
+      InternalSubnets:
+        default: Internal subnets *
       JiraProduct:
         default: Jira Product *
       JvmHeapOverride:
@@ -196,14 +201,12 @@ Metadata:
         default: Tomcat Redirect Port
       TomcatScheme:
         default: Tomcat protocol Scheme
+      VPC:
+        default: VPC *
 Parameters:
-  ASIPrefix:
-    Default: 'ATL-'
-    Description:
-      Each Atlassian Standard Infrastructure (ASI) uses a unique identifier. If you have multiple ASIs within the same AWS region, use this field to specify where to deploy Jira.
-    Type: String
   CatalinaOpts:
-    Description: Pass in any additional JVM options to tune Catalina Tomcat
+    Default: ''
+    Description: Pass in any additional jvm options to tune Catalina
     Type: String
   CidrBlock:
     Default: '0.0.0.0/0'
@@ -213,6 +216,12 @@ Parameters:
     MinLength: 9
     MaxLength: 18
     Type: String
+  CloudWatchIntegration:
+    Default: "Off"
+    Type: String
+    Description: "Enables CloudWatch metrics with or without log gathering. If cost is an issue, you can disable this altogether."
+    AllowedValues: ["Off", "Metrics Only", "Metrics and Logs"]
+    ConstraintDescription: "Must be 'Off', 'Metrics Only', or 'Metrics and Logs'"
   ClusterNodeInstanceType:
     Default: t3.medium
     AllowedValues:
@@ -327,14 +336,6 @@ Parameters:
   CustomDnsName:
     Description: 'Use custom existing DNS name for this Atlassian service. This will take precedence over HostedZone. Please note: you must own the domain and configure it to point at the load balancer.'
     Type: String
-  DBEngine:
-    Default: 'PostgreSQL'
-    Description: 'Database Engine to use for the application. PostgreSQL or Amazon Aurora PostgreSQL'
-    AllowedValues:
-      - 'PostgreSQL'
-      - 'Amazon Aurora PostgreSQL'
-    ConstraintDescription: Must be 'Amazon Aurora PostgreSQL' or 'PostgreSQL'.
-    Type: String
   DBEngineVersion:
     Default: '9.6'
     AllowedPattern: '^\d+\.\d+'
@@ -344,34 +345,18 @@ Parameters:
   DBInstanceClass:
     Default: db.t3.medium
     AllowedValues:
-      - db.m4.large
-      - db.m4.xlarge
-      - db.m4.2xlarge
-      - db.m4.4xlarge
-      - db.m4.10xlarge
-      - db.m4.16xlarge
       - db.m5.large
       - db.m5.xlarge
       - db.m5.2xlarge
       - db.m5.4xlarge
       - db.m5.12xlarge
       - db.m5.24xlarge
-      - db.r4.large
-      - db.r4.xlarge
-      - db.r4.2xlarge
-      - db.r4.4xlarge
-      - db.r4.8xlarge
-      - db.r4.16xlarge
       - db.r5.large
       - db.r5.xlarge
       - db.r5.2xlarge
       - db.r5.4xlarge
       - db.r5.12xlarge
       - db.r5.24xlarge
-      - db.t2.medium
-      - db.t2.large
-      - db.t2.xlarge
-      - db.t2.2xlarge
       - db.t3.medium
       - db.t3.large
       - db.t3.xlarge
@@ -387,11 +372,11 @@ Parameters:
     MaxValue: 30000
     Type: Number
   DBMasterUserPassword:
-    Default: 'ChangeMe'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Description: Password for the master ('postgres') account.
-    MinLength: 8
+    AllowedPattern: >-
+      ^(?=^.{8,255}$)(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])(?!.*[@/"']).*$
+    ConstraintDescription: >-
+      Must be at least 8 characters and include 1 uppercase, 1 lowercase, 1 number, 1 (non / @ " ') symbol
+    Description: Password for the master ('postgres') account. Must be at least 8 characters and include 1 uppercase, 1 lowercase, 1 number, 1 (non / @ " ') symbol
     MaxLength: 128
     NoEcho: true
     Type: String
@@ -420,10 +405,9 @@ Parameters:
     ConstraintDescription: Must be 'true' or 'false'.
     Type: String
   DBPassword:
-    Default: 'cHANGEmE'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Must be at least 8 alphanumeric characters.
-    Description: Database user account password.
+    AllowedPattern: '(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*'
+    ConstraintDescription: Must be at least 8 characters and include 1 uppercase, 1 lowercase, 1 number, 1 (non / @ " ') symbol
+    Description: Password for the master ('postgres') account. Must be at least 8 characters and include 1 uppercase, 1 lowercase, 1 number, 1 (non / @ " ') symbol
     MinLength: 8
     MaxLength: 128
     NoEcho: true
@@ -532,29 +516,36 @@ Parameters:
       - 90
     Description: Number of days before files stored in EFS (shared home) are moved to the Infrequent Access storage class.
     Type: String
+  ExternalSubnets:
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
+    Description: Subnets (two or more) where your user-facing load balancer will be deployed. MUST be within the selected VPC.
+    Type: List<AWS::EC2::Subnet::Id>
   HostedZone:
-    Default: 'wpt.atlassian.com.'
+    Default: ''
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 PRIVATE Hosted Zone in which to create cnames
     Type: String
+  InternalSubnets:
+    ConstraintDescription: Must be a list of two or more Subnet IDs within the selected VPC.
+    Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
+    Type: List<AWS::EC2::Subnet::Id>
   JiraProduct:
-    Default: All
+    Default: all
     Description: The Jira product to install.
     Type: String
     ConstraintDescription: 'Must be "Core", "Software", "ServiceDesk", or "All"'
     AllowedValues:
-      - All
-      - Core
-      - ServiceDesk
-      - Software
+      - all
+      - core
+      - servicedesk
+      - software
   JvmHeapOverride:
     Description: Override the default amount of memory to allocate to the JVM for your instance type - set size in meg or gig e.g. 1024m or 1g
     Type: String
   KeyPairName:
-    Default: ''
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
     Description: The EC2 Key Pair to allow SSH access to the instances
-    Type: String
+    Type: AWS::EC2::KeyPair::KeyName
   KmsKeyArn:
     Default: ''
     AllowedPattern: '^arn:aws:kms:[\w\-]+:\d{12}:key\/[\w\-]+|^(?![\s\S])'
@@ -568,6 +559,7 @@ Parameters:
     ConstraintDescription: Must be 'internet-facing' or 'internal'.
     Description: Controls if the load balancer is assigned a public IP address
     Type: String
+# LocalAnsible is an exit point provided to allow further customization of at Atlassian stack by ansible. See example at https://bitbucket.org/atlassian/atlassian-local-ansible-example
   LocalAnsibleGitRepo:
     Default: ''
     Description: For additional node customization, provide repo location to git clone. This must be in format git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@stash.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
@@ -644,6 +636,10 @@ Parameters:
     Description: "The name of the protocol you wish to have returned, ie 'https' for an SSL Connector. The value of this setting also configures Tomcat's proxy port (443/80) and secure (true/false) settings appropriately."
     Type: String
     AllowedValues: [http, https]
+  VPC:
+    ConstraintDescription: Must be the ID of a VPC.
+    Description: Virtual Private Cloud
+    Type: AWS::EC2::VPC::Id
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
@@ -655,14 +651,18 @@ Conditions:
     !Not [!Equals [!Ref DBMasterUserPassword, '']]
   DoSSL:
     !Not [!Equals [!Ref SSLCertificateARN, '']]
+  EnableCloudWatch:
+    !Not [!Equals [!Ref CloudWatchIntegration, 'Off']]
+  EnableCloudWatchLogs:
+    !Equals [!Ref CloudWatchIntegration, 'Metrics and Logs']
+  GovCloudCondition:
+    !Equals [!Ref 'AWS::Region', 'us-gov-west-1']
   JSDasObr:
-    !Equals [!Ref JiraProduct, 'All']
-  KeyProvided:
-    !Not [!Equals [!Ref KeyPairName, '']]
-  SSLScheme:
-    !Equals [!Ref TomcatScheme, 'https']
+    !Equals [!Ref JiraProduct, 'all']
   OverrideHeap:
     !Not [!Equals [!Ref JvmHeapOverride, '']]
+  SSLScheme:
+    !Equals [!Ref TomcatScheme, 'https']
   UseContextPath:
     !Not [!Equals [!Ref TomcatContextPath, '']]
   UseCustomDnsName:
@@ -924,8 +924,9 @@ Resources:
               Service: 'ec2.amazonaws.com'
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Path: /
   ClusterNodePolicy:
     Type: AWS::IAM::Policy
@@ -951,6 +952,15 @@ Resources:
                 'ec2:ResourceTag/Name': !Sub '${AWS::StackName} sg'
             Effect: Allow
             Resource: !Sub 'arn:aws:ec2::${AWS::AccountId}:security-group/${SecurityGroup}'
+          - Action:
+              - 'route53:ChangeResourceRecordSets'
+            Effect: Allow
+            Resource:
+              - arn:aws:route53:::healthcheck/*
+              - arn:aws:route53:::healthcheck/*
+              - arn:aws:route53:::change/*
+              - arn:aws:route53:::hostedzone/*
+              - arn:aws:route53:::delegationset/*
       Roles: [!Ref ClusterNodeRole]
   ClusterNodeAnsibleCustomPolicy:
     Type: AWS::IAM::Policy
@@ -983,9 +993,7 @@ Resources:
       MaxSize: !Ref ClusterNodeCount
       MinSize: !Ref ClusterNodeCount
       TargetGroupARNs: [!Ref MainTargetGroup]
-      VPCZoneIdentifier: !Split
-        - ","
-        - Fn::ImportValue: !Sub "${ASIPrefix}PriNets"
+      VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} Jira Node"
@@ -1018,6 +1026,8 @@ Resources:
               content: !Sub
                 - |
                   ATL_APP_DATA_MOUNT_ENABLED=false
+                  ATL_AWS_ENABLE_CLOUDWATCH=${EnableCW}
+                  ATL_AWS_ENABLE_CLOUDWATCH_LOGS=${EnableCWLogs}
                   ATL_AWS_STACK_NAME=${AWS::StackName}
                   ATL_CATALINA_OPTS="${CatalinaOpts} ${MailOpts}"
                   ATL_DB_HOST=${DBEndpointAddress}
@@ -1090,7 +1100,9 @@ Resources:
                   DeployRepositoryBranch: !Select [1, !Split [";", !Ref DeployFromAnsible]]
                   DeployRepositoryKeyName: !Ref LocalAnsibleGitSshKeyName
                   DeployRepositoryPlaybook: !Select [2, !Split [";", !Ref DeployFromAnsible]]
-                  JiraProduct: !If [JSDasObr, 'Software', !Ref JiraProduct]
+                  EnableCW: !If [EnableCloudWatch, true, false]
+                  EnableCWLogs: !If [EnableCloudWatchLogs, true, false]
+                  JiraProduct: !If [JSDasObr, 'software', !Ref JiraProduct]
                   JSDasObr: !If [JSDasObr, "true", "false"]
                   MailOpts: !If [DisableMail, '-Datlassian.mail.senddisabled=true -Datlassian.mail.fetchdisabled=true -Datlassian.mail.popdisabled=true -Dconfluence.disable.mailpolling=true', '']
                   TomcatProxyPort: !If [SSLScheme, 443, 80]
@@ -1209,10 +1221,7 @@ Resources:
             Encrypted: true
             VolumeSize: !Ref ClusterNodeVolumeSize
             VolumeType: gp2
-      KeyName: !If
-        - KeyProvided
-        - !Ref KeyPairName
-        - Fn::ImportValue: !Sub "${ASIPrefix}DefaultKey"
+      KeyName: !Ref KeyPairName
       IamInstanceProfile: !Ref ClusterNodeInstanceProfile
       ImageId:
         !FindInMap
@@ -1254,21 +1263,13 @@ Resources:
     Properties:
       FileSystemId: !Ref ElasticFileSystem
       SecurityGroups: [!Ref SecurityGroup]
-      SubnetId: !Select
-        - 0
-        - !Split
-          - ","
-          - Fn::ImportValue: !Sub "${ASIPrefix}PriNets"
+      SubnetId: !Select [0, !Ref InternalSubnets]
   EFSMountAz2:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref ElasticFileSystem
       SecurityGroups: [!Ref SecurityGroup]
-      SubnetId: !Select
-        - 1
-        - !Split
-          - ","
-          - Fn::ImportValue: !Sub "${ASIPrefix}PriNets"
+      SubnetId: !Select [1, !Ref InternalSubnets]
   EFSCname:
     Type: AWS::Route53::RecordSet
     Condition: UseHostedZone
@@ -1313,9 +1314,7 @@ Resources:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: DBSubnetGroup
-      SubnetIds: !Split
-        - ","
-        - Fn::ImportValue: !Sub "${ASIPrefix}PriNets"
+      SubnetIds: !Ref InternalSubnets
   DBCname:
     Condition: UseHostedZone
     Type: AWS::Route53::RecordSet
@@ -1359,17 +1358,9 @@ Resources:
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
           Value: '300'
-        - Key: access_logs.s3.enabled
-          Value: 'true'
-        - Key: access_logs.s3.bucket
-          Value: !Sub "itops-logs-${AWS::Region}"
-        - Key: access_logs.s3.prefix
-          Value: !Sub "${AWS::StackName}"
       Scheme: !Ref LoadBalancerScheme
       SecurityGroups: [!Ref SecurityGroup]
-      Subnets: !Split
-        - ","
-        - Fn::ImportValue: !Sub "${ASIPrefix}PubNets"
+      Subnets: !Ref ExternalSubnets
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-LoadBalancerV2"
@@ -1412,8 +1403,7 @@ Resources:
       Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancerV2.LoadBalancerName]]]]
       Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
-      VpcId:
-        Fn::ImportValue: !Sub "${ASIPrefix}VPCID"
+      VpcId: !Ref VPC
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 29
       HealthyThresholdCount: 2
@@ -1423,6 +1413,8 @@ Resources:
       HealthCheckPort: !Ref TomcatDefaultConnectorPort
       HealthCheckProtocol: HTTP
       TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
         - Key: stickiness.enabled
           Value: 'true'
         - Key: stickiness.type
@@ -1456,8 +1448,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName} sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${ASIPrefix}VPCID"
+      VpcId: !Ref VPC
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -1466,7 +1457,52 @@ Resources:
       FromPort: -1
       ToPort: -1
       SourceSecurityGroupId: !Ref SecurityGroup
+  # Optional: Cloudwatch dashboard to be created when CloudWatch is enabled
+  CloudWatchDashboard:
+    DependsOn:
+      - DB
+    Condition: EnableCloudWatch
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - https://aws-quickstart.${QSS3Region}.amazonaws.com/quickstart-atlassian-jira/submodules/quickstart-atlassian-services/templates/quickstart-cloudwatch-dashboard.yaml
+        - QSS3Region: !If ["GovCloudCondition", "s3-us-gov-west-1", "s3"]
+      Parameters:
+        ProductStackName: !Sub "${AWS::StackName}"
+        ProductFamilyName: !Sub
+          - "jira-${JiraProduct}"
+          - JiraProduct: !If [JSDasObr, 'software', !Ref JiraProduct]
+        AsgToMonitor: !Ref ClusterNodeGroup
+        DatabaseIdentifier: !Ref DB
 Outputs:
+  CloudWatchDashboardURL:
+    Description: CloudWatch monitoring dashboard URL
+    Value: !GetAtt CloudWatchDashboard.Outputs.Dashboard
+    Condition: EnableCloudWatch
+  DBEndpointAddress:
+    Description: The Database Connection String
+    Value: !GetAtt DB.Endpoint.Address
+  DBReplicaEndpointAddress:
+    Condition: DoCreateReadReplica
+    Description: The endpoint for the read replica
+    Value: !If
+      - UseHostedZone
+      - !Ref DBReadReplicaCname
+      - !GetAtt DBReplica.Endpoint.Address
+  EFSCname:
+    Description: The cname of the EFS
+    Value: !If
+      - UseHostedZone
+      - !Ref EFSCname
+      - !Ref ElasticFileSystem
+    Export:
+      Name: !Sub "${AWS::StackName}-EFSCname"
+  LoadBalancerURL:
+    Description: The Load Balancer URL
+    Value: !Sub
+      - "${HTTP}://${LoadBalancerDNSName}"
+      - HTTP: !If [DoSSL, 'https', 'http']
+        LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
   ServiceURL:
     Description: The URL to access this Atlassian service
     Value: !If
@@ -1488,32 +1524,8 @@ Outputs:
           - HTTP: !If [SSLScheme, 'https', 'http']
             LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
             ContextPath: !Ref TomcatContextPath
-  LoadBalancerURL:
-    Description: The Load Balancer URL
-    Value: !Sub
-      - "${HTTP}://${LoadBalancerDNSName}"
-      - HTTP: !If [DoSSL, 'https', 'http']
-        LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
   SGname:
     Description: The name of the SecurityGroup
     Value: !Ref SecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-SGname"
-  DBEndpointAddress:
-    Description: The Database Connection String
-    Value: !GetAtt DB.Endpoint.Address
-  DBReplicaEndpointAddress:
-    Condition: DoCreateReadReplica
-    Description: The endpoint for the read replica
-    Value: !If
-      - UseHostedZone
-      - !Ref DBReadReplicaCname
-      - !GetAtt DBReplica.Endpoint.Address
-  EFSCname:
-    Description: The cname of the EFS
-    Value: !If
-      - UseHostedZone
-      - !Ref EFSCname
-      - !Ref ElasticFileSystem
-    Export:
-      Name: !Sub "${AWS::StackName}-EFSCname"
