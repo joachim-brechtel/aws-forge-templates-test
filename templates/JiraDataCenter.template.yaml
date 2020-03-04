@@ -552,7 +552,7 @@ Parameters:
     Description: Provide the KMS key ARN for a pre-generated encryption key. If this is provided, RDS and EFS will be encrypted at-rest using this key
     Type: String
   LoadBalancerScheme:
-    Default: internal
+    Default: internet-facing
     AllowedValues:
       - internet-facing
       - internal
