@@ -223,7 +223,7 @@ Parameters:
     AllowedValues: ["Off", "Metrics Only", "Metrics and Logs"]
     ConstraintDescription: "Must be 'Off', 'Metrics Only', or 'Metrics and Logs'"
   ClusterNodeInstanceType:
-    Default: t3.medium
+    Default: c5.xlarge
     AllowedValues:
       - c4.xlarge
       - c4.2xlarge
@@ -338,12 +338,15 @@ Parameters:
     Type: String
   DBEngineVersion:
     Default: '9.6'
-    AllowedPattern: '^\d+\.\d+'
+    AllowedValues:
+      - 9.6
+      - 10
+      - 11
     ConstraintDescription: "Must be a valid DB engine major version number, for example 9.6 or 10.10. Find valid versions at https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts.General.DBVersions"
     Description: The DB Engine major version to use
     Type: String
   DBInstanceClass:
-    Default: db.t3.medium
+    Default: db.m5.large
     AllowedValues:
       - db.m5.large
       - db.m5.xlarge
