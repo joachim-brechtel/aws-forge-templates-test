@@ -1520,7 +1520,6 @@ Resources:
           - "jira-${JiraProduct}"
           - JiraProduct: !If [JSDasObr, 'software', !Ref JiraProduct]
         AsgToMonitor: !Ref ClusterNodeGroup
-        DatabaseIdentifier: !Ref DB
 Outputs:
   CloudWatchDashboardURL:
     Description: CloudWatch monitoring dashboard URL
