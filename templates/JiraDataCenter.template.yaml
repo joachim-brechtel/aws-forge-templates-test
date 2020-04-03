@@ -339,9 +339,9 @@ Parameters:
   DBEngineVersion:
     Default: '9.6'
     AllowedValues:
-      - 9.6
-      - 10
-      - 11
+      - '9.6'
+      - '10'
+      - '11'
     ConstraintDescription: "Must be a valid DB engine major version number, for example 9.6 or 10.10. Find valid versions at https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts.General.DBVersions"
     Description: The DB Engine major version to use
     Type: String
@@ -1462,8 +1462,6 @@ Resources:
       SourceSecurityGroupId: !Ref SecurityGroup
   # Optional: Cloudwatch dashboard to be created when CloudWatch is enabled
   CloudWatchDashboard:
-    DependsOn:
-      - DB
     Condition: EnableCloudWatch
     Type: AWS::CloudFormation::Stack
     Properties:
