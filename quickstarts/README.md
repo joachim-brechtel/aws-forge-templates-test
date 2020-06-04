@@ -1,3 +1,19 @@
+# :warning: Production usage warning
+
+- **This repo is not officially supported by Atlassian** 
+- **This repo should no longer be used as a source for production based AWS QuickStart deployments**
+
+The AWS QuickStart templates have been moved to the [Atlassian org on GitHub](https://github.com/atlassian/). 
+
+Please refer to the respective product repos and readme's on GitHub for details on how to utilise the templates, and also for raising issues.
+
+Respective AWS QuickStart templates on GitHub below:
+
+ * [quickstart-atlassian-jira](https://github.com/atlassian/quickstart-atlassian-jira)
+ * [quickstart-atlassian-confluence](https://github.com/atlassian/quickstart-atlassian-confluence)
+ * [quickstart-atlassian-bitbucket](https://github.com/atlassian/quickstart-atlassian-bitbucket)
+ * [quickstart-atlassian-services](https://github.com/atlassian/quickstart-atlassian-services)
+
 ## Atlassian AWS CloudFormation Quickstart templates
 
 This directory contains the following AWS CloudFormation Quickstart templates:
