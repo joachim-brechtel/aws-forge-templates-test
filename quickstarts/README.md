@@ -1,11 +1,11 @@
 # :warning: Production usage warning
 
-- **This repo is not officially supported by Atlassian** 
-- **This repo should no longer be used as a source for production based AWS QuickStart deployments**
+- **These resources are no longer officially supported by Atlassian** 
+- **These resources should not be used as a source for production based AWS QuickStart deployments**
 
-The AWS QuickStart templates have been moved to the [Atlassian org on GitHub](https://github.com/atlassian/). 
+For Atlassian supported AWS QuickStarts please use the templates which have been moved to the [Atlassian org on GitHub](https://github.com/atlassian/). 
 
-Please refer to the respective product repos and readme's on GitHub for details on how to utilise the templates, and also for raising issues.
+Please refer to the respective product repos and readme's at [GitHub](https://github.com/atlassian/) for details on usage, and for raising issues.
 
 Respective AWS QuickStart templates on GitHub below:
 
