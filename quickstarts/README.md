@@ -4,10 +4,10 @@
 
 The AWS QuickStart templates can all be found at the GitHub locations below:
 
- * [quickstart-atlassian-jira](https://github.com/atlassian/quickstart-atlassian-jira)
- * [quickstart-atlassian-confluence](https://github.com/atlassian/quickstart-atlassian-confluence)
- * [quickstart-atlassian-bitbucket](https://github.com/atlassian/quickstart-atlassian-bitbucket)
- * [quickstart-atlassian-services](https://github.com/atlassian/quickstart-atlassian-services)
+ * [quickstart-atlassian-jira](https://github.com/aws-quickstart/quickstart-atlassian-jira)
+ * [quickstart-atlassian-confluence](https://github.com/aws-quickstart/quickstart-atlassian-confluence)
+ * [quickstart-atlassian-bitbucket](https://github.com/aws-quickstart/quickstart-atlassian-bitbucket)
+ * [quickstart-atlassian-services](https://github.com/aws-quickstart/quickstart-atlassian-services)
 
 ## Supplementary templates
 
