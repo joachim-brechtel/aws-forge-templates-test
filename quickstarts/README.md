@@ -11,7 +11,7 @@ The AWS QuickStart templates can all be found at the GitHub locations below:
 
 ## Supplementary templates
 
-This directory contains the following AWS CloudFormation Quickstart templates:
+`Backmack` and `Forge` CloudFormation templates:
 
 | Template Name | Purpose |
 |---------------|-------------|
