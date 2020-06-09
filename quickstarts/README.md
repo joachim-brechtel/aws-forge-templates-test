@@ -1,4 +1,6 @@
-# Atlassian AWS CloudFormation QuickStart templates
+# Atlassian AWS CloudFormation templates 
+
+## QuickStart templates
 
 The AWS QuickStart templates can all be found at the GitHub locations below:
 
@@ -7,7 +9,7 @@ The AWS QuickStart templates can all be found at the GitHub locations below:
  * [quickstart-atlassian-bitbucket](https://github.com/atlassian/quickstart-atlassian-bitbucket)
  * [quickstart-atlassian-services](https://github.com/atlassian/quickstart-atlassian-services)
 
-# Atlassian AWS CloudFormation supplementary templates
+## Supplementary templates
 
 This directory contains the following AWS CloudFormation Quickstart templates:
 
