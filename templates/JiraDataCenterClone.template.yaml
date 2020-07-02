@@ -1042,7 +1042,7 @@ Resources:
                   ATL_TOMCAT_SECURE=${TomcatSecure}
                 - AtlJvmHeap: !If [OverrideHeap, !Ref 'JvmHeapOverride', !FindInMap [AWSInstanceType2Arch, !Ref         ClusterNodeInstanceType, Jvmheap]]
                   AtlProduct: jira
-                  AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancerV2.DNSName]]
+                  AtlProxyName: !If [UseCustomDnsName, !Ref CustomDnsName, !If [UseHostedZone, !Ref LoadBalancerCname, !GetAtt LoadBalancer.DNSName]]
                   AtlSslProxy: !If [SSLScheme, "true", "false"]
                   DBEndpointAddress: !GetAtt DB.Endpoint.Address
                   DBEndpointPort: !GetAtt DB.Endpoint.Port
@@ -1399,7 +1399,7 @@ Resources:
       ResourceRecords:
         - !GetAtt DB.Endpoint.Address
 # Loadbalancer
-  LoadBalancerV2:
+  LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       LoadBalancerAttributes:
@@ -1410,7 +1410,7 @@ Resources:
       Subnets: !Ref ExternalSubnets
       Tags:
         - Key: Name
-          Value: !Sub "${AWS::StackName}-LoadBalancerV2"
+          Value: !Sub "${AWS::StackName}-LoadBalancer"
         - Key: Cluster
           Value: !Ref AWS::StackName
         - Key: service_name
@@ -1459,11 +1459,11 @@ Resources:
       Type: CNAME
       TTL: '60'
       ResourceRecords:
-        - !GetAtt LoadBalancerV2.DNSName
+        - !GetAtt LoadBalancer.DNSName
   MainTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancerV2.LoadBalancerName]]]]
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Select [2, !Split ['-', !GetAtt LoadBalancer.LoadBalancerName]]]]
       Port: !Ref TomcatDefaultConnectorPort
       Protocol: HTTP
       VpcId: !Ref VPC
@@ -1551,7 +1551,7 @@ Outputs:
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [DoSSL, 'https', 'http']
-        LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
+        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
   NFSR53name:
     Description: The DR NFS name
     Value: !If [ UseHostedZone, !Join ['.', [!Ref 'AWS::StackName', 'nfs', !Ref 'HostedZone']], '']
@@ -1574,7 +1574,7 @@ Outputs:
         - !Sub
           - "${HTTP}://${LoadBalancerDNSName}${ContextPath}"
           - HTTP: !If [SSLScheme, 'https', 'http']
-            LoadBalancerDNSName: !GetAtt LoadBalancerV2.DNSName
+            LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
             ContextPath: !Ref TomcatContextPath
   SGname:
     Description: The name of the SecurityGroup
