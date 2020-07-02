@@ -15,6 +15,7 @@ Metadata:
         - Label:
             default: EC2 Config
           Parameters:
+            - LatestAmiId
             - KeyPairName
             - NodeInstanceType
             - NodeVolumeSize
@@ -22,6 +23,7 @@ Metadata:
             default: DNS Config
           Parameters:
             - HostedZone
+            - SSLCertificateARN
         - Label:
             default: Forge config
           Parameters:
@@ -56,6 +58,10 @@ Metadata:
           default: IP range permitted to access forge
         HostedZone:
           default: Route 53 Hosted Zone
+        SSLCertificateARN:
+          default: ARN of the certificate
+        LatestAmiId:
+          default: Lookup for latest AMI from public Systems Manager Parameter
         KeyPairName:
           default: Key Pair
         LocalAnsibleGitRepo:
@@ -120,6 +126,12 @@ Parameters:
     ConstraintDescription: Must be the name of an existing Route53 Hosted Zone.
     Description: The domain name of the Route53 Hosted Zone in which to create cnames
     Type: String
+  SSLCertificateARN:
+    Default: ''
+    Description: "Amazon Resource Name (ARN) of your SSL certificate. Supplying this will automatically enable HTTPS on the product and load balancer, configured to use the corresponding certificate. If you want to use your own certificate that you generated outside of Amazon, you need to first import it to AWS Certificate Manager. After a successful import, you'll receive the ARN. If you want to create a certificate with AWS Certificate Manager (ACM certificate), you will receive the ARN after it's successfully created."
+    MinLength: 0
+    MaxLength: 90
+    Type: String
   InternalSubnet:
     ConstraintDescription: Select one Subnet ID within the selected VPC
     Description: Subnet where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnet again here if you wish to deploy the whole stack into the same subnet.
@@ -136,6 +148,10 @@ Parameters:
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
     Type: AWS::EC2::KeyPair::KeyName
+  LatestAmiId:
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: 'The key to use for the latest AMI lookup from AWS public Systems Manager'
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
   LocalAnsibleGitRepo:
     Default: ''
     Description: For additional node customization, provide ansible repo location to git clone. This may be in either http or ssh format, but it must be in the correct format for your git hosting provider (as it is passed directly to a 'git clone' command), eg git@bitbucket.org:atlassian/atlassian-local-ansible-example.git if using Bitbucket Cloud, or ssh://git@bitbucketserver.example.com:7997/my-local-ansible.git (ie protocol included) if using Bitbucket Server.
@@ -241,9 +257,11 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Action:
+                - acm:ListCertificates
                 - autoscaling:*
                 - cloudformation:*
                 - cloudwatch:DeleteAlarms
+                - cloudwatch:GetMetricStatistics
                 - cloudwatch:PutMetricAlarm
                 - ec2:*
                 - elasticfilesystem:CreateFileSystem
@@ -253,7 +271,11 @@ Resources:
                 - elasticfilesystem:DeleteMountTarget
                 - elasticfilesystem:DeleteTags
                 - elasticfilesystem:DescribeFileSystems
+                - elasticfilesystem:DescribeFileSystemPolicy
                 - elasticfilesystem:DescribeMountTargets
+                - elasticfilesystem:DescribeLifecycleConfiguration
+                - elasticfilesystem:TagResource
+                - elasticfilesystem:ListTagsForResource
                 - elasticloadbalancing:*
                 - iam:AddRoleToInstanceProfile
                 - iam:AttachRolePolicy
@@ -264,16 +286,24 @@ Resources:
                 - iam:DeleteRole
                 - iam:DeleteRolePolicy
                 - iam:DetachRolePolicy
+                - iam:GetRole
+                - iam:GetRolePolicy
                 - iam:PassRole
                 - iam:PutRolePolicy
                 - iam:RemoveRoleFromInstanceProfile
+                - iam:TagRole
+                - iam:UpdateAssumeRolePolicy
                 - kms:CreateAlias
                 - kms:CreateGrant
                 - kms:CreateKey
+                - kms:Decrypt
                 - kms:DeleteAlias
                 - kms:DescribeKey
+                - kms:Encrypt
+                - kms:GenerateDataKey*
                 - kms:ListAliases
                 - kms:PutKeyPolicy
+                - kms:ReEncrypt*
                 - kms:ScheduleKeyDeletion
                 - kms:TagResource
                 - kms:UpdateKey
@@ -288,10 +318,16 @@ Resources:
                 - rds:ModifyDBInstance
                 - rds:ModifyDBSubnetGroup
                 - rds:RestoreDBInstanceFromDBSnapshot
+                - rds:AddTagsToResource
                 - route53:ChangeResourceRecordSets
                 - route53:GetChange
                 - route53:ListHostedZones
                 - route53:ListResourceRecordSets
+                - s3:GetObject
+                - s3:ListBucket
+                - sns:CreateTopic
+                - sns:ListTopics
+                - sns:Publish
                 - ssm:ListCommands
                 - ssm:PutParameter
                 - ssm:SendCommand
@@ -452,23 +488,32 @@ Resources:
               mode: "000700"
               owner: root
               group: root
-            /etc/init/forge.conf:
+            /etc/systemd/system/multi-user.target.wants/forge.service:
               content: !Sub
                 - |
-                  #!upstart
-                  description "Atlassian Cloudformation Forge"
+                  [Unit]
+                  Description=Atlassian CloudFormation Forge
+                  After=network-online.target
 
-                  start on started mountall
-                  stop on shutdown
+                  [Service]
+                  User=forge
+                  Group=forge
 
-                  # Automatically Respawn:
-                  respawn
-                  respawn limit 3 5
+                  Environment=LC_ALL=en_US.UTF-8
+                  Environment=LANG=en_US.UTF-8
+                  Environment=REGION=${region}
+                  ${noSaml}
 
-                  script
-                    exec sudo -u forge /bin/bash -c "cd /home/forge/atl-cfn-forge && export LC_ALL=en_US.UTF-8 && export LANG=en_US.UTF-8 && export REGION=${region} ${noSaml} && /usr/local/bin/pipenv install --skip-lock && /usr/local/bin/pipenv run forge-gunicorn" >> /var/log/forge.log 2>&1
-                  end script
-                - noSaml: !If [NoSamlMetadata, "&& export NO_SAML=1", '']
+                  StandardOutput=file:/var/log/forge.log
+                  StandardError=file:/var/log/forge.log
+                  WorkingDirectory=/home/forge/atl-cfn-forge
+                  ExecStartPre=/usr/local/bin/pipenv install --skip-lock
+                  ExecStart=/usr/local/bin/pipenv run forge-gunicorn
+                  Restart=always
+
+                  [Install]
+                  WantedBy=multi-user.target
+                - noSaml: !If [NoSamlMetadata, "&& Environment=NO_SAML=1", '']
                   region: !Ref AWS::Region
               mode: "000600"
               owner: root
@@ -520,7 +565,7 @@ Resources:
             VolumeSize: !Ref NodeVolumeSize
             DeleteOnTermination: true
       IamInstanceProfile: !Ref ForgeNodeInstanceProfile
-      ImageId: !FindInMap [RegionAmiMap, !Ref "AWS::Region", "ami"]
+      ImageId: !Ref LatestAmiId
       InstanceType: !Ref NodeInstanceType
       KeyName: !Ref KeyPairName
       SecurityGroups: [!Ref ForgeNodeSecurityGroup]
@@ -533,7 +578,7 @@ Resources:
   ForgeNodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow HTTP, SSH and ICMP to Forge node
+      GroupDescription: Allow HTTPS, SSH and ICMP to Forge node
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -542,8 +587,8 @@ Resources:
           ToPort: 22
         - IpProtocol: tcp
           CidrIp: !Ref CidrBlock
-          FromPort: 80
-          ToPort: 80
+          FromPort: 443
+          ToPort: 443
         - IpProtocol: tcp
           FromPort: 8000
           ToPort: 8000
@@ -569,10 +614,11 @@ Resources:
     Properties:
       CrossZone: true
       Listeners:
-        - LoadBalancerPort: '80'
-          Protocol: TCP
+        - LoadBalancerPort: '443'
+          Protocol: HTTPS
           InstancePort: '8000'
-          InstanceProtocol: TCP
+          InstanceProtocol: HTTP
+          SSLCertificateId: !Ref SSLCertificateARN
       HealthCheck:
         Target: 'HTTP:8000/status'
         Timeout: '29'
@@ -593,7 +639,7 @@ Resources:
       Comment: Route53 cname for the ELB
       Name: !Join ['.', [!Ref "AWS::StackName", !Ref 'HostedZone']]
       Type: CNAME
-      TTL: '900'
+      TTL: 900
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
 Outputs:
@@ -602,8 +648,8 @@ Outputs:
     Value: !If
       - UseHostedZone
       - !Sub
-        - "http://${LBCName}"
+        - "https://${LBCName}"
         - LBCName: !Ref LoadBalancerCname
       - !Sub
-        - "http://${LoadBalancerDNSName}"
+        - "https://${LoadBalancerDNSName}"
         - LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
