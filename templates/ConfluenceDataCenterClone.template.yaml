@@ -218,7 +218,6 @@ Parameters:
   ClusterNodeInstanceType:
     Default: t3.medium
     AllowedValues:
-      - c5.large
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
@@ -556,7 +555,6 @@ Parameters:
   SynchronyNodeInstanceType:
     Default: t3.medium
     AllowedValues:
-      - c5.large
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
@@ -736,9 +734,6 @@ Conditions:
     !Equals [!Ref CollaborativeEditingMode, 'synchrony-separate-nodes']
 Mappings:
   AWSInstanceType2Arch:
-    c5.large:
-      Arch: HVM64
-      Jvmheap: 2048m
     c5.xlarge:
       Arch: HVM64
       Jvmheap: 5120m
