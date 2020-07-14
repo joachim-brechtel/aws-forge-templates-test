@@ -229,6 +229,12 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
       - c5d.large
       - c5d.xlarge
       - c5d.2xlarge
@@ -566,6 +572,12 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
       - c5d.large
       - c5d.xlarge
       - c5d.2xlarge
@@ -762,6 +774,24 @@ Mappings:
       Arch: HVM64
       Jvmheap: 12288m
     c5.18xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5n.large:
+      Arch: HVM64
+      Jvmheap: 2048m
+    c5n.xlarge:
+      Arch: HVM64
+      Jvmheap: 5120m
+    c5n.2xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5n.4xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5n.9xlarge:
+      Arch: HVM64
+      Jvmheap: 12288m
+    c5n.18xlarge:
       Arch: HVM64
       Jvmheap: 12288m
     c5d.large:
