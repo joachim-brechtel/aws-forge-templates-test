@@ -541,37 +541,41 @@ Conditions:
 Mappings:
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-0c3fd0f5d33134a76
+      HVM64: ami-00d101850e971728d
     ap-northeast-2:
-      HVM64: ami-095ca789e0549777d
+      HVM64: ami-08ab3f7e72215fe91
     ap-south-1:
-      HVM64: ami-0d2692b6acea72ee6
+      HVM64: ami-00e782930f1c3dbc7
     ap-southeast-1:
-      HVM64: ami-01f7527546b557442
+      HVM64: ami-0b5a47f8865280111
     ap-southeast-2:
-      HVM64: ami-0dc96254d5535925f
+      HVM64: ami-0fb7513bcdc525c3b
     ca-central-1:
-      HVM64: ami-0d4ae09ec9361d8ac
+      HVM64: ami-08a9b721ecc5b0a53
     eu-central-1:
-      HVM64: ami-0cc293023f983ed53
+      HVM64: ami-0ebe657bc328d4e82
     eu-north-1:
-      HVM64: ami-3f36be41
+      HVM64: ami-1fb13961
     eu-west-1:
-      HVM64: ami-0bbc25e23a7640b9b
+      HVM64: ami-030dbca661d402413
     eu-west-2:
-      HVM64: ami-0d8e27447ec2c8410
+      HVM64: ami-0009a33f033d8b7b6
     eu-west-3:
-      HVM64: ami-0adcddd3324248c4c
+      HVM64: ami-0ebb3a801d5fb8b9b
     sa-east-1:
-      HVM64: ami-058943e7d9b9cabfb
+      HVM64: ami-058141e091292ecf0
     us-east-1:
-      HVM64: ami-0b898040803850657
+      HVM64: ami-0c6b1d09930fac512
     us-east-2:
-      HVM64: ami-0d8f6eb4f641ef691
+      HVM64: ami-0ebbf2179e615c338
     us-west-1:
-      HVM64: ami-056ee704806822732
+      HVM64: ami-015954d5e5548d13b
     us-west-2:
-      HVM64: ami-082b5a644766e0e6f
+      HVM64: ami-0cb72367e98845d43
+    us-gov-west-1:
+      HVM64: ami-e9a9d388
+    us-gov-east-1:
+      HVM64: ami-a2d938d3
 
 Resources:
   BitbucketFileServerRole:
@@ -728,7 +732,7 @@ Resources:
                   - !Sub ["ATL_ELASTICSEARCH_HOST=${ESEndpoint}", ESEndpoint: !GetAtt Elasticsearch.DomainEndpoint]
                   - !Sub ["ATL_ELASTICSEARCH_ENDPOINT=http://${ESEndpoint}", ESEndpoint: !GetAtt Elasticsearch.DomainEndpoint]
                   - !Sub ["ATL_BITBUCKET_PROPERTIES=\"${BitbucketProperties}\"", BitbucketProperties: !Join ["\\\n", !Ref BitbucketProperties]]
-                  - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]                  
+                  - !If [DoSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
 
             /opt/atlassian/bin/clone_deployment_repo:
               content: !Sub |

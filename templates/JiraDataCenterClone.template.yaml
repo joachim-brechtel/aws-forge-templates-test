@@ -830,37 +830,41 @@ Mappings:
       Jvmheap: 12288m
   AWSRegion2AMI:
     ap-northeast-1:
-      AMI: ami-0af1df87db7b650f4
+      HVM64: ami-00d101850e971728d
     ap-northeast-2:
-      AMI:  ami-0a93a08544874b3b7
+      HVM64: ami-08ab3f7e72215fe91
     ap-south-1:
-      AMI:  ami-0d9462a653c34dab7
+      HVM64: ami-00e782930f1c3dbc7
     ap-southeast-1:
-      AMI:  ami-0f02b24005e4aec36
+      HVM64: ami-0b5a47f8865280111
     ap-southeast-2:
-      AMI:  ami-0f767afb799f45102
+      HVM64: ami-0fb7513bcdc525c3b
     ca-central-1:
-      AMI:  ami-00db12b46ef5ebc36
+      HVM64: ami-08a9b721ecc5b0a53
     eu-central-1:
-      AMI:  ami-0df0e7600ad0913a9
+      HVM64: ami-0ebe657bc328d4e82
     eu-north-1:
-      AMI:  ami-074a0e4318181e9d9
+      HVM64: ami-1fb13961
     eu-west-1:
-      AMI:  ami-099a8245f5daa82bf
+      HVM64: ami-030dbca661d402413
     eu-west-2:
-      AMI:  ami-0389b2a3c4948b1a0
+      HVM64: ami-0009a33f033d8b7b6
     eu-west-3:
-      AMI:  ami-0fd9bce3a3384b635
+      HVM64: ami-0ebb3a801d5fb8b9b
     sa-east-1:
-      AMI:  ami-080a223be3de0c3b8
+      HVM64: ami-058141e091292ecf0
     us-east-1:
-      AMI:  ami-0a887e401f7654935
+      HVM64: ami-0c6b1d09930fac512
     us-east-2:
-      AMI:  ami-0e38b48473ea57778
+      HVM64: ami-0ebbf2179e615c338
     us-west-1:
-      AMI:  ami-01c94064639c71719
+      HVM64: ami-015954d5e5548d13b
     us-west-2:
-      AMI:  ami-0e8c04af2729ff1bb
+      HVM64: ami-0cb72367e98845d43
+    us-gov-west-1:
+      HVM64: ami-e9a9d388
+    us-gov-east-1:
+      HVM64: ami-a2d938d3
 Resources:
   ClusterNodeRole:
     Type: AWS::IAM::Role
