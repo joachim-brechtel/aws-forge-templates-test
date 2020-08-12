@@ -332,42 +332,51 @@ Mappings:
     cc2.8xlarge:
       Arch: HVM64
   AWSRegionArch2AMI:
-    ap-northeast-1:
-      HVM64: ami-00d101850e971728d
-    ap-northeast-2:
-      HVM64: ami-08ab3f7e72215fe91
-    ap-south-1:
-      HVM64: ami-00e782930f1c3dbc7
-    ap-southeast-1:
-      HVM64: ami-0b5a47f8865280111
-    ap-southeast-2:
-      HVM64: ami-0fb7513bcdc525c3b
-    ca-central-1:
-      HVM64: ami-08a9b721ecc5b0a53
-    eu-central-1:
-      HVM64: ami-0ebe657bc328d4e82
-    eu-north-1:
-      HVM64: ami-1fb13961
-    eu-west-1:
-      HVM64: ami-030dbca661d402413
-    eu-west-2:
-      HVM64: ami-0009a33f033d8b7b6
-    eu-west-3:
-      HVM64: ami-0ebb3a801d5fb8b9b
-    sa-east-1:
-      HVM64: ami-058141e091292ecf0
     us-east-1:
-      HVM64: ami-0c6b1d09930fac512
+      HVM64: ami-071cd8a2fab6949ca
+      HVMG2: NOT_SUPPORTED
+    ap-south-1:
+      HVM64: ami-0930527f394f1bd33
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-012bb64140c351f86
+      HVMG2: NOT_SUPPORTED
+    eu-west-2:
+      HVM64: ami-0773a7950c78a347a
+      HVMG2: NOT_SUPPORTED
+    eu-west-1:
+      HVM64: ami-065a73de325151c55
+      HVMG2: NOT_SUPPORTED
+    ap-northeast-2:
+      HVM64: ami-0bc205f15452957ed
+      HVMG2: NOT_SUPPORTED
+    ap-northeast-1:
+      HVM64: ami-0ea657859df27b551
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      HVM64: ami-01bbd4ef0401c51da
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-0e4d655684a6c6615
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      HVM64: ami-09f66fb36dbed1d66
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-2:
+      HVM64: ami-0a26861ab0371c77e
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      HVM64: ami-0a81ee8bccf4cfa71
+      HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0ebbf2179e615c338
+      HVM64: ami-069500b0ef2c2db3a
+      HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-015954d5e5548d13b
+      HVM64: ami-050d3992bc96ab769
+      HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0cb72367e98845d43
-    us-gov-west-1:
-      HVM64: ami-e9a9d388
-    us-gov-east-1:
-      HVM64: ami-a2d938d3
+      HVM64: ami-06a03bd30a0d6ea0c
+      HVMG2: NOT_SUPPORTED
 Resources:
   BitbucketBackupRole:
     Type: AWS::IAM::Role

@@ -889,41 +889,53 @@ Mappings:
       Jvmheap: 12288m
   AWSRegionArch2AMI:
     ap-northeast-1:
-      HVM64: ami-00d101850e971728d
+      HVM64: ami-0f6c70fbd1b8730f0
+      HVMG2: NOT_SUPPORTED
     ap-northeast-2:
-      HVM64: ami-08ab3f7e72215fe91
+      HVM64: ami-011996fd2561387d4
+      HVMG2: NOT_SUPPORTED
     ap-south-1:
-      HVM64: ami-00e782930f1c3dbc7
+      HVM64: ami-0e781a9c824410717
+      HVMG2: NOT_SUPPORTED
     ap-southeast-1:
-      HVM64: ami-0b5a47f8865280111
+      HVM64: ami-0733aaac0eeef151a
+      HVMG2: NOT_SUPPORTED
     ap-southeast-2:
-      HVM64: ami-0fb7513bcdc525c3b
+      HVM64: ami-0ff482f1bd693040f
+      HVMG2: NOT_SUPPORTED
     ca-central-1:
-      HVM64: ami-08a9b721ecc5b0a53
+      HVM64: ami-00fa475433251c41d
+      HVMG2: NOT_SUPPORTED
     eu-central-1:
-      HVM64: ami-0ebe657bc328d4e82
+      HVM64: ami-0d7ffddee8c7f2097
+      HVMG2: NOT_SUPPORTED
     eu-north-1:
-      HVM64: ami-1fb13961
+      HVM64: ami-0f43b683e6bb6b358
+      HVMG2: NOT_SUPPORTED
     eu-west-1:
-      HVM64: ami-030dbca661d402413
+      HVM64: ami-0dc0ac3facfc21953
+      HVMG2: NOT_SUPPORTED
     eu-west-2:
-      HVM64: ami-0009a33f033d8b7b6
+      HVM64: ami-00ca00bd5c582a19a
+      HVMG2: NOT_SUPPORTED
     eu-west-3:
-      HVM64: ami-0ebb3a801d5fb8b9b
+      HVM64: ami-0809433f36e17d87a
+      HVMG2: NOT_SUPPORTED
     sa-east-1:
-      HVM64: ami-058141e091292ecf0
+      HVM64: ami-0f7cd2910a4abb18e
+      HVMG2: NOT_SUPPORTED
     us-east-1:
-      HVM64: ami-0c6b1d09930fac512
+      HVM64: ami-04b1b4b4dda95e8e0
+      HVMG2: NOT_SUPPORTED
     us-east-2:
-      HVM64: ami-0ebbf2179e615c338
+      HVM64: ami-00b57770dfb0d83e0
+      HVMG2: NOT_SUPPORTED
     us-west-1:
-      HVM64: ami-015954d5e5548d13b
+      HVM64: ami-08ad5d768a9906bd0
+      HVMG2: NOT_SUPPORTED
     us-west-2:
-      HVM64: ami-0cb72367e98845d43
-    us-gov-west-1:
-      HVM64: ami-e9a9d388
-    us-gov-east-1:
-      HVM64: ami-a2d938d3
+      HVM64: ami-058da2a7352c365af
+      HVMG2: NOT_SUPPORTED
 Resources:
   ConfluenceServerRole:
     Type: AWS::IAM::Role
