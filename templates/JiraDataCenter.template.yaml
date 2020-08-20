@@ -1199,6 +1199,9 @@ Resources:
               command: /usr/local/bin/local-ansible-run
               test: test -f /usr/local/bin/local-ansible-run
               ignoreErrors: true
+            99_reload_services:
+              command: systemctl daemon-reload
+              ignoreErrors: true
             100_start_service:
               command: service jira start
               test: test -f /etc/systemd/system/jira.service
